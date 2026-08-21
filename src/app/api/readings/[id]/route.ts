@@ -47,6 +47,9 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       diastolic: raw.diastolic ?? existing.diastolic,
       pulse: raw.pulse ?? existing.pulse,
       note: raw.note !== undefined ? raw.note : existing.note,
+      // Tags kan opdateres OG ryddes (null), men beholdes hvis feltet udelades
+      timeOfDay: raw.timeOfDay !== undefined ? raw.timeOfDay : existing.timeOfDay,
+      arm: raw.arm !== undefined ? raw.arm : existing.arm,
     };
 
     // Samme validering som POST — nonsense-værdier giver 400 med dansk fejlbesked
@@ -66,6 +69,9 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
         diastolic: validation.data.diastolic,
         pulse: validation.data.pulse,
         note,
+        // Kun rør ved tags hvis de var med i anmodningen (kan sættes eller ryddes)
+        ...(raw.timeOfDay !== undefined ? { timeOfDay: validation.data.timeOfDay } : {}),
+        ...(raw.arm !== undefined ? { arm: validation.data.arm } : {}),
       },
     });
 

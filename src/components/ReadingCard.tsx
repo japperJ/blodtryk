@@ -53,13 +53,27 @@ export default function ReadingCard({ reading, onDelete, onEdit }: Props) {
               <p className="text-sm text-gray-500">
                 {date.toLocaleDateString("da-DK", { weekday: "short", day: "numeric", month: "short", year: "numeric" })}
               </p>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <p className="text-xs text-gray-400">
                   {date.toLocaleTimeString("da-DK", { hour: "2-digit", minute: "2-digit" })}
                 </p>
                 {reading.age != null && (
                   <span className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full">
                     {reading.age} år
+                  </span>
+                )}
+                {/* Kontekst-tags — kun vist hvis angivet */}
+                {reading.timeOfDay && (
+                  <span
+                    className="text-[10px] bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded-full"
+                    title={reading.timeOfDay === "morning" ? "Målt om morgenen" : "Målt om aftenen"}
+                  >
+                    {reading.timeOfDay === "morning" ? "🌅 Morgen" : "🌙 Aften"}
+                  </span>
+                )}
+                {reading.arm && (
+                  <span className="text-[10px] bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded-full">
+                    {reading.arm === "left" ? "Venstre arm" : "Højre arm"}
                   </span>
                 )}
               </div>

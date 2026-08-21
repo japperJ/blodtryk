@@ -16,6 +16,10 @@ const NOTE_MAX_LENGTH = 500;
 // i fremtiden afvises som "far-future"
 const CREATED_AT_FUTURE_TOLERANCE_MS = 5 * 60 * 1000;
 
+// Tilladte kontekst-tags (SQLite har ingen enums — strenge valideres her)
+export const TIME_OF_DAY_VALUES = ["morning", "evening"] as const;
+export const ARM_VALUES = ["left", "right"] as const;
+
 // Grænse for gyldigt fødselsår (maksimum er indeværende år)
 export const BIRTH_YEAR_MIN = 1900;
 
@@ -27,6 +31,9 @@ export interface ValidatedReadingInput {
   age: number | null;
   note: string | null;
   image: string | null;
+  // Kontekst-tags: morgen/aften og arm (null = ikke angivet)
+  timeOfDay: string | null;
+  arm: string | null;
   personId: number;
   // Valgfrit målingstidspunkt (null = serveren sætter tidspunktet selv)
   createdAt: Date | null;
@@ -134,6 +141,27 @@ export function validateReadingInput(body: unknown): ReadingValidationResult {
     image = raw.image;
   }
 
+  // Kontekst-tag: tidspunkt på dagen ("morning" | "evening")
+  let timeOfDay: string | null = null;
+  if (!isAbsent(raw.timeOfDay)) {
+    if (
+      typeof raw.timeOfDay !== "string" ||
+      !TIME_OF_DAY_VALUES.includes(raw.timeOfDay as (typeof TIME_OF_DAY_VALUES)[number])
+    ) {
+      return { ok: false, error: "Tidspunkt skal være 'morning' eller 'evening'" };
+    }
+    timeOfDay = raw.timeOfDay;
+  }
+
+  // Kontekst-tag: arm ("left" | "right")
+  let arm: string | null = null;
+  if (!isAbsent(raw.arm)) {
+    if (typeof raw.arm !== "string" || !ARM_VALUES.includes(raw.arm as (typeof ARM_VALUES)[number])) {
+      return { ok: false, error: "Arm skal være 'left' eller 'right'" };
+    }
+    arm = raw.arm;
+  }
+
   // Tidspunkt: valgfri ISO-dato/tid som streng (fraværende = serveren bruger "nu")
   let createdAt: Date | null = null;
   if (!isAbsent(raw.createdAt)) {
@@ -160,6 +188,8 @@ export function validateReadingInput(body: unknown): ReadingValidationResult {
       age,
       note,
       image,
+      timeOfDay,
+      arm,
       personId: raw.personId,
       createdAt,
     },
