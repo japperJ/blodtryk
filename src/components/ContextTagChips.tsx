@@ -25,7 +25,7 @@ export default function ContextTagChips({ timeOfDay, arm, onChange }: Props) {
     <div className="grid grid-cols-2 gap-3">
       {/* Tidspunkt på dagen */}
       <div>
-        <p className="text-xs font-medium text-gray-600 mb-1.5">Tidspunkt</p>
+        <p className="text-xs font-medium text-gray-600 dark:text-gray-300 mb-1.5">Tidspunkt</p>
         <div className="flex gap-2">
           {TIME_OPTIONS.map((opt) => {
             const selected = timeOfDay === opt.value;
@@ -38,7 +38,7 @@ export default function ContextTagChips({ timeOfDay, arm, onChange }: Props) {
                 className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all
                            ${selected
                              ? "bg-primary-600 text-white"
-                             : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
+                             : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"}`}
               >
                 {opt.label}
               </button>
@@ -49,7 +49,7 @@ export default function ContextTagChips({ timeOfDay, arm, onChange }: Props) {
 
       {/* Arm */}
       <div>
-        <p className="text-xs font-medium text-gray-600 mb-1.5">Arm</p>
+        <p className="text-xs font-medium text-gray-600 dark:text-gray-300 mb-1.5">Arm</p>
         <div className="flex gap-2">
           {ARM_OPTIONS.map((opt) => {
             const selected = arm === opt.value;
@@ -62,7 +62,7 @@ export default function ContextTagChips({ timeOfDay, arm, onChange }: Props) {
                 className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all
                            ${selected
                              ? "bg-primary-600 text-white"
-                             : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
+                             : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"}`}
               >
                 {opt.label}
               </button>

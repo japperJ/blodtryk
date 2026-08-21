@@ -68,7 +68,7 @@ export default function DashboardPage() {
   // Ingen person valgt — samme tom-state-mønster som /readings
   if (!person && !loading) {
     return (
-      <main className="min-h-screen bg-gray-50 pb-24">
+      <main className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-24">
         <div className="max-w-lg mx-auto p-4 pt-12">
           <EmptyState
             icon={User}
@@ -96,38 +96,38 @@ export default function DashboardPage() {
   const streakDays = stats?.streakDays ?? 0;
 
   return (
-    <main className="min-h-screen bg-gray-50 pb-24">
+    <main className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-24">
       <div className="max-w-lg mx-auto p-4 pt-6">
         {/* Overskrift */}
-        <h1 className="flex items-center gap-2 text-2xl font-bold text-gray-900 mb-1">
-          <House className="w-6 h-6 text-primary-600" aria-hidden />
+        <h1 className="flex items-center gap-2 text-2xl font-bold text-gray-900 dark:text-gray-100 mb-1">
+          <House className="w-6 h-6 text-primary-600 dark:text-primary-400" aria-hidden />
           Dashboard
         </h1>
-        <p className="text-sm text-gray-500 mb-4">{person?.name}</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{person?.name}</p>
 
         {loading ? (
           <DashboardSkeleton />
         ) : (
           <>
             {/* Hero-kort: seneste måling */}
-            <section className="bg-white rounded-2xl p-4 shadow-sm border mb-4" aria-label="Seneste måling">
+            <section className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-700 mb-4" aria-label="Seneste måling">
               {latest && latestStatus ? (
                 <>
                   <div className="flex justify-between items-start mb-2">
-                    <p className="text-sm font-medium text-gray-500">Seneste måling</p>
+                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Seneste måling</p>
                     <StatusPill status={latestStatus} />
                   </div>
                   <div className="flex items-baseline gap-3">
-                    <span className="text-5xl font-bold tracking-tight text-gray-900">{latest.systolic}</span>
-                    <span className="text-2xl font-semibold text-gray-400">/</span>
-                    <span className="text-3xl font-bold text-gray-700">{latest.diastolic}</span>
-                    <span className="text-sm text-gray-400 ml-1">mmHg</span>
+                    <span className="text-5xl font-bold tracking-tight text-gray-900 dark:text-gray-100">{latest.systolic}</span>
+                    <span className="text-2xl font-semibold text-gray-400 dark:text-gray-500">/</span>
+                    <span className="text-3xl font-bold text-gray-700 dark:text-gray-200">{latest.diastolic}</span>
+                    <span className="text-sm text-gray-500 dark:text-gray-400 ml-1">mmHg</span>
                   </div>
-                  <p className="flex items-center gap-1.5 text-base text-gray-600 mt-1">
+                  <p className="flex items-center gap-1.5 text-base text-gray-600 dark:text-gray-300 mt-1">
                     <HeartPulse className="w-4 h-4 text-red-500" aria-hidden />
                     {latest.pulse} slag/min
                   </p>
-                  <p className="text-xs text-gray-400 mt-2">{formatRelativeTime(latest.createdAt)}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">{formatRelativeTime(latest.createdAt)}</p>
                 </>
               ) : (
                 /* Nul-målinger: venlig CTA i stedet for tomme tal */
@@ -139,7 +139,7 @@ export default function DashboardPage() {
                   action={
                     <Link
                       href="/scan"
-                      className="inline-flex items-center gap-2 bg-primary-600 text-white px-5 py-2.5 rounded-xl font-semibold
+                      className="inline-flex items-center gap-2 bg-primary-600 text-white px-5 py-3 rounded-xl font-semibold
                                  hover:bg-primary-700 active:scale-95 transition-all"
                     >
                       <Camera className="w-5 h-5" aria-hidden />
@@ -152,10 +152,10 @@ export default function DashboardPage() {
 
             {/* Mini-sparkline: seneste 14 daglige systolisk-gennemsnit */}
             {sparkValues.length > 0 && (
-              <section className="bg-white rounded-2xl p-4 shadow-sm border mb-4 flex items-center justify-between gap-3">
+              <section className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-700 mb-4 flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-sm font-medium text-gray-500 mb-1">Systolisk</p>
-                  <p className="text-xs text-gray-400">Seneste {sparkValues.length} dage</p>
+                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Systolisk</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Seneste {sparkValues.length} dage</p>
                 </div>
                 <Sparkline values={sparkValues} />
               </section>
@@ -163,24 +163,24 @@ export default function DashboardPage() {
 
             {/* Tæller-række: streak + målinger denne uge */}
             <div className="grid grid-cols-2 gap-3 mb-4">
-              <div className="bg-white rounded-2xl p-4 shadow-sm border">
-                <p className="flex items-center gap-1.5 text-xl font-bold text-gray-900">
+              <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-700">
+                <p className="flex items-center gap-1.5 text-xl font-bold text-gray-900 dark:text-gray-100">
                   <Flame className="w-5 h-5 text-orange-500" aria-hidden />
                   {streakDays}
                 </p>
-                <p className="text-xs text-gray-500 mt-0.5">dag{streakDays === 1 ? "" : "e"} i træk</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">dag{streakDays === 1 ? "" : "e"} i træk</p>
               </div>
-              <div className="bg-white rounded-2xl p-4 shadow-sm border">
-                <p className="flex items-center gap-1.5 text-xl font-bold text-gray-900">
-                  <CalendarDays className="w-5 h-5 text-primary-600" aria-hidden />
+              <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-700">
+                <p className="flex items-center gap-1.5 text-xl font-bold text-gray-900 dark:text-gray-100">
+                  <CalendarDays className="w-5 h-5 text-primary-600 dark:text-primary-400" aria-hidden />
                   {weekCount}
                 </p>
-                <p className="text-xs text-gray-500 mt-0.5">målinger denne uge</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">målinger denne uge</p>
               </div>
             </div>
 
             {/* Medicin-placeholder (#14 lever rigtige data senere) */}
-            <p className="flex items-center gap-1.5 text-sm text-gray-400 mb-4">
+            <p className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 mb-4">
               <Pill className="w-4 h-4" aria-hidden />
               Medicin kommer snart
             </p>
@@ -197,8 +197,8 @@ export default function DashboardPage() {
               </Link>
               <Link
                 href="/scan?tab=manual"
-                className="flex items-center justify-center gap-2 bg-white text-primary-700 text-center px-4 py-3 rounded-2xl font-semibold
-                           border hover:bg-gray-50 active:scale-95 transition-all"
+                className="flex items-center justify-center gap-2 bg-white dark:bg-gray-800 text-primary-700 dark:text-primary-300 text-center px-4 py-3 rounded-2xl font-semibold
+                           border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 active:scale-95 transition-all"
               >
                 <Keyboard className="w-5 h-5" aria-hidden />
                 Manuelt
@@ -209,8 +209,8 @@ export default function DashboardPage() {
             {latest && (
               <section aria-label="Seneste målinger">
                 <div className="flex justify-between items-center mb-2">
-                  <h2 className="text-sm font-medium text-gray-500">Seneste målinger</h2>
-                  <Link href="/readings" className="text-sm text-primary-600 font-medium hover:text-primary-700">
+                  <h2 className="text-sm font-medium text-gray-500 dark:text-gray-400">Seneste målinger</h2>
+                  <Link href="/readings" className="text-sm text-primary-600 dark:text-primary-400 font-medium hover:text-primary-700 dark:hover:text-primary-300">
                     Se alle målinger →
                   </Link>
                 </div>
@@ -219,13 +219,13 @@ export default function DashboardPage() {
                     const status = getBPStatus(r.systolic, r.diastolic, r.age);
                     const date = new Date(r.createdAt);
                     return (
-                      <div key={r.id} className="bg-white rounded-2xl px-4 py-3 shadow-sm border flex items-center justify-between">
-                        <span className="text-sm text-gray-600 truncate">
+                      <div key={r.id} className="bg-white dark:bg-gray-800 rounded-2xl px-4 py-3 shadow-sm border border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                        <span className="text-sm text-gray-600 dark:text-gray-300 truncate">
                           {date.toLocaleDateString("da-DK", { day: "numeric", month: "short" })},{" "}
                           {date.toLocaleTimeString("da-DK", { hour: "2-digit", minute: "2-digit" })}
                         </span>
                         <div className="flex items-center gap-2 shrink-0">
-                          <span className="text-sm font-semibold text-gray-900 tabular-nums">
+                          <span className="text-sm font-semibold text-gray-900 dark:text-gray-100 tabular-nums">
                             {r.systolic}/{r.diastolic}
                           </span>
                           <StatusPill status={status} size="sm" />

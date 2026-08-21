@@ -90,7 +90,7 @@ export default function TrendsPage() {
   // Ingen person valgt — samme tom-state-mønster som /readings
   if (!person && !loading) {
     return (
-      <main className="min-h-screen bg-gray-50 pb-24">
+      <main className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-24">
         <div className="max-w-lg mx-auto p-4 pt-12">
           <EmptyState
             icon={User}
@@ -112,15 +112,15 @@ export default function TrendsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 pb-24">
+    <main className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-24">
       <div className="max-w-lg mx-auto p-4 pt-6">
         <div className="mb-5">
-          <h1 className="flex items-center gap-2 text-2xl font-bold text-gray-900">
-            <TrendingUp className="w-6 h-6 text-primary-600" aria-hidden />
+          <h1 className="flex items-center gap-2 text-2xl font-bold text-gray-900 dark:text-gray-100">
+            <TrendingUp className="w-6 h-6 text-primary-600 dark:text-primary-400" aria-hidden />
             Tendenser
           </h1>
           {person && (
-            <p className="text-sm text-gray-500 mt-0.5">{person.name}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{person.name}</p>
           )}
         </div>
 
@@ -133,7 +133,7 @@ export default function TrendsPage() {
               className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all
                          ${range === r.value
                            ? 'bg-primary-600 text-white'
-                           : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                           : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
             >
               {r.label}
             </button>
@@ -147,7 +147,7 @@ export default function TrendsPage() {
           </div>
         ) : !stats || stats.count === 0 ? (
           /* Tom state: personen har ingen målinger i det valgte interval */
-          <div className="bg-white rounded-2xl shadow-sm border overflow-hidden">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
             <EmptyState
               icon={TrendingDown}
               title="Ingen målinger i denne periode"
@@ -167,20 +167,20 @@ export default function TrendsPage() {
         ) : (
           <div className="space-y-4">
             {/* Nøgletal */}
-            <div className="bg-white rounded-2xl p-4 shadow-sm border grid grid-cols-3 gap-2 text-center">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-700 grid grid-cols-3 gap-2 text-center">
               <div>
-                <p className="text-xs text-gray-400">Gennemsnit</p>
-                <p className="text-lg font-bold text-gray-900">
+                <p className="text-xs text-gray-500 dark:text-gray-400">Gennemsnit</p>
+                <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
                   {stats.avg.systolic}/{stats.avg.diastolic}
                 </p>
               </div>
               <div>
-                <p className="text-xs text-gray-400">Puls</p>
-                <p className="text-lg font-bold text-gray-900">{stats.avg.pulse}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Puls</p>
+                <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{stats.avg.pulse}</p>
               </div>
               <div>
-                <p className="text-xs text-gray-400">Streak</p>
-                <p className="flex items-center justify-center gap-1 text-lg font-bold text-gray-900">
+                <p className="text-xs text-gray-500 dark:text-gray-400">Streak</p>
+                <p className="flex items-center justify-center gap-1 text-lg font-bold text-gray-900 dark:text-gray-100">
                   <Flame className="w-5 h-5 text-orange-500" aria-hidden />
                   {stats.streakDays > 0 ? stats.streakDays : "0"}
                 </p>
@@ -188,21 +188,21 @@ export default function TrendsPage() {
             </div>
 
             {/* Linjediagram: daglige gennemsnit + målbånd */}
-            <div className="bg-white rounded-2xl p-4 shadow-sm border">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-700">
               <div className="flex items-center justify-between mb-2">
-                <h2 className="text-sm font-semibold text-gray-900">Daglige gennemsnit</h2>
+                <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Daglige gennemsnit</h2>
                 <button
                   onClick={() => setShowPulse((v) => !v)}
                   className={`px-3 py-1 rounded-full text-xs font-medium transition-all
                              ${showPulse
-                               ? "bg-purple-100 text-purple-700"
-                               : "bg-gray-100 text-gray-500 hover:bg-gray-200"}`}
+                               ? "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300"
+                               : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"}`}
                 >
                   Puls
                 </button>
               </div>
               <BPLineChart data={stats.daily} band={band} showPulse={showPulse} />
-              <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500">
+              <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
                 <span className="flex items-center gap-1.5">
                   <span
                     className="inline-block h-2 w-2 rounded-full"
@@ -237,7 +237,7 @@ export default function TrendsPage() {
                   Målbånd ({ageGroupLabel})
                 </span>
               </div>
-              <p className="mt-1.5 text-xs text-gray-400">
+              <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
                 Sys {band.sysMin}–{band.sysMax} · Dia {band.diaMin}–{band.diaMax} mmHg ·{" "}
                 {stats.count} målinger
               </p>
@@ -245,16 +245,16 @@ export default function TrendsPage() {
 
             {/* Ugentlige gennemsnit — kompakte bar-rækker */}
             {stats.weekly.length > 0 && (
-              <div className="bg-white rounded-2xl p-4 shadow-sm border">
-                <h2 className="text-sm font-semibold text-gray-900 mb-3">Ugentlige gennemsnit</h2>
+              <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-700">
+                <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">Ugentlige gennemsnit</h2>
                 <div className="space-y-3">
                   {stats.weekly.map((w) => (
                     <div key={w.weekStart} className="flex items-center gap-2">
-                      <span className="w-12 shrink-0 text-xs text-gray-500">
+                      <span className="w-12 shrink-0 text-xs text-gray-500 dark:text-gray-400">
                         {shortDate(w.weekStart)}
                       </span>
                       <div className="flex-1 space-y-1">
-                        <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
+                        <div className="h-2 rounded-full bg-gray-100 dark:bg-gray-700 overflow-hidden">
                           <div
                             className="h-full rounded-full"
                             style={{
@@ -263,7 +263,7 @@ export default function TrendsPage() {
                             }}
                           />
                         </div>
-                        <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
+                        <div className="h-2 rounded-full bg-gray-100 dark:bg-gray-700 overflow-hidden">
                           <div
                             className="h-full rounded-full"
                             style={{
@@ -273,10 +273,10 @@ export default function TrendsPage() {
                           />
                         </div>
                       </div>
-                      <span className="w-14 shrink-0 text-right text-xs font-medium text-gray-700 tabular-nums">
+                      <span className="w-14 shrink-0 text-right text-xs font-medium text-gray-700 dark:text-gray-200 tabular-nums">
                         {w.sysAvg}/{w.diaAvg}
                       </span>
-                      <span className="shrink-0 text-xs text-gray-400 bg-gray-100 rounded-full px-2 py-0.5">
+                      <span className="shrink-0 text-xs text-gray-500 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-full px-2 py-0.5">
                         {w.count}
                       </span>
                     </div>
@@ -287,8 +287,8 @@ export default function TrendsPage() {
 
             {/* Klassificerings-fordeling */}
             {classificationSegments.length > 0 && (
-              <div className="bg-white rounded-2xl p-4 shadow-sm border">
-                <h2 className="text-sm font-semibold text-gray-900 mb-3">
+              <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-700">
+                <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">
                   Klassificering af målinger
                 </h2>
                 <DistributionBar segments={classificationSegments} />
@@ -299,31 +299,31 @@ export default function TrendsPage() {
             {stats.byTimeOfDay && (
               <div className={`grid gap-3 ${stats.byTimeOfDay.morning && stats.byTimeOfDay.evening ? "grid-cols-2" : "grid-cols-1"}`}>
                 {stats.byTimeOfDay.morning && (
-                  <div className="bg-white rounded-2xl p-4 shadow-sm border text-center">
-                    <p className="flex items-center justify-center gap-1.5 text-xs text-gray-400">
+                  <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-700 text-center">
+                    <p className="flex items-center justify-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
                       <Sunrise className="w-4 h-4 text-amber-500" aria-hidden />
                       Morgen
                     </p>
-                    <p className="text-xl font-bold text-gray-900 mt-0.5">
+                    <p className="text-xl font-bold text-gray-900 dark:text-gray-100 mt-0.5">
                       {stats.byTimeOfDay.morning.sysAvg}
-                      <span className="text-xs font-normal text-gray-400"> mmHg sys</span>
+                      <span className="text-xs font-normal text-gray-500 dark:text-gray-400"> mmHg sys</span>
                     </p>
                   </div>
                 )}
                 {stats.byTimeOfDay.evening && (
-                  <div className="bg-white rounded-2xl p-4 shadow-sm border text-center">
-                    <p className="flex items-center justify-center gap-1.5 text-xs text-gray-400">
+                  <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-700 text-center">
+                    <p className="flex items-center justify-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
                       <Moon className="w-4 h-4 text-indigo-500" aria-hidden />
                       Aften
                     </p>
-                    <p className="text-xl font-bold text-gray-900 mt-0.5">
+                    <p className="text-xl font-bold text-gray-900 dark:text-gray-100 mt-0.5">
                       {stats.byTimeOfDay.evening.sysAvg}
-                      <span className="text-xs font-normal text-gray-400"> mmHg sys</span>
+                      <span className="text-xs font-normal text-gray-500 dark:text-gray-400"> mmHg sys</span>
                     </p>
                   </div>
                 )}
                 {stats.byTimeOfDay.morning && stats.byTimeOfDay.evening && (
-                  <div className="col-span-full text-center text-xs text-gray-500 -mt-1">
+                  <div className="col-span-full text-center text-xs text-gray-500 dark:text-gray-400 -mt-1">
                     {(() => {
                       const diff =
                         stats.byTimeOfDay!.evening!.sysAvg - stats.byTimeOfDay!.morning!.sysAvg;

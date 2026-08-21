@@ -17,14 +17,14 @@ export default function EmptyState({ icon: Icon, title, description, action, com
   return (
     <div className={`text-center ${compact ? "py-6" : "py-12 px-4"}`}>
       <div
-        className={`mx-auto mb-4 flex items-center justify-center rounded-full bg-gray-100 ${
+        className={`mx-auto mb-4 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 ${
           compact ? "h-14 w-14" : "h-16 w-16"
         }`}
       >
-        <Icon className={`${compact ? "h-7 w-7" : "h-8 w-8"} text-gray-400`} aria-hidden />
+        <Icon className={`${compact ? "h-7 w-7" : "h-8 w-8"} text-gray-400 dark:text-gray-500`} aria-hidden />
       </div>
-      <p className="text-lg font-semibold text-gray-900">{title}</p>
-      {description && <p className="text-sm text-gray-500 mt-1">{description}</p>}
+      <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">{title}</p>
+      {description && <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{description}</p>}
       {action && <div className="mt-5">{action}</div>}
     </div>
   );

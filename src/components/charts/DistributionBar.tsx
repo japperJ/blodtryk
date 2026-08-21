@@ -30,7 +30,7 @@ export default function DistributionBar({ segments }: DistributionBarProps) {
   return (
     <div>
       {/* Stablet søjle — brede segmenter får mindst 6px så små andele forbliver synlige */}
-      <div className="flex h-4 w-full overflow-hidden rounded-full bg-gray-100">
+      <div className="flex h-4 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-gray-700">
         {segments.map((s) => (
           <div
             key={s.severity}
@@ -52,16 +52,16 @@ export default function DistributionBar({ segments }: DistributionBarProps) {
               className={`inline-block h-2.5 w-2.5 rounded-full ${SEVERITY_COLORS[s.severity]}`}
               aria-hidden
             />
-            <span className="text-gray-700">{s.label}</span>
-            <span className="ml-auto font-medium text-gray-900">{s.count}</span>
-            <span className="text-xs text-gray-400 w-10 text-right">
+            <span className="text-gray-700 dark:text-gray-200">{s.label}</span>
+            <span className="ml-auto font-medium text-gray-900 dark:text-gray-100">{s.count}</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400 w-10 text-right">
               {Math.round((s.count / total) * 100)}%
             </span>
           </li>
         ))}
       </ul>
 
-      <p className="mt-2 text-xs text-gray-400">{total} målinger klassificeret</p>
+      <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">{total} målinger klassificeret</p>
     </div>
   );
 }
