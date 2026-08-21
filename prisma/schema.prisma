@@ -1,0 +1,33 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Person {
+  id        Int      @id @default(autoincrement())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  readings  Reading[]
+}
+
+model Reading {
+  id        Int      @id @default(autoincrement())
+  systolic  Int
+  diastolic Int
+  pulse     Int
+  age       Int?
+  note      String?
+  image     String?
+  personId  Int
+  person    Person   @relation(fields: [personId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([createdAt])
+  @@index([personId])
+}
