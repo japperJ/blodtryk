@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import ReadingCard from "@/components/ReadingCard";
 import EditReadingDialog from "@/components/EditReadingDialog";
 import PdfExport from "@/components/PdfExport";
+import { downloadReadingsCsv, downloadReadingsJson } from "@/lib/exporters";
 import type { Reading, PersonSummary } from "@/types";
 import Link from "next/link";
 
@@ -127,8 +128,31 @@ export default function ReadingsPage() {
               <p className="text-sm text-gray-500 mt-0.5">{selectedPerson.name}</p>
             )}
           </div>
-          {readings.length > 0 && selectedPerson && (
-            <PdfExport readings={readings} personName={selectedPerson.name} />
+          {filteredReadings.length > 0 && selectedPerson && (
+            <div className="flex items-center gap-1.5 shrink-0">
+              {/* CSV/JSON eksporterer den FILTREREDE liste (#11) */}
+              <button
+                onClick={() =>
+                  downloadReadingsCsv(filteredReadings, selectedPerson.name)
+                }
+                title="Eksportér filtrerede målinger til CSV (dansk Excel-venlig)"
+                className="bg-white border text-sm px-3 py-2 rounded-lg font-medium
+                           hover:bg-gray-50 active:scale-95 transition-all shadow-sm"
+              >
+                CSV
+              </button>
+              <button
+                onClick={() =>
+                  downloadReadingsJson(filteredReadings, selectedPerson.name)
+                }
+                title="Eksportér filtrerede målinger til JSON"
+                className="bg-white border text-sm px-3 py-2 rounded-lg font-medium
+                           hover:bg-gray-50 active:scale-95 transition-all shadow-sm"
+              >
+                JSON
+              </button>
+              <PdfExport readings={filteredReadings} personName={selectedPerson.name} />
+            </div>
           )}
         </div>
 
