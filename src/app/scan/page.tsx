@@ -253,6 +253,14 @@ export default function ScanPage() {
               age: derivedAge,
               image: `data:image/jpeg;base64,${image.compressedBase64}`,
               personId: selectedPerson?.id,
+              // Brug EXIF-objektivets optagelsestidspunkt hvis tilgængeligt,
+              // ellers falder API'et tilbage til "nu" (upload-tidspunkt).
+              // Tidspunkter i fremtiden (fx forkert kameraur) springes over,
+              // da API'et ellers afviser målingen.
+              ...(result.timestamp &&
+              new Date(result.timestamp).getTime() <= Date.now() + 5 * 60 * 1000
+                ? { createdAt: new Date(result.timestamp).toISOString() }
+                : {}),
             }),
           });
         } catch {
