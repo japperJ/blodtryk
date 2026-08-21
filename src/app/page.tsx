@@ -20,9 +20,11 @@ import Sparkline from "@/components/dashboard/Sparkline";
 import StatusPill from "@/components/StatusPill";
 import EmptyState from "@/components/EmptyState";
 import { DashboardSkeleton } from "@/components/Skeleton";
+import type { Medication } from "@/components/MedicationPanel";
 
 export default function DashboardPage() {
   const [person, setPerson] = useState<PersonSummary | null>(null);
+  const [medications, setMedications] = useState<Medication[]>([]);
   const [readings, setReadings] = useState<Reading[]>([]);
   const [stats, setStats] = useState<ReadingStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -61,6 +63,15 @@ export default function DashboardPage() {
       } finally {
         setLoading(false);
       }
+
+      // Tredje kald: aktive medicin (#14) — uafhængig af de andre
+      try {
+        const medsRes = await fetch(`/api/persons/${savedId}/medications`);
+        if (medsRes.ok) {
+          const all: Medication[] = await medsRes.json();
+          setMedications(all.filter((m) => m.active));
+        }
+      } catch {}
     };
     init();
   }, []);
@@ -179,11 +190,15 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Medicin-placeholder (#14 lever rigtige data senere) */}
-            <p className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 mb-4">
-              <Pill className="w-4 h-4" aria-hidden />
-              Medicin kommer snart
-            </p>
+            {/* Aktive medicin (#14) — skjules helt når ingen aktive */}
+            {medications.length > 0 && (
+              <p className="flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-300 mb-4">
+                <Pill className="w-4 h-4 shrink-0" aria-hidden />
+                <span className="truncate">
+                  {medications.map((m) => `${m.name} ${m.dose}`).join(", ")}
+                </span>
+              </p>
+            )}
 
             {/* Genveje */}
             <div className="grid grid-cols-2 gap-3 mb-6">

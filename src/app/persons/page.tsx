@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import { User, UserPlus, Pencil, Trash2, X, Check } from "lucide-react";
 import EmptyState from "@/components/EmptyState";
 import { PersonRowSkeleton } from "@/components/Skeleton";
+import MedicationPanel from "@/components/MedicationPanel";
 import type { PersonSummary } from "@/types";
 
 export default function PersonsPage() {
@@ -327,6 +328,7 @@ export default function PersonsPage() {
                     </div>
                   </div>
                 )}
+                <MedicationPanel personId={person.id} />
               </div>
             ))}
           </div>

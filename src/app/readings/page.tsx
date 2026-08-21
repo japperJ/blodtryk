@@ -31,6 +31,9 @@ export default function ReadingsPage() {
   const [timeFilter, setTimeFilter] = useState<TimeFilterType>("all");
   const [selectedPerson, setSelectedPerson] = useState<PersonSummary | null>(null);
   const [editingReading, setEditingReading] = useState<Reading | null>(null);
+  const [medications, setMedications] = useState<
+    { name: string; dose: string; active: boolean }[]
+  >([]);
 
   const fetchReadings = useCallback(async () => {
     const savedId = localStorage.getItem("selectedPersonId");
@@ -59,6 +62,9 @@ export default function ReadingsPage() {
           const persons = await res.json();
           const person = persons.find((p: PersonSummary) => p.id === parseInt(savedId));
           if (person) setSelectedPerson(person);
+          // Aktive medicin til PDF-resuméet (#14)
+          const medsRes = await fetch(`/api/persons/${savedId}/medications`);
+          if (medsRes.ok) setMedications(await medsRes.json());
         } catch {}
       }
       await fetchReadings();
@@ -172,7 +178,11 @@ export default function ReadingsPage() {
                 <FileJson className="w-4 h-4 text-amber-600" aria-hidden />
                 JSON
               </button>
-              <PdfExport readings={filteredReadings} personName={selectedPerson.name} />
+              <PdfExport
+                  readings={filteredReadings}
+                  personName={selectedPerson.name}
+                  medications={medications}
+                />
             </div>
           )}
         </div>
