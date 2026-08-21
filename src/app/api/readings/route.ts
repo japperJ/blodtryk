@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { validateReadingInput } from "@/lib/validation";
 
 // GET readings — filtered by personId (required)
 export async function GET(request: NextRequest) {
@@ -32,21 +33,24 @@ export async function GET(request: NextRequest) {
 // POST new reading — requires personId
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { systolic, diastolic, pulse, age, note, image, personId } = body;
-
-    if (typeof systolic !== "number" || typeof diastolic !== "number" || typeof pulse !== "number") {
-      return NextResponse.json({ error: "Invalid reading values" }, { status: 400 });
+    let body: unknown;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json({ error: "Ugyldigt JSON-format" }, { status: 400 });
     }
 
-    if (typeof personId !== "number" || personId < 1) {
-      return NextResponse.json({ error: "personId er påkrævet" }, { status: 400 });
+    // Server-side validering før noget DB-arbejde
+    const validation = validateReadingInput(body);
+    if (!validation.ok) {
+      return NextResponse.json({ error: validation.error }, { status: 400 });
     }
+    const { systolic, diastolic, pulse, age, note, image, personId } = validation.data;
 
     // Tjek at personen eksisterer
     const person = await prisma.person.findUnique({ where: { id: personId } });
     if (!person) {
-      return NextResponse.json({ error: "Personen findes ikke" }, { status: 404 });
+      return NextResponse.json({ error: "Personen findes ikke" }, { status: 400 });
     }
 
     const reading = await prisma.reading.create({
@@ -54,9 +58,9 @@ export async function POST(request: NextRequest) {
         systolic,
         diastolic,
         pulse,
-        age: (typeof age === "number" && age > 0 && age < 150) ? age : null,
-        note: note || null,
-        image: image || null,
+        age,
+        note,
+        image,
         personId,
       },
     });

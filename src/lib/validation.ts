@@ -1,0 +1,120 @@
+// Server-side validering af målinger (bruges af POST /api/readings).
+// Ren logik uden DB-adgang — personId-tjek mod databasen sker i routen via Prisma.
+
+// Grænser for gyldige målingsværdier
+const SYSTOLIC_MIN = 50;
+const SYSTOLIC_MAX = 300;
+const DIASTOLIC_MIN = 20;
+const DIASTOLIC_MAX = 200;
+const PULSE_MIN = 20;
+const PULSE_MAX = 250;
+const AGE_MIN = 1;
+const AGE_MAX = 120;
+const NOTE_MAX_LENGTH = 500;
+
+// Valideret og koordineret input klar til Prisma
+export interface ValidatedReadingInput {
+  systolic: number;
+  diastolic: number;
+  pulse: number;
+  age: number | null;
+  note: string | null;
+  image: string | null;
+  personId: number;
+}
+
+export type ReadingValidationResult =
+  | { ok: true; data: ValidatedReadingInput }
+  | { ok: false; error: string };
+
+// Hjælper: er værdien et heltal?
+function isInt(value: unknown): value is number {
+  return typeof value === "number" && Number.isInteger(value);
+}
+
+// Hjælper: valgfelt — null/undefined betragtes som "ikke udfyldt"
+function isAbsent(value: unknown): boolean {
+  return value === null || value === undefined;
+}
+
+/**
+ * Validerer body fra POST /api/readings.
+ * Returnerer enten { ok: true, data } med rensede felter
+ * eller { ok: false, error } med en dansk fejlbesked.
+ */
+export function validateReadingInput(body: unknown): ReadingValidationResult {
+  // Body skal være et JSON-objekt
+  if (typeof body !== "object" || body === null || Array.isArray(body)) {
+    return { ok: false, error: "Ugyldigt anmodningsformat" };
+  }
+
+  const raw = body as Record<string, unknown>;
+
+  // personId er påkrævet
+  if (!isInt(raw.personId) || raw.personId < 1) {
+    return { ok: false, error: "personId er påkrævet" };
+  }
+
+  // Systolisk: heltal mellem 50 og 300
+  if (!isInt(raw.systolic) || raw.systolic < SYSTOLIC_MIN || raw.systolic > SYSTOLIC_MAX) {
+    return { ok: false, error: `Systolisk skal være et heltal mellem ${SYSTOLIC_MIN} og ${SYSTOLIC_MAX}` };
+  }
+
+  // Diastolisk: heltal mellem 20 og 200
+  if (!isInt(raw.diastolic) || raw.diastolic < DIASTOLIC_MIN || raw.diastolic > DIASTOLIC_MAX) {
+    return { ok: false, error: `Diastolisk skal være et heltal mellem ${DIASTOLIC_MIN} og ${DIASTOLIC_MAX}` };
+  }
+
+  // Puls: heltal mellem 20 og 250 (påkrævet — samme som schema og nuværende flows)
+  if (!isInt(raw.pulse) || raw.pulse < PULSE_MIN || raw.pulse > PULSE_MAX) {
+    return { ok: false, error: `Puls skal være et heltal mellem ${PULSE_MIN} og ${PULSE_MAX}` };
+  }
+
+  // Relation: systolisk skal være højere end diastolisk
+  if (raw.systolic <= raw.diastolic) {
+    return { ok: false, error: "Systolisk skal være højere end diastolisk" };
+  }
+
+  // Note: valgfri streng på højst 500 tegn
+  let note: string | null = null;
+  if (!isAbsent(raw.note)) {
+    if (typeof raw.note !== "string") {
+      return { ok: false, error: "Note skal være en tekststreng" };
+    }
+    if (raw.note.length > NOTE_MAX_LENGTH) {
+      return { ok: false, error: `Note må højst være ${NOTE_MAX_LENGTH} tegn` };
+    }
+    note = raw.note;
+  }
+
+  // Alder: valgfrit heltal mellem 1 og 120
+  let age: number | null = null;
+  if (!isAbsent(raw.age)) {
+    if (!isInt(raw.age) || raw.age < AGE_MIN || raw.age > AGE_MAX) {
+      return { ok: false, error: `Alder skal være et heltal mellem ${AGE_MIN} og ${AGE_MAX}` };
+    }
+    age = raw.age;
+  }
+
+  // Billede: valgfri data-URL som streng (sendes uændret videre)
+  let image: string | null = null;
+  if (!isAbsent(raw.image)) {
+    if (typeof raw.image !== "string") {
+      return { ok: false, error: "Billede skal være en tekststreng (data-URL)" };
+    }
+    image = raw.image;
+  }
+
+  return {
+    ok: true,
+    data: {
+      systolic: raw.systolic,
+      diastolic: raw.diastolic,
+      pulse: raw.pulse,
+      age,
+      note,
+      image,
+      personId: raw.personId,
+    },
+  };
+}
