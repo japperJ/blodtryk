@@ -1,8 +1,22 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
+import {
+  ClipboardList,
+  Sunrise,
+  Moon,
+  Image as ImageIcon,
+  FileText,
+  FileSpreadsheet,
+  FileJson,
+  Stethoscope,
+  Filter,
+  User,
+} from "lucide-react";
 import ReadingCard from "@/components/ReadingCard";
 import EditReadingDialog from "@/components/EditReadingDialog";
 import PdfExport from "@/components/PdfExport";
+import EmptyState from "@/components/EmptyState";
+import { ReadingCardSkeleton } from "@/components/Skeleton";
 import { downloadReadingsCsv, downloadReadingsJson } from "@/lib/exporters";
 import type { Reading, PersonSummary } from "@/types";
 import Link from "next/link";
@@ -100,19 +114,21 @@ export default function ReadingsPage() {
   if (!selectedPerson && !loading) {
     return (
       <main className="min-h-screen bg-gray-50 pb-24">
-        <div className="max-w-lg mx-auto p-4 pt-12 text-center">
-          <p className="text-4xl mb-4">👤</p>
-          <p className="text-lg font-semibold text-gray-900 mb-2">Vælg en person</p>
-          <p className="text-gray-500 mb-6">
-            Du skal vælge en person for at se målinger.
-          </p>
-          <Link
-            href="/persons"
-            className="inline-block bg-primary-600 text-white px-6 py-3 rounded-xl font-semibold
-                       hover:bg-primary-700 active:scale-95 transition-all"
-          >
-            Gå til personer
-          </Link>
+        <div className="max-w-lg mx-auto p-4 pt-12">
+          <EmptyState
+            icon={User}
+            title="Vælg en person"
+            description="Du skal vælge en person for at se målinger."
+            action={
+              <Link
+                href="/persons"
+                className="inline-block bg-primary-600 text-white px-6 py-3 rounded-xl font-semibold
+                           hover:bg-primary-700 active:scale-95 transition-all"
+              >
+                Gå til personer
+              </Link>
+            }
+          />
         </div>
       </main>
     );
@@ -123,7 +139,10 @@ export default function ReadingsPage() {
       <div className="max-w-lg mx-auto p-4 pt-6">
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">📋 Målinger</h1>
+            <h1 className="flex items-center gap-2 text-2xl font-bold text-gray-900">
+              <ClipboardList className="w-6 h-6 text-primary-600" aria-hidden />
+              Målinger
+            </h1>
             {selectedPerson && (
               <p className="text-sm text-gray-500 mt-0.5">{selectedPerson.name}</p>
             )}
@@ -136,9 +155,10 @@ export default function ReadingsPage() {
                   downloadReadingsCsv(filteredReadings, selectedPerson.name)
                 }
                 title="Eksportér filtrerede målinger til CSV (dansk Excel-venlig)"
-                className="bg-white border text-sm px-3 py-2 rounded-lg font-medium
+                className="flex items-center gap-1 bg-white border text-sm px-3 py-2 rounded-lg font-medium
                            hover:bg-gray-50 active:scale-95 transition-all shadow-sm"
               >
+                <FileSpreadsheet className="w-4 h-4 text-green-700" aria-hidden />
                 CSV
               </button>
               <button
@@ -146,9 +166,10 @@ export default function ReadingsPage() {
                   downloadReadingsJson(filteredReadings, selectedPerson.name)
                 }
                 title="Eksportér filtrerede målinger til JSON"
-                className="bg-white border text-sm px-3 py-2 rounded-lg font-medium
+                className="flex items-center gap-1 bg-white border text-sm px-3 py-2 rounded-lg font-medium
                            hover:bg-gray-50 active:scale-95 transition-all shadow-sm"
               >
+                <FileJson className="w-4 h-4 text-amber-600" aria-hidden />
                 JSON
               </button>
               <PdfExport readings={filteredReadings} personName={selectedPerson.name} />
@@ -169,21 +190,23 @@ export default function ReadingsPage() {
             </button>
             <button
               onClick={() => setFilter("with-image")}
-              className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all
                          ${filter === "with-image"
                            ? 'bg-primary-600 text-white'
                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
             >
-              🖼️ Med billede ({withImageCount})
+              <ImageIcon className="w-4 h-4" aria-hidden />
+              Med billede ({withImageCount})
             </button>
             <button
               onClick={() => setFilter("without-image")}
-              className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all
                          ${filter === "without-image"
                            ? 'bg-primary-600 text-white'
                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
             >
-              📝 Uden billede ({withoutImageCount})
+              <FileText className="w-4 h-4" aria-hidden />
+              Uden billede ({withoutImageCount})
             </button>
           </div>
         )}
@@ -202,47 +225,64 @@ export default function ReadingsPage() {
             </button>
             <button
               onClick={() => setTimeFilter("morning")}
-              className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all
                          ${timeFilter === "morning"
                            ? 'bg-primary-600 text-white'
                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
             >
-              🌅 Morgen ({morningCount})
+              <Sunrise className="w-4 h-4" aria-hidden />
+              Morgen ({morningCount})
             </button>
             <button
               onClick={() => setTimeFilter("evening")}
-              className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all
                          ${timeFilter === "evening"
                            ? 'bg-primary-600 text-white'
                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
             >
-              🌙 Aften ({eveningCount})
+              <Moon className="w-4 h-4" aria-hidden />
+              Aften ({eveningCount})
             </button>
           </div>
         )}
 
         {loading ? (
-          <div className="text-center py-12 text-gray-400 animate-pulse">Indlæser...</div>
+          /* Skelet-layout (#12): samme form som kortene */
+          <div className="space-y-3" aria-busy="true" aria-label="Indlæser målinger">
+            <ReadingCardSkeleton />
+            <ReadingCardSkeleton />
+            <ReadingCardSkeleton />
+          </div>
         ) : filteredReadings.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-4xl mb-3">🩺</p>
-            {filter === "all" ? (
-              <>
-                <p className="text-gray-600">Ingen målinger endnu</p>
-                <p className="text-sm text-gray-400 mt-1">Tag din første måling for at komme i gang</p>
-              </>
-            ) : (
-              <>
-                <p className="text-gray-600">Ingen målinger med dette filter</p>
+          filter === "all" ? (
+            <EmptyState
+              icon={Stethoscope}
+              title="Ingen målinger endnu"
+              description="Tag din første måling for at komme i gang"
+              action={
+                <Link
+                  href="/scan"
+                  className="inline-block bg-primary-600 text-white px-6 py-3 rounded-xl font-semibold
+                             hover:bg-primary-700 active:scale-95 transition-all"
+                >
+                  Tag en måling
+                </Link>
+              }
+            />
+          ) : (
+            <EmptyState
+              icon={Filter}
+              title="Ingen målinger med dette filter"
+              action={
                 <button
                   onClick={() => setFilter("all")}
-                  className="mt-2 text-sm text-primary-600 font-medium"
+                  className="text-sm text-primary-600 font-medium hover:text-primary-700"
                 >
                   Vis alle målinger
                 </button>
-              </>
-            )}
-          </div>
+              }
+            />
+          )
         ) : (
           <>
             <p className="text-sm text-gray-500 mb-4">

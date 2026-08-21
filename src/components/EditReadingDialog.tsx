@@ -1,4 +1,6 @@
 "use client";
+
+import { X } from "lucide-react";
 import { useState } from "react";
 import type { Reading, TimeOfDay, Arm } from "@/types";
 import ReadingStepper, { type ReadingStepperKey } from "./ReadingStepper";
@@ -87,7 +89,7 @@ export default function EditReadingDialog({ reading, onClose, onSaved }: Props) 
             className="text-gray-400 hover:text-gray-600 text-xl"
             title="Luk"
           >
-            ✕
+            <X className="w-5 h-5" />
           </button>
         </div>
 

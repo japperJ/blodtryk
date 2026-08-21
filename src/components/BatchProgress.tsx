@@ -1,4 +1,6 @@
 "use client";
+
+import { AlertTriangle, CheckCircle2, Loader2, OctagonAlert, X, XCircle } from "lucide-react";
 import type { UploadImage } from "./BatchUpload";
 
 export interface ScanResult {
@@ -27,7 +29,7 @@ export default function BatchProgress({ images, results, currentIndex, isComplet
       <div className="bg-white rounded-xl p-4 shadow-sm border">
         <div className="flex justify-between items-center mb-2">
           <p className="text-sm font-medium text-gray-700">
-            {isComplete ? '✅ Scanning færdig' : `⏳ Scanner billede ${currentIndex + 1} af ${totalCount}...`}
+            {isComplete ? <span className="inline-flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-green-600" /> Scanning færdig</span> : <span className="inline-flex items-center gap-1.5"><Loader2 className="w-4 h-4 animate-spin" /> Scanner billede {currentIndex + 1} af {totalCount}...</span>}
           </p>
           <p className="text-sm text-gray-500">
             {completedCount}/{totalCount}
@@ -86,15 +88,15 @@ export default function BatchProgress({ images, results, currentIndex, isComplet
                   <p className="text-sm text-gray-600">
                     {result.reading.systolic}/{result.reading.diastolic}/{result.reading.pulse}
                     <span className="text-gray-400 ml-1">
-                      {result.reading.systolic < 130 && result.reading.diastolic < 80 ? '✅' :
-                       result.reading.systolic < 140 ? '⚠️' : '🔴'}
+                      {result.reading.systolic < 130 && result.reading.diastolic < 80 ? <CheckCircle2 className="w-4 h-4 text-green-600 inline" /> :
+                       result.reading.systolic < 140 ? <AlertTriangle className="w-4 h-4 text-orange-500 inline" /> : <OctagonAlert className="w-4 h-4 text-red-500 inline" />}
                     </span>
                   </p>
                 )}
 
                 {hasError && (
                   <p className="text-sm text-red-600">
-                    ❌ {result?.error}
+                    <AlertTriangle className="w-4 h-4 inline mr-1 text-red-500" /> {result?.error}
                   </p>
                 )}
 
@@ -111,8 +113,8 @@ export default function BatchProgress({ images, results, currentIndex, isComplet
 
               {/* Status ikon */}
               <div className="shrink-0">
-                {isDone && !hasError && '✅'}
-                {hasError && '❌'}
+                {isDone && !hasError && <CheckCircle2 className="w-6 h-6 text-green-600" />}
+                {hasError && <XCircle className="w-6 h-6 text-red-500" />}
                 {isActive && (
                   <div className="w-5 h-5 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
                 )}
@@ -132,7 +134,7 @@ export default function BatchProgress({ images, results, currentIndex, isComplet
           className="w-full bg-gray-200 text-gray-700 py-3 rounded-xl font-medium
                      hover:bg-gray-300 active:scale-95 transition-all"
         >
-          ✕ Annuller scanning
+          <X className="w-4 h-4 mr-1 inline" /> Annuller scanning
         </button>
       )}
     </div>

@@ -1,4 +1,6 @@
 "use client";
+
+import { Camera as CameraIcon, Loader2 } from "lucide-react";
 import { useCamera } from "@/hooks/useCamera";
 
 interface Props {
@@ -26,7 +28,7 @@ export default function Camera({ onCapture }: Props) {
           className="bg-primary-600 text-white px-8 py-4 rounded-xl text-lg font-semibold
                      hover:bg-primary-700 active:scale-95 transition-all shadow-lg"
         >
-          📸 Åbn kamera
+          <span className="inline-flex items-center gap-2"><CameraIcon className="w-5 h-5" /> Åbn kamera</span>
         </button>
       ) : (
         <div className="w-full max-w-md">
@@ -42,7 +44,7 @@ export default function Camera({ onCapture }: Props) {
             />
             {!isReady && (
               <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-                <p className="text-white text-lg">⏳ Starter kamera...</p>
+                <p className="text-white text-lg"><Loader2 className="w-5 h-5 animate-spin inline mr-1" /> Starter kamera...</p>
               </div>
             )}
           </div>
@@ -54,7 +56,7 @@ export default function Camera({ onCapture }: Props) {
               className="flex-1 bg-primary-600 text-white py-3 rounded-xl font-semibold
                          hover:bg-primary-700 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isReady ? "📷 Tag billede" : "⏳ Kamera starter..."}
+            {isReady ? <span className="inline-flex items-center gap-2"><CameraIcon className="w-5 h-5" /> Tag billede</span> : <span className="inline-flex items-center gap-2"><Loader2 className="w-5 h-5 animate-spin" /> Kamera starter...</span>}
             </button>
             <button
               onClick={stop}

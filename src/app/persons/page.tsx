@@ -1,5 +1,8 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
+import { User, UserPlus, Pencil, Trash2, X, Check } from "lucide-react";
+import EmptyState from "@/components/EmptyState";
+import { PersonRowSkeleton } from "@/components/Skeleton";
 import type { PersonSummary } from "@/types";
 
 export default function PersonsPage() {
@@ -117,13 +120,17 @@ export default function PersonsPage() {
     <main className="min-h-screen bg-gray-50 pb-24">
       <div className="max-w-lg mx-auto p-4 pt-6">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">👤 Personer</h1>
+          <h1 className="flex items-center gap-2 text-2xl font-bold text-gray-900">
+            <User className="w-6 h-6 text-primary-600" aria-hidden />
+            Personer
+          </h1>
           <button
             onClick={() => setIsAdding(true)}
-            className="bg-primary-600 text-white px-4 py-2 rounded-xl text-sm font-medium
+            className="flex items-center gap-1.5 bg-primary-600 text-white px-4 py-2 rounded-xl text-sm font-medium
                        hover:bg-primary-700 active:scale-95 transition-all"
           >
-            + Tilføj
+            <UserPlus className="w-4 h-4" aria-hidden />
+            Tilføj
           </button>
         </div>
 
@@ -153,9 +160,10 @@ export default function PersonsPage() {
               </button>
               <button
                 onClick={() => { setIsAdding(false); setNewName(""); setNewBirthYear(""); setFormError(""); }}
-                className="px-3 py-2 text-gray-500 hover:text-gray-700"
+                className="p-2 text-gray-400 hover:text-gray-700 transition-colors"
+                title="Annuller"
               >
-                ✕
+                <X className="w-5 h-5" aria-hidden />
               </button>
             </div>
             <div className="flex items-center gap-3 mt-2">
@@ -183,17 +191,28 @@ export default function PersonsPage() {
 
         {/* Personer */}
         {loading ? (
-          <div className="text-center py-12 text-gray-400 animate-pulse">
-            Indlæser...
+          /* Skelet-layout (#12): rækker i samme form som personkortene */
+          <div className="space-y-3" aria-busy="true" aria-label="Indlæser personer">
+            <PersonRowSkeleton />
+            <PersonRowSkeleton />
+            <PersonRowSkeleton />
           </div>
         ) : persons.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-4xl mb-3">👤</p>
-            <p className="text-gray-600">Ingen personer endnu</p>
-            <p className="text-sm text-gray-400 mt-1">
-              Opret en person for at komme i gang
-            </p>
-          </div>
+          <EmptyState
+            icon={UserPlus}
+            title="Ingen personer endnu"
+            description="Opret en person for at komme i gang"
+            action={
+              <button
+                onClick={() => setIsAdding(true)}
+                className="inline-flex items-center gap-2 bg-primary-600 text-white px-6 py-3 rounded-xl font-semibold
+                           hover:bg-primary-700 active:scale-95 transition-all"
+              >
+                <UserPlus className="w-5 h-5" aria-hidden />
+                Opret person
+              </button>
+            }
+          />
         ) : (
           <div className="space-y-3">
             {persons.map((person) => (
@@ -221,15 +240,17 @@ export default function PersonsPage() {
                       />
                       <button
                         onClick={() => handleUpdate(person.id)}
-                        className="px-3 py-2 bg-primary-600 text-white rounded-xl text-sm"
+                        className="p-2 text-primary-600 hover:bg-primary-50 rounded-full transition-colors"
+                        title="Gem"
                       >
-                        ✓
+                        <Check className="w-5 h-5" aria-hidden />
                       </button>
                       <button
                         onClick={() => { setEditingId(null); setEditName(""); setEditBirthYear(""); setFormError(""); }}
-                        className="px-3 py-2 text-gray-500"
+                        className="p-2 text-gray-400 hover:text-gray-700 transition-colors"
+                        title="Annuller"
                       >
-                        ✕
+                        <X className="w-5 h-5" aria-hidden />
                       </button>
                     </div>
                     <input
@@ -256,8 +277,15 @@ export default function PersonsPage() {
                       className="flex-1 text-left"
                     >
                       <div className="flex items-center gap-3">
-                        <span className="text-2xl">
-                          {selectedPersonId === person.id ? "✅" : "👤"}
+                        {/* Avatar — valgt person fremhæves med fyldt primærfarvet cirkel (ikke kun farve: kortet har også ring) */}
+                        <span
+                          className={`flex items-center justify-center w-9 h-9 rounded-full shrink-0 transition-colors ${
+                            selectedPersonId === person.id
+                              ? "bg-primary-600 text-white"
+                              : "bg-gray-100 text-gray-400"
+                          }`}
+                        >
+                          <User className="w-5 h-5" aria-hidden />
                         </span>
                         <div>
                           <p className="font-medium text-gray-900">{person.name}</p>
@@ -285,15 +313,15 @@ export default function PersonsPage() {
                         className="p-2 text-gray-400 hover:text-primary-600 transition-colors"
                         title="Rediger"
                       >
-                        ✏️
+                        <Pencil className="w-4 h-4" aria-hidden />
                       </button>
                       {person.id !== 1 && (
                         <button
                           onClick={() => handleDelete(person.id, person.name)}
-                          className="p-2 text-gray-400 hover:text-red-600 transition-colors"
+                          className="p-2 text-gray-400 hover:text-danger-600 transition-colors"
                           title="Slet"
                         >
-                          🗑️
+                          <Trash2 className="w-4 h-4" aria-hidden />
                         </button>
                       )}
                     </div>
@@ -306,7 +334,7 @@ export default function PersonsPage() {
 
         {/* Info */}
         <p className="text-xs text-gray-400 text-center mt-6">
-          Tryk på en person for at vælge den · Valgte person vises med ✓
+          Tryk på en person for at vælge den · Valgte person er fremhævet
         </p>
       </div>
     </main>

@@ -1,4 +1,6 @@
 "use client";
+
+import { ArrowLeft, ImageOff, Pencil } from "lucide-react";
 import { useState } from "react";
 
 interface Props {
@@ -33,7 +35,7 @@ export default function ImageViewer({ imageUrl, reading, timestamp, onClose }: P
           onClick={onClose}
           className="text-white text-sm font-medium flex items-center gap-1"
         >
-          ← Tilbage
+          <ArrowLeft className="w-4 h-4" /> Tilbage
         </button>
         <p className="text-white/80 text-sm">
           {date.toLocaleDateString('da-DK', {
@@ -66,7 +68,7 @@ export default function ImageViewer({ imageUrl, reading, timestamp, onClose }: P
                 onClick={() => setIsEditing(true)}
                 className="text-sm text-primary-600 font-medium"
               >
-                ✏️ Ret
+                <span className="inline-flex items-center gap-1"><Pencil className="w-3.5 h-3.5" /> Ret</span>
               </button>
             </div>
 
@@ -155,7 +157,7 @@ export default function ImageViewer({ imageUrl, reading, timestamp, onClose }: P
 
         {!reading && (
           <div className="text-center py-4">
-            <p className="text-red-500">❌ Billedet kunne ikke aflæses</p>
+            <p className="text-red-500"><ImageOff className="w-4 h-4 inline mr-1" /> Billedet kunne ikke aflæses</p>
           </div>
         )}
       </div>

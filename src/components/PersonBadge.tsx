@@ -1,4 +1,6 @@
 "use client";
+
+import { ChevronDown, UserRound } from "lucide-react";
 import { useState, useEffect } from "react";
 import type { PersonSummary } from "@/types";
 import PersonDialog from "./PersonDialog";
@@ -80,9 +82,9 @@ export default function PersonBadge({ onPersonChange }: Props) {
                    text-primary-700 text-sm font-medium hover:bg-primary-100
                    transition-colors"
       >
-        <span className="text-base">👤</span>
+        <UserRound className="w-4 h-4" />
         <span>{selectedPerson?.name || "Vælg person"}</span>
-        <span className="text-xs opacity-60">▼</span>
+        <ChevronDown className="w-3.5 h-3.5 opacity-60" />
       </button>
 
       {showDialog && (
