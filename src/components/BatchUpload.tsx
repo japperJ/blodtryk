@@ -94,8 +94,8 @@ export default function BatchUpload({ onImagesReady }: Props) {
       {/* Upload område */}
       <div
         onClick={handleClick}
-        className="border-2 border-dashed border-gray-300 rounded-2xl p-8 text-center
-                   hover:border-primary-400 hover:bg-primary-50/50 transition-all cursor-pointer"
+        className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-2xl p-8 text-center
+                   hover:border-primary-400 dark:hover:border-primary-500 hover:bg-primary-50/50 dark:hover:bg-primary-900/20 transition-all cursor-pointer"
       >
         <input
           ref={fileInputRef}
@@ -108,11 +108,11 @@ export default function BatchUpload({ onImagesReady }: Props) {
 
         {isProcessing ? (
           <div className="space-y-2">
-            <p className="text-2xl"><Loader2 className="w-8 h-8 animate-spin text-primary-600 inline" /> </p>
-            <p className="text-sm text-gray-600">
+            <p className="text-2xl"><Loader2 className="w-8 h-8 animate-spin text-primary-600 dark:text-primary-400 inline" /> </p>
+            <p className="text-sm text-gray-600 dark:text-gray-300">
               Behandler billede {progress.current} af {progress.total}...
             </p>
-            <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mt-2">
               <div
                 className="bg-primary-500 h-2 rounded-full transition-all duration-300"
                 style={{ width: `${(progress.current / progress.total) * 100}%` }}
@@ -122,10 +122,10 @@ export default function BatchUpload({ onImagesReady }: Props) {
         ) : (
           <>
             <p className="text-4xl mb-2">📁</p>
-            <p className="text-lg font-medium text-gray-700">
+            <p className="text-lg font-medium text-gray-700 dark:text-gray-200">
               Vælg billeder fra galleriet
             </p>
-            <p className="text-sm text-gray-400 mt-1">
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
               Tryk for at vælge — kan vælge flere på én gang
             </p>
           </>
@@ -135,10 +135,8 @@ export default function BatchUpload({ onImagesReady }: Props) {
       {/* Valgte billeder */}
       {selectedImages.length > 0 && !isProcessing && (
         <>
-          <div className="bg-white rounded-xl p-4 shadow-sm border">
-            <p className="text-sm font-medium text-gray-600 mb-3">
-<p className="text-sm font-medium text-gray-600 mb-3 flex items-center gap-2"><Images className="w-4 h-4" /> {selectedImages.length} billede{selectedImages.length !== 1 ? 'r' : ''} valgt</p>
-            </p>
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-700">
+            <p className="text-sm font-medium text-gray-600 dark:text-gray-300 mb-3 flex items-center gap-2"><Images className="w-4 h-4" /> {selectedImages.length} billede{selectedImages.length !== 1 ? 'r' : ''} valgt</p>
 
             <div className="grid grid-cols-5 gap-2">
               {selectedImages.map((img) => (
@@ -159,7 +157,7 @@ export default function BatchUpload({ onImagesReady }: Props) {
                       e.stopPropagation();
                       handleRemoveImage(img.id);
                     }}
-                    className="absolute top-0.5 right-0.5 w-5 h-5 bg-red-500 text-white rounded-full
+                    className="absolute top-0.5 right-0.5 h-6 w-6 bg-red-500 text-white rounded-full
                                text-xs flex items-center justify-center opacity-0 group-hover:opacity-100
                                transition-opacity"
                   >
@@ -170,8 +168,8 @@ export default function BatchUpload({ onImagesReady }: Props) {
             </div>
 
             {/* Oversigt over tidsstempler */}
-            <div className="mt-3 pt-3 border-t">
-              <p className="text-xs text-gray-400">
+            <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+              <p className="text-xs text-gray-500 dark:text-gray-400">
                 Tidsstempler fra kamera: {selectedImages.map(img =>
                   img.exif.dateOriginal
                     ? img.exif.dateOriginal.toLocaleTimeString('da-DK', { hour: '2-digit', minute: '2-digit' })

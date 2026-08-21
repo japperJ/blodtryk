@@ -33,7 +33,7 @@ export default function Camera({ onCapture }: Props) {
       ) : (
         <div className="w-full max-w-md">
           {/* Live camera preview */}
-          <div className="relative rounded-xl overflow-hidden border-2 border-gray-200 shadow-lg bg-black" style={{ aspectRatio: "4/3" }}>
+          <div className="relative rounded-xl overflow-hidden border-2 border-gray-200 dark:border-gray-700 shadow-lg bg-black" style={{ aspectRatio: "4/3" }}>
             <video
               ref={videoRef}
               autoPlay
@@ -60,8 +60,8 @@ export default function Camera({ onCapture }: Props) {
             </button>
             <button
               onClick={stop}
-              className="px-6 py-3 bg-gray-200 rounded-xl font-semibold
-                         hover:bg-gray-300 active:scale-95 transition-all"
+              className="px-6 py-3 bg-gray-200 dark:bg-gray-700 dark:text-gray-100 rounded-xl font-semibold
+                         hover:bg-gray-300 dark:hover:bg-gray-600 active:scale-95 transition-all"
             >
               Annuller
             </button>
@@ -70,7 +70,7 @@ export default function Camera({ onCapture }: Props) {
       )}
 
       {error && (
-        <p className="text-danger-600 text-center bg-red-50 p-3 rounded-lg">{error}</p>
+        <p className="text-danger-600 dark:text-red-400 text-center bg-red-50 dark:bg-red-900/30 p-3 rounded-lg">{error}</p>
       )}
     </div>
   );

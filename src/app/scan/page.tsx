@@ -347,7 +347,7 @@ export default function ScanPage() {
   // Ingen person valgt — vis besked
   if (!selectedPerson) {
     return (
-      <main className="min-h-screen bg-gray-50 pb-24">
+      <main className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-24">
         <div className="max-w-lg mx-auto p-4 pt-12">
           <EmptyState
             icon={User}
@@ -369,18 +369,18 @@ export default function ScanPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 pb-24">
+    <main className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-24">
       <div className="max-w-lg mx-auto p-4 pt-6">
         {/* Person-badge */}
         <div className="flex items-center justify-between mb-4">
-          <h1 className="flex items-center gap-2 text-2xl font-bold text-gray-900">
-            <Stethoscope className="w-6 h-6 text-primary-600" aria-hidden />
+          <h1 className="flex items-center gap-2 text-2xl font-bold text-gray-900 dark:text-gray-100">
+            <Stethoscope className="w-6 h-6 text-primary-600 dark:text-primary-400" aria-hidden />
             Ny måling
           </h1>
           <Link
             href="/persons"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary-50
-                       text-primary-700 text-sm font-medium hover:bg-primary-100 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary-50 dark:bg-primary-900/40
+                       text-primary-700 dark:text-primary-300 text-sm font-medium hover:bg-primary-100 dark:hover:bg-primary-900/60 transition-colors"
           >
             <User className="w-4 h-4" aria-hidden />
             <span>{selectedPerson.name}</span>
@@ -389,13 +389,13 @@ export default function ScanPage() {
 
         {/* Faneblad */}
         {cameraStep === "camera" && batchStep === "upload" && manualStep === "form" && (
-          <div className="flex gap-1 p-1 bg-gray-200 rounded-xl mb-6">
+          <div className="flex gap-1 p-1 bg-gray-200 dark:bg-gray-700 rounded-xl mb-6">
             <button
               onClick={() => setActiveTab("camera")}
               className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-sm font-medium transition-all
                          ${activeTab === "camera"
-                           ? 'bg-white text-gray-900 shadow-sm'
-                           : 'text-gray-500 hover:text-gray-700'}`}
+                           ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm'
+                           : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
             >
               <CameraIcon className="w-4 h-4" aria-hidden />
               Kamera
@@ -404,8 +404,8 @@ export default function ScanPage() {
               onClick={() => setActiveTab("batch")}
               className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-sm font-medium transition-all
                          ${activeTab === "batch"
-                           ? 'bg-white text-gray-900 shadow-sm'
-                           : 'text-gray-500 hover:text-gray-700'}`}
+                           ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm'
+                           : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
             >
               <FolderOpen className="w-4 h-4" aria-hidden />
               Upload
@@ -414,8 +414,8 @@ export default function ScanPage() {
               onClick={() => setActiveTab("manual")}
               className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-sm font-medium transition-all
                          ${activeTab === "manual"
-                           ? 'bg-white text-gray-900 shadow-sm'
-                           : 'text-gray-500 hover:text-gray-700'}`}
+                           ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm'
+                           : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
             >
               <Keyboard className="w-4 h-4" aria-hidden />
               Manuel
@@ -430,11 +430,11 @@ export default function ScanPage() {
 
             {cameraStep === "preview" && capturedImage && (
               <div className="space-y-4">
-                <p className="text-sm text-gray-500 text-center">Tjek billedet inden AI-scanning:</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 text-center">Tjek billedet inden AI-scanning:</p>
                 <img
                   src={capturedImage}
                   alt="Preview"
-                  className="w-full max-w-sm mx-auto rounded-xl border-2 border-gray-200 shadow-lg"
+                  className="w-full max-w-sm mx-auto rounded-xl border-2 border-gray-200 dark:border-gray-600 shadow-lg"
                 />
                 <div className="flex gap-3">
                   <button
@@ -447,8 +447,8 @@ export default function ScanPage() {
                   </button>
                   <button
                     onClick={handleRetake}
-                    className="flex items-center justify-center gap-2 px-6 py-3 bg-gray-200 rounded-xl font-semibold
-                               hover:bg-gray-300 active:scale-95 transition-all"
+                    className="flex items-center justify-center gap-2 px-6 py-3 bg-gray-200 dark:bg-gray-700 dark:text-gray-100 rounded-xl font-semibold
+                               hover:bg-gray-300 dark:hover:bg-gray-600 active:scale-95 transition-all"
                   >
                     <CameraIcon className="w-5 h-5" aria-hidden />
                     Tag igen
@@ -466,10 +466,10 @@ export default function ScanPage() {
                     className="w-full max-w-sm mx-auto rounded-xl border shadow-lg mb-6"
                   />
                 )}
-                <div className="animate-pulse text-lg text-gray-600">
-                  <ScanLine className="w-10 h-10 mx-auto mb-2 text-primary-600" aria-hidden />
+                <div className="animate-pulse text-lg text-gray-600 dark:text-gray-300">
+                  <ScanLine className="w-10 h-10 mx-auto mb-2 text-primary-600 dark:text-primary-400" aria-hidden />
                   <p>Scanner måling med AI...</p>
-                  <p className="text-sm text-gray-400 mt-2">Ca. 60-90 sekunder</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">Ca. 60-90 sekunder</p>
                 </div>
               </div>
             )}
@@ -484,8 +484,8 @@ export default function ScanPage() {
                   />
                 )}
 
-                <div className="bg-white rounded-2xl p-4 shadow-sm border">
-                  <p className="text-xs text-gray-400 text-center mb-3">
+                <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-700">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 text-center mb-3">
                     AI aflæste — ret hvis nødvendigt:
                   </p>
 
@@ -496,7 +496,7 @@ export default function ScanPage() {
                 </div>
 
                 {/* Kontekst-tags — morgen/aften og arm (valgfri) */}
-                <div className="bg-white rounded-2xl p-4 shadow-sm border">
+                <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-700">
                   <ContextTagChips
                     timeOfDay={cameraTimeOfDay}
                     arm={cameraArm}
@@ -510,24 +510,24 @@ export default function ScanPage() {
 
                 {/* Alder — beregnet ud fra fødselsår, eller manuel indtastning som fallback */}
                 {derivedAge != null ? (
-                  <div className="bg-white rounded-2xl p-4 shadow-sm border">
+                  <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-700">
                     <div className="flex items-center gap-3">
                       <div className="w-20 shrink-0">
-                        <p className="text-sm font-medium text-gray-600">Alder</p>
-                        <p className="text-[10px] text-gray-400">ud fra fødselsår</p>
+                        <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Alder</p>
+                        <p className="text-[10px] text-gray-500 dark:text-gray-400">ud fra fødselsår</p>
                       </div>
-                      <p className="flex-1 text-center text-2xl font-bold text-gray-900">
+                      <p className="flex-1 text-center text-2xl font-bold text-gray-900 dark:text-gray-100">
                         {derivedAge} år
                       </p>
                       <div className="w-12 shrink-0" />
                     </div>
                   </div>
                 ) : (
-                  <div className="bg-white rounded-2xl p-4 shadow-sm border">
+                  <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-700">
                     <div className="flex items-center gap-3">
                       <div className="w-20 shrink-0">
-                        <p className="text-sm font-medium text-gray-600">Alder</p>
-                        <p className="text-[10px] text-gray-400">for bedre vurdering</p>
+                        <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Alder</p>
+                        <p className="text-[10px] text-gray-500 dark:text-gray-400">for bedre vurdering</p>
                       </div>
                       <input
                         type="number"
@@ -536,12 +536,12 @@ export default function ScanPage() {
                         value={userAge ?? ""}
                         onChange={(e) => setUserAge(e.target.value ? Number(e.target.value) : null)}
                         placeholder="f.eks. 65"
-                        className="flex-1 text-center text-2xl font-bold border-2 border-gray-200 rounded-xl
+                        className="flex-1 text-center text-2xl font-bold border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-900 rounded-xl
                                    py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 min-w-0
-                                   text-gray-900 placeholder-gray-300"
+                                   text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
                       />
                       <div className="w-12 shrink-0 text-center">
-                        <p className="text-sm text-gray-500">år</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">år</p>
                       </div>
                     </div>
                   </div>
@@ -558,8 +558,8 @@ export default function ScanPage() {
                   </button>
                   <button
                     onClick={handleCameraReset}
-                    className="w-14 h-14 bg-gray-200 rounded-xl text-lg font-semibold
-                               hover:bg-gray-300 active:scale-95 transition-all flex items-center justify-center"
+                    className="w-14 h-14 bg-gray-200 dark:bg-gray-700 dark:text-gray-100 rounded-xl text-lg font-semibold
+                               hover:bg-gray-300 dark:hover:bg-gray-600 active:scale-95 transition-all flex items-center justify-center"
                   >
                     <X className="w-6 h-6" />
                   </button>
@@ -570,7 +570,7 @@ export default function ScanPage() {
             {cameraStep === "saved" && (
               <div className="text-center py-12">
                 <CircleCheckBig className="w-16 h-16 text-green-600 mx-auto mb-4" />
-                <p className="text-xl font-semibold text-gray-900">Måling gemt!</p>
+                <p className="text-xl font-semibold text-gray-900 dark:text-gray-100">Måling gemt!</p>
                 <button
                   onClick={handleCameraReset}
                   className="mt-6 bg-primary-600 text-white px-8 py-3 rounded-xl font-semibold
@@ -584,8 +584,8 @@ export default function ScanPage() {
             {cameraStep === "error" && (
               <div className="text-center py-12">
                 <XCircle className="w-16 h-16 text-danger-600 mx-auto mb-4" />
-                <p className="text-xl font-semibold text-danger-600">Fejl</p>
-                <p className="text-gray-600 mt-2">{errorMsg}</p>
+                <p className="text-xl font-semibold text-danger-600 dark:text-red-400">Fejl</p>
+                <p className="text-gray-600 dark:text-gray-300 mt-2">{errorMsg}</p>
                 <button
                   onClick={handleCameraReset}
                   className="mt-6 bg-primary-600 text-white px-8 py-3 rounded-xl font-semibold
@@ -629,7 +629,7 @@ export default function ScanPage() {
             {batchStep === "saved" && (
               <div className="text-center py-12">
                 <CircleCheckBig className="w-16 h-16 text-green-600 mx-auto mb-4" />
-                <p className="text-xl font-semibold text-gray-900">
+                <p className="text-xl font-semibold text-gray-900 dark:text-gray-100">
                   {batchResults.filter(r => r.reading).length} måling{batchResults.filter(r => r.reading).length !== 1 ? 'er' : ''} gemt!
                 </p>
                 <button
@@ -645,8 +645,8 @@ export default function ScanPage() {
             {batchStep === "error" && (
               <div className="text-center py-12">
                 <XCircle className="w-16 h-16 text-danger-600 mx-auto mb-4" />
-                <p className="text-xl font-semibold text-danger-600">Fejl</p>
-                <p className="text-gray-600 mt-2">{batchErrorMsg}</p>
+                <p className="text-xl font-semibold text-danger-600 dark:text-red-400">Fejl</p>
+                <p className="text-gray-600 dark:text-gray-300 mt-2">{batchErrorMsg}</p>
                 <button
                   onClick={handleBatchReset}
                   className="mt-6 bg-primary-600 text-white px-8 py-3 rounded-xl font-semibold
@@ -671,8 +671,8 @@ export default function ScanPage() {
                 className="space-y-4"
               >
                 {/* Målingsværdier */}
-                <div className="bg-white rounded-2xl p-4 shadow-sm border">
-                  <p className="text-xs text-gray-400 text-center mb-3">
+                <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-700">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 text-center mb-3">
                     Indtast målingen manuelt:
                   </p>
 
@@ -680,7 +680,7 @@ export default function ScanPage() {
                 </div>
 
                 {/* Kontekst-tags — morgen/aften og arm (valgfri) */}
-                <div className="bg-white rounded-2xl p-4 shadow-sm border">
+                <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-700">
                   <ContextTagChips
                     timeOfDay={manualTimeOfDay}
                     arm={manualArm}
@@ -694,24 +694,24 @@ export default function ScanPage() {
 
                 {/* Alder — beregnet ud fra fødselsår, eller manuel indtastning som fallback */}
                 {derivedAge != null ? (
-                  <div className="bg-white rounded-2xl p-4 shadow-sm border">
+                  <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-700">
                     <div className="flex items-center gap-3">
                       <div className="w-20 shrink-0">
-                        <p className="text-sm font-medium text-gray-600">Alder</p>
-                        <p className="text-[10px] text-gray-400">ud fra fødselsår</p>
+                        <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Alder</p>
+                        <p className="text-[10px] text-gray-500 dark:text-gray-400">ud fra fødselsår</p>
                       </div>
-                      <p className="flex-1 text-center text-2xl font-bold text-gray-900">
+                      <p className="flex-1 text-center text-2xl font-bold text-gray-900 dark:text-gray-100">
                         {derivedAge} år
                       </p>
                       <div className="w-12 shrink-0" />
                     </div>
                   </div>
                 ) : (
-                  <div className="bg-white rounded-2xl p-4 shadow-sm border">
+                  <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-700">
                     <div className="flex items-center gap-3">
                       <div className="w-20 shrink-0">
-                        <p className="text-sm font-medium text-gray-600">Alder</p>
-                        <p className="text-[10px] text-gray-400">for bedre vurdering</p>
+                        <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Alder</p>
+                        <p className="text-[10px] text-gray-500 dark:text-gray-400">for bedre vurdering</p>
                       </div>
                       <input
                         type="number"
@@ -720,49 +720,49 @@ export default function ScanPage() {
                         value={userAge ?? ""}
                         onChange={(e) => setUserAge(e.target.value ? Number(e.target.value) : null)}
                         placeholder="f.eks. 65"
-                        className="flex-1 text-center text-2xl font-bold border-2 border-gray-200 rounded-xl
+                        className="flex-1 text-center text-2xl font-bold border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-900 rounded-xl
                                    py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 min-w-0
-                                   text-gray-900 placeholder-gray-300"
+                                   text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
                       />
                       <div className="w-12 shrink-0 text-center">
-                        <p className="text-sm text-gray-500">år</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">år</p>
                       </div>
                     </div>
                   </div>
                 )}
 
                 {/* Tidspunkt for målingen */}
-                <div className="bg-white rounded-2xl p-4 shadow-sm border">
+                <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-700">
                   <label className="block">
-                    <span className="text-sm font-medium text-gray-600">Tidspunkt</span>
-                    <span className="text-[10px] text-gray-400 block">hvornår blev der målt?</span>
+                    <span className="text-sm font-medium text-gray-600 dark:text-gray-300">Tidspunkt</span>
+                    <span className="text-[10px] text-gray-500 dark:text-gray-400 block">hvornår blev der målt?</span>
                     <input
                       type="datetime-local"
                       value={measuredAt}
                       onChange={(e) => setMeasuredAt(e.target.value)}
-                      className="mt-2 w-full text-center text-lg font-bold border-2 border-gray-200 rounded-xl
+                      className="mt-2 w-full text-center text-lg font-bold border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-900 rounded-xl
                                  py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500
-                                 text-gray-900"
+                                 text-gray-900 dark:text-gray-100"
                     />
                   </label>
                 </div>
 
                 {/* Note — valgfri */}
-                <div className="bg-white rounded-2xl p-4 shadow-sm border">
+                <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-700">
                   <label className="block">
-                    <span className="text-sm font-medium text-gray-600">Note</span>
-                    <span className="text-[10px] text-gray-400 block">valgfri</span>
+                    <span className="text-sm font-medium text-gray-600 dark:text-gray-300">Note</span>
+                    <span className="text-[10px] text-gray-500 dark:text-gray-400 block">valgfri</span>
                     <textarea
                       value={manualNote}
                       onChange={(e) => setManualNote(e.target.value)}
                       maxLength={500}
                       rows={3}
                       placeholder="f.eks. målt efter morgenmotion"
-                      className="mt-2 w-full text-base border-2 border-gray-200 rounded-xl px-3 py-2
+                      className="mt-2 w-full text-base border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-900 rounded-xl px-3 py-2
                                  focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-none
-                                 text-gray-900 placeholder-gray-300"
+                                 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
                     />
-                    <span className="text-[10px] text-gray-400 block text-right">
+                    <span className="text-[10px] text-gray-500 dark:text-gray-400 block text-right">
                       {manualNote.length}/500
                     </span>
                   </label>
@@ -770,9 +770,9 @@ export default function ScanPage() {
 
                 {/* Inline fejl fra API-validering */}
                 {manualError && (
-                  <div className="bg-red-50 border border-red-200 rounded-xl p-3 flex items-start gap-2">
+                  <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/60 rounded-xl p-3 flex items-start gap-2">
                     <TriangleAlert className="w-4 h-4 shrink-0 mt-0.5" />
-                    <p className="text-sm text-danger-600 font-medium">{manualError}</p>
+                    <p className="text-sm text-danger-600 dark:text-red-400 font-medium">{manualError}</p>
                   </div>
                 )}
 
@@ -788,8 +788,8 @@ export default function ScanPage() {
                   <button
                     type="button"
                     onClick={handleManualReset}
-                    className="w-14 h-14 bg-gray-200 rounded-xl text-lg font-semibold
-                               hover:bg-gray-300 active:scale-95 transition-all flex items-center justify-center"
+                    className="w-14 h-14 bg-gray-200 dark:bg-gray-700 dark:text-gray-100 rounded-xl text-lg font-semibold
+                               hover:bg-gray-300 dark:hover:bg-gray-600 active:scale-95 transition-all flex items-center justify-center"
                   >
                     <X className="w-6 h-6" />
                   </button>
@@ -800,7 +800,7 @@ export default function ScanPage() {
             {manualStep === "saved" && (
               <div className="text-center py-12">
                 <CircleCheckBig className="w-16 h-16 text-green-600 mx-auto mb-4" />
-                <p className="text-xl font-semibold text-gray-900">Måling gemt!</p>
+                <p className="text-xl font-semibold text-gray-900 dark:text-gray-100">Måling gemt!</p>
                 <div className="mt-6 flex gap-3 justify-center">
                   <button
                     onClick={handleManualReset}
@@ -811,8 +811,8 @@ export default function ScanPage() {
                   </button>
                   <Link
                     href="/readings"
-                    className="px-8 py-3 bg-gray-200 rounded-xl font-semibold inline-block
-                               hover:bg-gray-300 active:scale-95 transition-all"
+                    className="px-8 py-3 bg-gray-200 dark:bg-gray-700 dark:text-gray-100 rounded-xl font-semibold inline-block
+                               hover:bg-gray-300 dark:hover:bg-gray-600 active:scale-95 transition-all"
                   >
                     Se målinger
                   </Link>

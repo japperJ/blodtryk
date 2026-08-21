@@ -113,7 +113,7 @@ export default function ReadingsPage() {
   // Ingen person valgt
   if (!selectedPerson && !loading) {
     return (
-      <main className="min-h-screen bg-gray-50 pb-24">
+      <main className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-24">
         <div className="max-w-lg mx-auto p-4 pt-12">
           <EmptyState
             icon={User}
@@ -135,16 +135,16 @@ export default function ReadingsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 pb-24">
+    <main className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-24">
       <div className="max-w-lg mx-auto p-4 pt-6">
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h1 className="flex items-center gap-2 text-2xl font-bold text-gray-900">
-              <ClipboardList className="w-6 h-6 text-primary-600" aria-hidden />
+            <h1 className="flex items-center gap-2 text-2xl font-bold text-gray-900 dark:text-gray-100">
+              <ClipboardList className="w-6 h-6 text-primary-600 dark:text-primary-400" aria-hidden />
               Målinger
             </h1>
             {selectedPerson && (
-              <p className="text-sm text-gray-500 mt-0.5">{selectedPerson.name}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{selectedPerson.name}</p>
             )}
           </div>
           {filteredReadings.length > 0 && selectedPerson && (
@@ -155,8 +155,8 @@ export default function ReadingsPage() {
                   downloadReadingsCsv(filteredReadings, selectedPerson.name)
                 }
                 title="Eksportér filtrerede målinger til CSV (dansk Excel-venlig)"
-                className="flex items-center gap-1 bg-white border text-sm px-3 py-2 rounded-lg font-medium
-                           hover:bg-gray-50 active:scale-95 transition-all shadow-sm"
+                className="inline-flex items-center min-h-[44px] gap-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-sm px-3 py-2 rounded-lg font-medium
+                           hover:bg-gray-50 dark:hover:bg-gray-700 active:scale-95 transition-all shadow-sm"
               >
                 <FileSpreadsheet className="w-4 h-4 text-green-700" aria-hidden />
                 CSV
@@ -166,8 +166,8 @@ export default function ReadingsPage() {
                   downloadReadingsJson(filteredReadings, selectedPerson.name)
                 }
                 title="Eksportér filtrerede målinger til JSON"
-                className="flex items-center gap-1 bg-white border text-sm px-3 py-2 rounded-lg font-medium
-                           hover:bg-gray-50 active:scale-95 transition-all shadow-sm"
+                className="inline-flex items-center min-h-[44px] gap-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-sm px-3 py-2 rounded-lg font-medium
+                           hover:bg-gray-50 dark:hover:bg-gray-700 active:scale-95 transition-all shadow-sm"
               >
                 <FileJson className="w-4 h-4 text-amber-600" aria-hidden />
                 JSON
@@ -184,7 +184,7 @@ export default function ReadingsPage() {
               className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all
                          ${filter === "all"
                            ? 'bg-primary-600 text-white'
-                           : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                           : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
             >
               Alle ({readings.length})
             </button>
@@ -193,7 +193,7 @@ export default function ReadingsPage() {
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all
                          ${filter === "with-image"
                            ? 'bg-primary-600 text-white'
-                           : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                           : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
             >
               <ImageIcon className="w-4 h-4" aria-hidden />
               Med billede ({withImageCount})
@@ -203,7 +203,7 @@ export default function ReadingsPage() {
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all
                          ${filter === "without-image"
                            ? 'bg-primary-600 text-white'
-                           : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                           : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
             >
               <FileText className="w-4 h-4" aria-hidden />
               Uden billede ({withoutImageCount})
@@ -219,7 +219,7 @@ export default function ReadingsPage() {
               className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all
                          ${timeFilter === "all"
                            ? 'bg-primary-600 text-white'
-                           : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                           : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
             >
               Alle tider
             </button>
@@ -228,7 +228,7 @@ export default function ReadingsPage() {
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all
                          ${timeFilter === "morning"
                            ? 'bg-primary-600 text-white'
-                           : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                           : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
             >
               <Sunrise className="w-4 h-4" aria-hidden />
               Morgen ({morningCount})
@@ -238,7 +238,7 @@ export default function ReadingsPage() {
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all
                          ${timeFilter === "evening"
                            ? 'bg-primary-600 text-white'
-                           : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                           : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
             >
               <Moon className="w-4 h-4" aria-hidden />
               Aften ({eveningCount})
@@ -276,7 +276,7 @@ export default function ReadingsPage() {
               action={
                 <button
                   onClick={() => setFilter("all")}
-                  className="text-sm text-primary-600 font-medium hover:text-primary-700"
+                  className="text-sm text-primary-600 dark:text-primary-400 font-medium hover:text-primary-700 dark:hover:text-primary-300"
                 >
                   Vis alle målinger
                 </button>
@@ -285,7 +285,7 @@ export default function ReadingsPage() {
           )
         ) : (
           <>
-            <p className="text-sm text-gray-500 mb-4">
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
               {filteredReadings.length} måling{filteredReadings.length !== 1 ? 'er' : ''}
               {(filter !== "all" || timeFilter !== "all") && ` (filtreret)`}
             </p>

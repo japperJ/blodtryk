@@ -29,14 +29,14 @@ export default function BatchTimeline({ images, results, onSaveAll, isSaving, on
   return (
     <div className="space-y-4">
       {/* Oversigt */}
-      <div className="bg-white rounded-xl p-4 shadow-sm border">
+      <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-700">
         <div className="flex justify-between items-center">
           <div>
-            <p className="text-lg font-semibold text-gray-900">
+            <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
               📊 {successCount} måling{successCount !== 1 ? 'er' : ''} klar
             </p>
             {failedCount > 0 && (
-              <p className="text-sm text-red-500">
+              <p className="text-sm text-red-600 dark:text-red-400">
                 {failedCount} billede{failedCount !== 1 ? 'r' : ''} kunne ikke aflæses
               </p>
             )}
@@ -56,19 +56,19 @@ export default function BatchTimeline({ images, results, onSaveAll, isSaving, on
           return (
             <div
               key={result.imageId}
-              className="bg-white rounded-xl p-3 shadow-sm border flex items-center gap-3"
+              className="bg-white dark:bg-gray-800 rounded-xl p-3 shadow-sm border border-gray-200 dark:border-gray-700 flex items-center gap-3"
             >
               {/* Thumbnail */}
               <img
                 src={image.thumbnail}
                 alt="Billede"
-                className="w-14 h-14 rounded-lg object-cover shrink-0 border"
+                className="w-14 h-14 rounded-lg object-cover shrink-0 border border-gray-200 dark:border-gray-600"
               />
 
               {/* Info */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <p className="text-sm font-medium text-gray-700">
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
                     {date ? date.toLocaleDateString('da-DK', {
                       weekday: 'short',
                       day: 'numeric',
@@ -80,7 +80,7 @@ export default function BatchTimeline({ images, results, onSaveAll, isSaving, on
                   </span>
                 </div>
 
-                <p className="text-xs text-gray-400">
+                <p className="text-xs text-gray-500 dark:text-gray-400">
                   {date ? date.toLocaleTimeString('da-DK', { hour: '2-digit', minute: '2-digit' }) : ''}
                   {image.exif.model && ` • ${image.exif.model}`}
                 </p>
@@ -88,10 +88,10 @@ export default function BatchTimeline({ images, results, onSaveAll, isSaving, on
 
               {/* Måling */}
               <div className="text-right shrink-0">
-                <p className="text-xl font-bold text-gray-900">
+                <p className="text-xl font-bold text-gray-900 dark:text-gray-100">
                   {result.reading.systolic}/{result.reading.diastolic}
                 </p>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-gray-500 dark:text-gray-400">
                   Puls {result.reading.pulse}
                 </p>
               </div>
@@ -102,15 +102,15 @@ export default function BatchTimeline({ images, results, onSaveAll, isSaving, on
 
       {/* Fejlede billeder */}
       {failedCount > 0 && (
-        <div className="bg-red-50 rounded-xl p-4 border border-red-200">
-          <p className="text-sm font-medium text-red-800 mb-2">
-            <ImageOff className="w-4 h-4 inline mr-1 text-red-700" />️ Billeder der ikke kunne aflæses:
+        <div className="bg-red-50 dark:bg-red-900/20 rounded-xl p-4 border border-red-200 dark:border-red-900/60">
+          <p className="text-sm font-medium text-red-800 dark:text-red-300 mb-2">
+            <ImageOff className="w-4 h-4 inline mr-1 text-red-700 dark:text-red-300" />️ Billeder der ikke kunne aflæses:
           </p>
           <div className="space-y-1">
             {results.filter(r => r.error).map((result) => {
               const image = images.find(img => img.id === result.imageId);
               return (
-                <div key={result.imageId} className="flex items-center gap-2 text-sm text-red-600">
+                <div key={result.imageId} className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400">
                   <img
                     src={image?.thumbnail}
                     alt=""
@@ -137,8 +137,8 @@ export default function BatchTimeline({ images, results, onSaveAll, isSaving, on
 
         <button
           onClick={onReset}
-          className="w-14 h-14 bg-gray-200 rounded-xl text-lg font-semibold
-                     hover:bg-gray-300 active:scale-95 transition-all flex items-center justify-center"
+          className="w-14 h-14 bg-gray-200 dark:bg-gray-700 dark:text-gray-100 rounded-xl text-lg font-semibold
+                     hover:bg-gray-300 dark:hover:bg-gray-600 active:scale-95 transition-all flex items-center justify-center"
         >
           <X className="w-6 h-6" />
         </button>
