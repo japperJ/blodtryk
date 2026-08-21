@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
     if (!validation.ok) {
       return NextResponse.json({ error: validation.error }, { status: 400 });
     }
-    const { systolic, diastolic, pulse, age, note, image, personId } = validation.data;
+    const { systolic, diastolic, pulse, age, note, image, personId, createdAt } = validation.data;
 
     // Tjek at personen eksisterer
     const person = await prisma.person.findUnique({ where: { id: personId } });
@@ -62,6 +62,8 @@ export async function POST(request: NextRequest) {
         note,
         image,
         personId,
+        // Valgfrit målingstidspunkt — udelades hvis ikke angivet (Prisma-default "nu")
+        ...(createdAt ? { createdAt } : {}),
       },
     });
 
