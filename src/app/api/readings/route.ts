@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { validateReadingInput } from "@/lib/validation";
+import { writeFile, mkdir } from "fs/promises";
+import { join } from "path";
+import { randomUUID } from "crypto";
 
 // GET readings — filtered by personId (required)
 export async function GET(request: NextRequest) {
@@ -54,6 +57,27 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Personen findes ikke" }, { status: 400 });
     }
 
+    // Billeder gemmes på disken (issue #15) — ikke som base64 i databasen.
+    // Data-URLs afkodes og skrives til scan-captures/<uuid>.jpg; kun filnavnet
+    // gemmes i Reading.image. Rense filnavne (allerede migrerede målinger)
+    // sendes uændret videre. Fejler filskrivningen gemmes målingen UDEN billede.
+    let storedImage = image;
+    if (image && image.startsWith("data:")) {
+      try {
+        const commaIndex = image.indexOf(",");
+        const base64Data = commaIndex === -1 ? "" : image.slice(commaIndex + 1);
+        const buffer = Buffer.from(base64Data, "base64");
+        const scanDir = join(process.cwd(), "scan-captures");
+        await mkdir(scanDir, { recursive: true });
+        const filename = `${randomUUID()}.jpg`;
+        await writeFile(join(scanDir, filename), buffer);
+        storedImage = filename;
+      } catch (error) {
+        console.error("Could not save reading image to disk:", error);
+        storedImage = null;
+      }
+    }
+
     const reading = await prisma.reading.create({
       data: {
         systolic,
@@ -61,7 +85,7 @@ export async function POST(request: NextRequest) {
         pulse,
         age,
         note,
-        image,
+        image: storedImage,
         timeOfDay,
         arm,
         personId,
