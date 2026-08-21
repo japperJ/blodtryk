@@ -17,6 +17,7 @@ export interface Reading extends BloodPressureReading {
 export interface Person {
   id: number;
   name: string;
+  birthYear: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -24,6 +25,7 @@ export interface Person {
 export interface PersonSummary {
   id: number;
   name: string;
+  birthYear: number | null;
   readingCount: number;
   lastReadingAt: string | null;
   createdAt: string;

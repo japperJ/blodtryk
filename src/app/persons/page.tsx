@@ -7,9 +7,15 @@ export default function PersonsPage() {
   const [loading, setLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
   const [newName, setNewName] = useState("");
+  const [newBirthYear, setNewBirthYear] = useState("");
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editName, setEditName] = useState("");
+  const [editBirthYear, setEditBirthYear] = useState("");
+  const [formError, setFormError] = useState("");
   const [selectedPersonId, setSelectedPersonId] = useState<number | null>(null);
+
+  // Indeværende år — bruges som maksimum for fødselsår
+  const currentYear = new Date().getFullYear();
 
   const fetchPersons = useCallback(async () => {
     try {
@@ -42,12 +48,20 @@ export default function PersonsPage() {
       const res = await fetch("/api/persons", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: newName.trim() }),
+        body: JSON.stringify({
+          name: newName.trim(),
+          birthYear: newBirthYear ? Number(newBirthYear) : null,
+        }),
       });
       if (res.ok) {
         setNewName("");
+        setNewBirthYear("");
+        setFormError("");
         setIsAdding(false);
         await fetchPersons();
+      } else {
+        const data = await res.json();
+        setFormError(data.error || "Kunne ikke oprette person");
       }
     } catch (err) {
       console.error("Failed to create person:", err);
@@ -61,12 +75,20 @@ export default function PersonsPage() {
       const res = await fetch(`/api/persons/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: editName.trim() }),
+        body: JSON.stringify({
+          name: editName.trim(),
+          birthYear: editBirthYear ? Number(editBirthYear) : null,
+        }),
       });
       if (res.ok) {
         setEditingId(null);
         setEditName("");
+        setEditBirthYear("");
+        setFormError("");
         await fetchPersons();
+      } else {
+        const data = await res.json();
+        setFormError(data.error || "Kunne ikke opdatere person");
       }
     } catch (err) {
       console.error("Failed to update person:", err);
@@ -130,12 +152,32 @@ export default function PersonsPage() {
                 Gem
               </button>
               <button
-                onClick={() => { setIsAdding(false); setNewName(""); }}
+                onClick={() => { setIsAdding(false); setNewName(""); setNewBirthYear(""); setFormError(""); }}
                 className="px-3 py-2 text-gray-500 hover:text-gray-700"
               >
                 ✕
               </button>
             </div>
+            <div className="flex items-center gap-3 mt-2">
+              <input
+                type="number"
+                min={1900}
+                max={currentYear}
+                value={newBirthYear}
+                onChange={(e) => setNewBirthYear(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleAdd()}
+                placeholder={`Fødselsår (f.eks. 1950)`}
+                className="w-40 px-3 py-2 border-2 border-gray-200 rounded-xl
+                           focus:ring-2 focus:ring-primary-500 focus:border-primary-500
+                           text-gray-900 placeholder-gray-300"
+              />
+              <p className="text-xs text-gray-400">
+                Valgfri — bruges til automatisk aldersvurdering
+              </p>
+            </div>
+            {formError && (
+              <p className="text-sm text-red-600 mt-2">{formError}</p>
+            )}
           </div>
         )}
 
@@ -165,29 +207,46 @@ export default function PersonsPage() {
               >
                 {editingId === person.id ? (
                   /* Redigerings-tilstand */
-                  <div className="flex gap-2">
+                  <div>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={editName}
+                        onChange={(e) => setEditName(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && handleUpdate(person.id)}
+                        autoFocus
+                        className="flex-1 px-3 py-2 border-2 border-gray-200 rounded-xl
+                                   focus:ring-2 focus:ring-primary-500 focus:border-primary-500
+                                   text-gray-900"
+                      />
+                      <button
+                        onClick={() => handleUpdate(person.id)}
+                        className="px-3 py-2 bg-primary-600 text-white rounded-xl text-sm"
+                      >
+                        ✓
+                      </button>
+                      <button
+                        onClick={() => { setEditingId(null); setEditName(""); setEditBirthYear(""); setFormError(""); }}
+                        className="px-3 py-2 text-gray-500"
+                      >
+                        ✕
+                      </button>
+                    </div>
                     <input
-                      type="text"
-                      value={editName}
-                      onChange={(e) => setEditName(e.target.value)}
+                      type="number"
+                      min={1900}
+                      max={currentYear}
+                      value={editBirthYear}
+                      onChange={(e) => setEditBirthYear(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && handleUpdate(person.id)}
-                      autoFocus
-                      className="flex-1 px-3 py-2 border-2 border-gray-200 rounded-xl
+                      placeholder={`Fødselsår (f.eks. 1950)`}
+                      className="w-40 px-3 py-2 border-2 border-gray-200 rounded-xl mt-2
                                  focus:ring-2 focus:ring-primary-500 focus:border-primary-500
-                                 text-gray-900"
+                                 text-gray-900 placeholder-gray-300"
                     />
-                    <button
-                      onClick={() => handleUpdate(person.id)}
-                      className="px-3 py-2 bg-primary-600 text-white rounded-xl text-sm"
-                    >
-                      ✓
-                    </button>
-                    <button
-                      onClick={() => { setEditingId(null); setEditName(""); }}
-                      className="px-3 py-2 text-gray-500"
-                    >
-                      ✕
-                    </button>
+                    {formError && (
+                      <p className="text-sm text-red-600 mt-2">{formError}</p>
+                    )}
                   </div>
                 ) : (
                   /* Normal tilstand */
@@ -203,6 +262,9 @@ export default function PersonsPage() {
                         <div>
                           <p className="font-medium text-gray-900">{person.name}</p>
                           <p className="text-xs text-gray-500">
+                            {person.birthYear != null && (
+                              <>Født {person.birthYear} · </>
+                            )}
                             {person.readingCount} måling{person.readingCount !== 1 ? "er" : ""}
                             {person.lastReadingAt && (
                               <> · Seneste: {new Date(person.lastReadingAt).toLocaleDateString("da-DK")}</>
@@ -217,6 +279,8 @@ export default function PersonsPage() {
                         onClick={() => {
                           setEditingId(person.id);
                           setEditName(person.name);
+                          setEditBirthYear(person.birthYear != null ? String(person.birthYear) : "");
+                          setFormError("");
                         }}
                         className="p-2 text-gray-400 hover:text-primary-600 transition-colors"
                         title="Rediger"

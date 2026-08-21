@@ -13,14 +13,13 @@ export interface UploadImage {
 }
 
 interface Props {
-  onImagesReady: (images: UploadImage[], age: number | null) => void;
+  onImagesReady: (images: UploadImage[]) => void;
 }
 
 export default function BatchUpload({ onImagesReady }: Props) {
   const [selectedImages, setSelectedImages] = useState<UploadImage[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
-  const [userAge, setUserAge] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -77,7 +76,7 @@ export default function BatchUpload({ onImagesReady }: Props) {
 
   const handleStartScan = () => {
     if (selectedImages.length === 0) return;
-    onImagesReady(selectedImages, userAge);
+    onImagesReady(selectedImages);
   };
 
   const handleRemoveImage = (id: string) => {
@@ -177,30 +176,6 @@ export default function BatchUpload({ onImagesReady }: Props) {
                     : '?'
                 ).join(' → ')}
               </p>
-            </div>
-          </div>
-
-          {/* Alder-input */}
-          <div className="bg-white rounded-xl p-4 shadow-sm border">
-            <div className="flex items-center gap-3">
-              <div className="w-20 shrink-0">
-                <p className="text-sm font-medium text-gray-600">Alder</p>
-                <p className="text-[10px] text-gray-400">for bedre vurdering</p>
-              </div>
-              <input
-                type="number"
-                min={1}
-                max={120}
-                value={userAge ?? ""}
-                onChange={(e) => setUserAge(e.target.value ? Number(e.target.value) : null)}
-                placeholder="f.eks. 65"
-                className="flex-1 text-center text-2xl font-bold border-2 border-gray-200 rounded-xl
-                           py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 min-w-0
-                           text-gray-900 placeholder-gray-300"
-              />
-              <div className="w-12 shrink-0 text-center">
-                <p className="text-sm text-gray-500">år</p>
-              </div>
             </div>
           </div>
 
