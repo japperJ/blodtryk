@@ -11,9 +11,16 @@ import {
   Sun,
   Moon,
   Monitor,
+  BellRing,
   Check,
   type LucideIcon,
 } from "lucide-react";
+import {
+  REMINDER_ENABLED_KEY,
+  REMINDER_TIME_KEY,
+  DEFAULT_REMINDER_TIME,
+  isValidTime,
+} from "@/lib/reminder";
 
 const links: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/scan", label: "Scan", icon: Camera },
@@ -43,12 +50,24 @@ export default function Navbar() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const settingsRef = useRef<HTMLDivElement>(null);
 
+  // Daglig påmindelse (#16) — indstillingerne persisteres øjeblikkeligt ved ændring
+  const [reminderEnabled, setReminderEnabled] = useState(false);
+  const [reminderTime, setReminderTime] = useState(DEFAULT_REMINDER_TIME);
+  const [reminderBlocked, setReminderBlocked] = useState(false);
+
   // Hent gemt præference efter mount (undgår SSR-mismatch)
   useEffect(() => {
     const saved = localStorage.getItem(THEME_KEY);
     if (saved === "light" || saved === "dark" || saved === "system") {
       setTheme(saved);
       applyTheme(saved);
+    }
+    // Påmindelse: gendan gemte indstillinger (#16)
+    const savedTime = localStorage.getItem(REMINDER_TIME_KEY);
+    setReminderEnabled(localStorage.getItem(REMINDER_ENABLED_KEY) === "1");
+    if (savedTime && isValidTime(savedTime)) setReminderTime(savedTime);
+    if (typeof Notification !== "undefined") {
+      setReminderBlocked(Notification.permission === "denied");
     }
   }, []);
 
@@ -92,6 +111,31 @@ export default function Navbar() {
     { value: "system", label: "System", icon: Monitor },
   ];
 
+  // Toggle for daglig påmindelse (#16). Tilladelse spørges KUN ved eksplicit aktivering —
+  // aldrig igen bagefter. Ved "denied" forbliver toggle slået til (banner-fallback på forsiden).
+  const toggleReminder = useCallback(async () => {
+    const next = !reminderEnabled;
+    if (next && typeof Notification !== "undefined") {
+      try {
+        if (Notification.permission === "default") {
+          setReminderBlocked((await Notification.requestPermission()) === "denied");
+        } else {
+          setReminderBlocked(Notification.permission === "denied");
+        }
+      } catch {
+        setReminderBlocked(true);
+      }
+    }
+    setReminderEnabled(next);
+    localStorage.setItem(REMINDER_ENABLED_KEY, next ? "1" : "0");
+  }, [reminderEnabled]);
+
+  // Tidspunkt persisteres øjeblikkeligt ved ændring
+  const changeReminderTime = useCallback((value: string) => {
+    setReminderTime(value);
+    if (isValidTime(value)) localStorage.setItem(REMINDER_TIME_KEY, value);
+  }, []);
+
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg z-50">
       <div className="max-w-lg mx-auto flex items-stretch">
@@ -132,8 +176,8 @@ export default function Navbar() {
           {settingsOpen && (
             <div
               role="menu"
-              aria-label="Tema"
-              className="absolute bottom-[calc(100%+8px)] right-0 w-44 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg p-1.5"
+              aria-label="Indstillinger"
+              className="absolute bottom-[calc(100%+8px)] right-0 w-64 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg p-1.5"
             >
               <p className="px-2.5 pt-1 pb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
                 Tema
@@ -156,6 +200,55 @@ export default function Navbar() {
                   {theme === value && <Check className="w-4 h-4 ml-auto" aria-hidden />}
                 </button>
               ))}
+
+              {/* Daglig påmindelse (#16) */}
+              <div role="separator" className="my-1 border-t border-gray-200 dark:border-gray-700" />
+              <p className="flex items-center gap-1.5 px-2.5 pt-1 pb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                <BellRing className="w-3.5 h-3.5" aria-hidden />
+                Daglig påmindelse
+              </p>
+              <div className="flex items-center justify-between rounded-lg px-2.5 py-2 min-h-[44px]">
+                <span id="reminder-toggle-label" className="text-sm font-medium text-gray-600 dark:text-gray-300">
+                  Påmind mig
+                </span>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={reminderEnabled}
+                  aria-labelledby="reminder-toggle-label"
+                  onClick={toggleReminder}
+                  title={reminderEnabled ? "Påmindelse slået til" : "Påmindelse slået fra"}
+                  className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 ${
+                    reminderEnabled ? "bg-primary-600" : "bg-gray-300 dark:bg-gray-600"
+                  }`}
+                >
+                  <span
+                    aria-hidden
+                    className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${
+                      reminderEnabled ? "translate-x-[22px]" : "translate-x-0.5"
+                    }`}
+                  />
+                </button>
+              </div>
+              {reminderEnabled && (
+                <div className="flex items-center justify-between rounded-lg px-2.5 py-2 min-h-[44px]">
+                  <label htmlFor="reminder-time" className="text-sm font-medium text-gray-600 dark:text-gray-300">
+                    Tidspunkt
+                  </label>
+                  <input
+                    id="reminder-time"
+                    type="time"
+                    value={reminderTime}
+                    onChange={(e) => changeReminderTime(e.target.value)}
+                    className="rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 px-2 py-1.5 text-sm text-gray-900 dark:text-gray-100 [color-scheme:light] dark:[color-scheme:dark]"
+                  />
+                </div>
+              )}
+              {reminderEnabled && reminderBlocked && (
+                <p className="px-2.5 pb-1.5 pt-1 text-xs leading-snug text-amber-600 dark:text-amber-400">
+                  Notifikationer er blokeret i din browser – påmindelsen vises som banner på forsiden.
+                </p>
+              )}
             </div>
           )}
         </div>
