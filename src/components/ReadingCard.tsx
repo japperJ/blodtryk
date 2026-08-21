@@ -1,4 +1,6 @@
 "use client";
+
+import { Pencil } from "lucide-react";
 import { useState } from "react";
 import type { Reading } from "@/types";
 import { getBPStatus, getAgeGroupLabel } from "@/lib/bpClassification";
@@ -145,7 +147,7 @@ export default function ReadingCard({ reading, onDelete, onEdit }: Props) {
                 onClick={() => onEdit(reading)}
                 className="text-xs text-gray-400 hover:text-primary-600 transition-colors"
               >
-                ✏️ Rediger
+                <span className="inline-flex items-center gap-1"><Pencil className="w-3 h-3" /> Rediger</span>
               </button>
             )}
             <button

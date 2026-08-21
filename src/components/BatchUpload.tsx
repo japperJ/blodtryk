@@ -1,4 +1,6 @@
 "use client";
+
+import { Images, Loader2 } from "lucide-react";
 import { useState, useRef } from "react";
 import { extractExifData, formatExifDate, type ExifData } from "@/lib/exif";
 import { compressImageForOCR, createThumbnail } from "@/lib/imageUtils";
@@ -106,7 +108,7 @@ export default function BatchUpload({ onImagesReady }: Props) {
 
         {isProcessing ? (
           <div className="space-y-2">
-            <p className="text-2xl">⏳</p>
+            <p className="text-2xl"><Loader2 className="w-8 h-8 animate-spin text-primary-600 inline" /> </p>
             <p className="text-sm text-gray-600">
               Behandler billede {progress.current} af {progress.total}...
             </p>
@@ -135,7 +137,7 @@ export default function BatchUpload({ onImagesReady }: Props) {
         <>
           <div className="bg-white rounded-xl p-4 shadow-sm border">
             <p className="text-sm font-medium text-gray-600 mb-3">
-              📸 {selectedImages.length} billede{selectedImages.length !== 1 ? 'r' : ''} valgt
+<p className="text-sm font-medium text-gray-600 mb-3 flex items-center gap-2"><Images className="w-4 h-4" /> {selectedImages.length} billede{selectedImages.length !== 1 ? 'r' : ''} valgt</p>
             </p>
 
             <div className="grid grid-cols-5 gap-2">

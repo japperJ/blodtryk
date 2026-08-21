@@ -1,4 +1,5 @@
 "use client";
+import { ImageOff, Save, X } from "lucide-react";
 import type { ScanResult } from "./BatchProgress";
 import type { UploadImage } from "./BatchUpload";
 import { getBPStatus } from "@/lib/bpClassification";
@@ -103,7 +104,7 @@ export default function BatchTimeline({ images, results, onSaveAll, isSaving, on
       {failedCount > 0 && (
         <div className="bg-red-50 rounded-xl p-4 border border-red-200">
           <p className="text-sm font-medium text-red-800 mb-2">
-            ⚠️ Billeder der ikke kunne aflæses:
+            <ImageOff className="w-4 h-4 inline mr-1 text-red-700" />️ Billeder der ikke kunne aflæses:
           </p>
           <div className="space-y-1">
             {results.filter(r => r.error).map((result) => {
@@ -139,7 +140,7 @@ export default function BatchTimeline({ images, results, onSaveAll, isSaving, on
           className="w-14 h-14 bg-gray-200 rounded-xl text-lg font-semibold
                      hover:bg-gray-300 active:scale-95 transition-all flex items-center justify-center"
         >
-          ✕
+          <X className="w-6 h-6" />
         </button>
       </div>
     </div>

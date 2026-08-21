@@ -1,11 +1,14 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { TrendingUp, TrendingDown, Sunrise, Moon, Flame, Camera, User } from "lucide-react";
 import BPLineChart, { LINE_COLORS } from "@/components/charts/BPLineChart";
 import type { TargetBand } from "@/components/charts/BPLineChart";
 import DistributionBar from "@/components/charts/DistributionBar";
 import type { ClassificationSegment } from "@/components/charts/DistributionBar";
 import { getAgeGroupLabel, type Severity } from "@/lib/bpClassification";
+import EmptyState from "@/components/EmptyState";
+import { TrendsSkeleton } from "@/components/Skeleton";
 import type { PersonSummary, ReadingStats } from "@/types";
 
 type RangeValue = "7" | "30" | "90" | "all";
@@ -88,19 +91,21 @@ export default function TrendsPage() {
   if (!person && !loading) {
     return (
       <main className="min-h-screen bg-gray-50 pb-24">
-        <div className="max-w-lg mx-auto p-4 pt-12 text-center">
-          <p className="text-4xl mb-4">👤</p>
-          <p className="text-lg font-semibold text-gray-900 mb-2">Vælg en person</p>
-          <p className="text-gray-500 mb-6">
-            Du skal vælge en person for at se tendenser.
-          </p>
-          <Link
-            href="/persons"
-            className="inline-block bg-primary-600 text-white px-6 py-3 rounded-xl font-semibold
-                       hover:bg-primary-700 active:scale-95 transition-all"
-          >
-            Gå til personer
-          </Link>
+        <div className="max-w-lg mx-auto p-4 pt-12">
+          <EmptyState
+            icon={User}
+            title="Vælg en person"
+            description="Du skal vælge en person for at se tendenser."
+            action={
+              <Link
+                href="/persons"
+                className="inline-block bg-primary-600 text-white px-6 py-3 rounded-xl font-semibold
+                           hover:bg-primary-700 active:scale-95 transition-all"
+              >
+                Gå til personer
+              </Link>
+            }
+          />
         </div>
       </main>
     );
@@ -110,7 +115,10 @@ export default function TrendsPage() {
     <main className="min-h-screen bg-gray-50 pb-24">
       <div className="max-w-lg mx-auto p-4 pt-6">
         <div className="mb-5">
-          <h1 className="text-2xl font-bold text-gray-900">📈 Tendenser</h1>
+          <h1 className="flex items-center gap-2 text-2xl font-bold text-gray-900">
+            <TrendingUp className="w-6 h-6 text-primary-600" aria-hidden />
+            Tendenser
+          </h1>
           {person && (
             <p className="text-sm text-gray-500 mt-0.5">{person.name}</p>
           )}
@@ -133,22 +141,28 @@ export default function TrendsPage() {
         </div>
 
         {statsLoading ? (
-          <div className="text-center py-12 text-gray-400 animate-pulse">Indlæser...</div>
+          /* Skelet-layout (#12): nøgletal + diagramblok + bar-rækker */
+          <div aria-busy="true" aria-label="Indlæser tendenser">
+            <TrendsSkeleton />
+          </div>
         ) : !stats || stats.count === 0 ? (
           /* Tom state: personen har ingen målinger i det valgte interval */
-          <div className="bg-white rounded-2xl p-4 shadow-sm border text-center py-10">
-            <p className="text-4xl mb-3">📉</p>
-            <p className="font-medium text-gray-900">Ingen målinger i denne periode</p>
-            <p className="text-sm text-gray-400 mt-1 mb-5">
-              Prøv et længere interval, eller scan en ny måling.
-            </p>
-            <Link
-              href="/scan"
-              className="inline-block bg-primary-600 text-white px-6 py-3 rounded-xl font-semibold
-                         hover:bg-primary-700 active:scale-95 transition-all"
-            >
-              📸 Scan en måling
-            </Link>
+          <div className="bg-white rounded-2xl shadow-sm border overflow-hidden">
+            <EmptyState
+              icon={TrendingDown}
+              title="Ingen målinger i denne periode"
+              description="Prøv et længere interval, eller scan en ny måling."
+              action={
+                <Link
+                  href="/scan"
+                  className="inline-flex items-center gap-2 bg-primary-600 text-white px-6 py-3 rounded-xl font-semibold
+                             hover:bg-primary-700 active:scale-95 transition-all"
+                >
+                  <Camera className="w-5 h-5" aria-hidden />
+                  Scan en måling
+                </Link>
+              }
+            />
           </div>
         ) : (
           <div className="space-y-4">
@@ -166,8 +180,9 @@ export default function TrendsPage() {
               </div>
               <div>
                 <p className="text-xs text-gray-400">Streak</p>
-                <p className="text-lg font-bold text-gray-900">
-                  {stats.streakDays > 0 ? `🔥 ${stats.streakDays}` : "0"}
+                <p className="flex items-center justify-center gap-1 text-lg font-bold text-gray-900">
+                  <Flame className="w-5 h-5 text-orange-500" aria-hidden />
+                  {stats.streakDays > 0 ? stats.streakDays : "0"}
                 </p>
               </div>
             </div>
@@ -285,7 +300,10 @@ export default function TrendsPage() {
               <div className={`grid gap-3 ${stats.byTimeOfDay.morning && stats.byTimeOfDay.evening ? "grid-cols-2" : "grid-cols-1"}`}>
                 {stats.byTimeOfDay.morning && (
                   <div className="bg-white rounded-2xl p-4 shadow-sm border text-center">
-                    <p className="text-xs text-gray-400">🌅 Morgen</p>
+                    <p className="flex items-center justify-center gap-1.5 text-xs text-gray-400">
+                      <Sunrise className="w-4 h-4 text-amber-500" aria-hidden />
+                      Morgen
+                    </p>
                     <p className="text-xl font-bold text-gray-900 mt-0.5">
                       {stats.byTimeOfDay.morning.sysAvg}
                       <span className="text-xs font-normal text-gray-400"> mmHg sys</span>
@@ -294,7 +312,10 @@ export default function TrendsPage() {
                 )}
                 {stats.byTimeOfDay.evening && (
                   <div className="bg-white rounded-2xl p-4 shadow-sm border text-center">
-                    <p className="text-xs text-gray-400">🌙 Aften</p>
+                    <p className="flex items-center justify-center gap-1.5 text-xs text-gray-400">
+                      <Moon className="w-4 h-4 text-indigo-500" aria-hidden />
+                      Aften
+                    </p>
                     <p className="text-xl font-bold text-gray-900 mt-0.5">
                       {stats.byTimeOfDay.evening.sysAvg}
                       <span className="text-xs font-normal text-gray-400"> mmHg sys</span>

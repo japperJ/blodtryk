@@ -3,19 +3,23 @@
 // Datobudget: præcis 2 kald efter persons-opslag (readings + stats); alt andet beregnes client-side.
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import {
+  House,
+  Camera,
+  Keyboard,
+  HeartPulse,
+  Flame,
+  CalendarDays,
+  Pill,
+  User,
+} from "lucide-react";
 import type { Reading, PersonSummary, ReadingStats } from "@/types";
-import { getBPStatus, type Severity } from "@/lib/bpClassification";
+import { getBPStatus } from "@/lib/bpClassification";
 import { formatRelativeTime } from "@/lib/relativeTime";
 import Sparkline from "@/components/dashboard/Sparkline";
-import StatusPill from "@/components/dashboard/StatusPill";
-
-const SEVERITY_DOT: Record<Severity, string> = {
-  normal: "bg-green-500",
-  elevated: "bg-yellow-500",
-  stage1: "bg-orange-500",
-  stage2: "bg-red-500",
-  crisis: "bg-red-600",
-};
+import StatusPill from "@/components/StatusPill";
+import EmptyState from "@/components/EmptyState";
+import { DashboardSkeleton } from "@/components/Skeleton";
 
 export default function DashboardPage() {
   const [person, setPerson] = useState<PersonSummary | null>(null);
@@ -65,19 +69,21 @@ export default function DashboardPage() {
   if (!person && !loading) {
     return (
       <main className="min-h-screen bg-gray-50 pb-24">
-        <div className="max-w-lg mx-auto p-4 pt-12 text-center">
-          <p className="text-4xl mb-4">👤</p>
-          <p className="text-lg font-semibold text-gray-900 mb-2">Vælg en person</p>
-          <p className="text-gray-500 mb-6">
-            Du skal vælge en person for at se dit dashboard.
-          </p>
-          <Link
-            href="/persons"
-            className="inline-block bg-primary-600 text-white px-6 py-3 rounded-xl font-semibold
-                       hover:bg-primary-700 active:scale-95 transition-all"
-          >
-            Gå til personer
-          </Link>
+        <div className="max-w-lg mx-auto p-4 pt-12">
+          <EmptyState
+            icon={User}
+            title="Vælg en person"
+            description="Du skal vælge en person for at se dit dashboard."
+            action={
+              <Link
+                href="/persons"
+                className="inline-block bg-primary-600 text-white px-6 py-3 rounded-xl font-semibold
+                           hover:bg-primary-700 active:scale-95 transition-all"
+              >
+                Gå til personer
+              </Link>
+            }
+          />
         </div>
       </main>
     );
@@ -93,11 +99,14 @@ export default function DashboardPage() {
     <main className="min-h-screen bg-gray-50 pb-24">
       <div className="max-w-lg mx-auto p-4 pt-6">
         {/* Overskrift */}
-        <h1 className="text-2xl font-bold text-gray-900 mb-1">🏠 Dashboard</h1>
+        <h1 className="flex items-center gap-2 text-2xl font-bold text-gray-900 mb-1">
+          <House className="w-6 h-6 text-primary-600" aria-hidden />
+          Dashboard
+        </h1>
         <p className="text-sm text-gray-500 mb-4">{person?.name}</p>
 
         {loading ? (
-          <div className="text-center py-12 text-gray-400 animate-pulse">Indlæser...</div>
+          <DashboardSkeleton />
         ) : (
           <>
             {/* Hero-kort: seneste måling */}
@@ -114,24 +123,30 @@ export default function DashboardPage() {
                     <span className="text-3xl font-bold text-gray-700">{latest.diastolic}</span>
                     <span className="text-sm text-gray-400 ml-1">mmHg</span>
                   </div>
-                  <p className="text-base text-gray-600 mt-1">
-                    ❤️ {latest.pulse} slag/min
+                  <p className="flex items-center gap-1.5 text-base text-gray-600 mt-1">
+                    <HeartPulse className="w-4 h-4 text-red-500" aria-hidden />
+                    {latest.pulse} slag/min
                   </p>
                   <p className="text-xs text-gray-400 mt-2">{formatRelativeTime(latest.createdAt)}</p>
                 </>
               ) : (
                 /* Nul-målinger: venlig CTA i stedet for tomme tal */
-                <div className="text-center py-6">
-                  <p className="text-lg font-semibold text-gray-800 mb-1">Ingen målinger endnu</p>
-                  <p className="text-sm text-gray-500 mb-4">Tag din første måling for at se dit blodtryk her</p>
-                  <Link
-                    href="/scan"
-                    className="inline-block bg-primary-600 text-white px-5 py-2.5 rounded-xl font-semibold
-                               hover:bg-primary-700 active:scale-95 transition-all"
-                  >
-                    📷 Tag en måling
-                  </Link>
-                </div>
+                <EmptyState
+                  compact
+                  icon={Camera}
+                  title="Ingen målinger endnu"
+                  description="Tag din første måling for at se dit blodtryk her"
+                  action={
+                    <Link
+                      href="/scan"
+                      className="inline-flex items-center gap-2 bg-primary-600 text-white px-5 py-2.5 rounded-xl font-semibold
+                                 hover:bg-primary-700 active:scale-95 transition-all"
+                    >
+                      <Camera className="w-5 h-5" aria-hidden />
+                      Tag en måling
+                    </Link>
+                  }
+                />
               )}
             </section>
 
@@ -149,33 +164,44 @@ export default function DashboardPage() {
             {/* Tæller-række: streak + målinger denne uge */}
             <div className="grid grid-cols-2 gap-3 mb-4">
               <div className="bg-white rounded-2xl p-4 shadow-sm border">
-                <p className="text-xl font-bold text-gray-900">🔥 {streakDays}</p>
+                <p className="flex items-center gap-1.5 text-xl font-bold text-gray-900">
+                  <Flame className="w-5 h-5 text-orange-500" aria-hidden />
+                  {streakDays}
+                </p>
                 <p className="text-xs text-gray-500 mt-0.5">dag{streakDays === 1 ? "" : "e"} i træk</p>
               </div>
               <div className="bg-white rounded-2xl p-4 shadow-sm border">
-                <p className="text-xl font-bold text-gray-900">📅 {weekCount}</p>
+                <p className="flex items-center gap-1.5 text-xl font-bold text-gray-900">
+                  <CalendarDays className="w-5 h-5 text-primary-600" aria-hidden />
+                  {weekCount}
+                </p>
                 <p className="text-xs text-gray-500 mt-0.5">målinger denne uge</p>
               </div>
             </div>
 
             {/* Medicin-placeholder (#14 lever rigtige data senere) */}
-            <p className="text-sm text-gray-400 mb-4">💊 Medicin kommer snart</p>
+            <p className="flex items-center gap-1.5 text-sm text-gray-400 mb-4">
+              <Pill className="w-4 h-4" aria-hidden />
+              Medicin kommer snart
+            </p>
 
             {/* Genveje */}
             <div className="grid grid-cols-2 gap-3 mb-6">
               <Link
                 href="/scan"
-                className="bg-primary-600 text-white text-center px-4 py-3 rounded-2xl font-semibold
+                className="flex items-center justify-center gap-2 bg-primary-600 text-white text-center px-4 py-3 rounded-2xl font-semibold
                            hover:bg-primary-700 active:scale-95 transition-all"
               >
-                📷 Scan nu
+                <Camera className="w-5 h-5" aria-hidden />
+                Scan nu
               </Link>
               <Link
                 href="/scan?tab=manual"
-                className="bg-white text-primary-700 text-center px-4 py-3 rounded-2xl font-semibold
+                className="flex items-center justify-center gap-2 bg-white text-primary-700 text-center px-4 py-3 rounded-2xl font-semibold
                            border hover:bg-gray-50 active:scale-95 transition-all"
               >
-                ⌨️ Manuelt
+                <Keyboard className="w-5 h-5" aria-hidden />
+                Manuelt
               </Link>
             </div>
 
@@ -194,13 +220,10 @@ export default function DashboardPage() {
                     const date = new Date(r.createdAt);
                     return (
                       <div key={r.id} className="bg-white rounded-2xl px-4 py-3 shadow-sm border flex items-center justify-between">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${SEVERITY_DOT[status.severity]}`} title={status.label} />
-                          <span className="text-sm text-gray-600 truncate">
-                            {date.toLocaleDateString("da-DK", { day: "numeric", month: "short" })},{" "}
-                            {date.toLocaleTimeString("da-DK", { hour: "2-digit", minute: "2-digit" })}
-                          </span>
-                        </div>
+                        <span className="text-sm text-gray-600 truncate">
+                          {date.toLocaleDateString("da-DK", { day: "numeric", month: "short" })},{" "}
+                          {date.toLocaleTimeString("da-DK", { hour: "2-digit", minute: "2-digit" })}
+                        </span>
                         <div className="flex items-center gap-2 shrink-0">
                           <span className="text-sm font-semibold text-gray-900 tabular-nums">
                             {r.systolic}/{r.diastolic}

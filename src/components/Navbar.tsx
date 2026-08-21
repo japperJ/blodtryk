@@ -1,12 +1,13 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Camera, ClipboardList, TrendingUp, User, type LucideIcon } from "lucide-react";
 
-const links = [
-  { href: "/scan", label: "Scan", icon: "📸" },
-  { href: "/readings", label: "Målinger", icon: "📋" },
-  { href: "/trends", label: "Tendenser", icon: "📈" },
-  { href: "/persons", label: "Personer", icon: "👤" },
+const links: { href: string; label: string; icon: LucideIcon }[] = [
+  { href: "/scan", label: "Scan", icon: Camera },
+  { href: "/readings", label: "Målinger", icon: ClipboardList },
+  { href: "/trends", label: "Tendenser", icon: TrendingUp },
+  { href: "/persons", label: "Personer", icon: User },
 ];
 
 export default function Navbar() {
@@ -17,15 +18,17 @@ export default function Navbar() {
       <div className="max-w-lg mx-auto flex">
         {links.map((link) => {
           const active = pathname === link.href || pathname.startsWith(link.href + "/");
+          const Icon = link.icon;
           return (
             <Link
               key={link.href}
               href={link.href}
+              aria-current={active ? "page" : undefined}
               className={`flex-1 flex flex-col items-center py-3 transition-colors ${
                 active ? "text-primary-600" : "text-gray-400 hover:text-gray-600"
               }`}
             >
-              <span className="text-xl">{link.icon}</span>
+              <Icon className="w-6 h-6" strokeWidth={active ? 2.25 : 2} aria-hidden />
               <span className="text-xs font-medium mt-1">{link.label}</span>
             </Link>
           );

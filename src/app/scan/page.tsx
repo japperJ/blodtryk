@@ -1,11 +1,25 @@
 "use client";
 import { useState, useRef, useCallback, useEffect } from "react";
+import {
+  Stethoscope,
+  User,
+  Camera as CameraIcon,
+  FolderOpen,
+  Keyboard,
+  ScanLine,
+  Check,
+  X,
+  CircleCheckBig,
+  XCircle,
+  TriangleAlert,
+} from "lucide-react";
 import Camera from "@/components/Camera";
 import ReadingStepper from "@/components/ReadingStepper";
 import BatchUpload, { type UploadImage } from "@/components/BatchUpload";
 import BatchProgress, { type ScanResult } from "@/components/BatchProgress";
 import BatchTimeline from "@/components/BatchTimeline";
 import ContextTagChips from "@/components/ContextTagChips";
+import EmptyState from "@/components/EmptyState";
 import type { BloodPressureReading, PersonSummary, TimeOfDay, Arm } from "@/types";
 import Link from "next/link";
 
@@ -334,19 +348,21 @@ export default function ScanPage() {
   if (!selectedPerson) {
     return (
       <main className="min-h-screen bg-gray-50 pb-24">
-        <div className="max-w-lg mx-auto p-4 pt-12 text-center">
-          <p className="text-4xl mb-4">👤</p>
-          <p className="text-lg font-semibold text-gray-900 mb-2">Vælg en person</p>
-          <p className="text-gray-500 mb-6">
-            Du skal vælge en person før du kan scanne målinger.
-          </p>
-          <Link
-            href="/persons"
-            className="inline-block bg-primary-600 text-white px-6 py-3 rounded-xl font-semibold
-                       hover:bg-primary-700 active:scale-95 transition-all"
-          >
-            Gå til personer
-          </Link>
+        <div className="max-w-lg mx-auto p-4 pt-12">
+          <EmptyState
+            icon={User}
+            title="Vælg en person"
+            description="Du skal vælge en person før du kan scanne målinger."
+            action={
+              <Link
+                href="/persons"
+                className="inline-block bg-primary-600 text-white px-6 py-3 rounded-xl font-semibold
+                           hover:bg-primary-700 active:scale-95 transition-all"
+              >
+                Gå til personer
+              </Link>
+            }
+          />
         </div>
       </main>
     );
@@ -357,13 +373,16 @@ export default function ScanPage() {
       <div className="max-w-lg mx-auto p-4 pt-6">
         {/* Person-badge */}
         <div className="flex items-center justify-between mb-4">
-          <h1 className="text-2xl font-bold text-gray-900">🩺 Ny måling</h1>
+          <h1 className="flex items-center gap-2 text-2xl font-bold text-gray-900">
+            <Stethoscope className="w-6 h-6 text-primary-600" aria-hidden />
+            Ny måling
+          </h1>
           <Link
             href="/persons"
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary-50
                        text-primary-700 text-sm font-medium hover:bg-primary-100 transition-colors"
           >
-            <span>👤</span>
+            <User className="w-4 h-4" aria-hidden />
             <span>{selectedPerson.name}</span>
           </Link>
         </div>
@@ -373,30 +392,33 @@ export default function ScanPage() {
           <div className="flex gap-1 p-1 bg-gray-200 rounded-xl mb-6">
             <button
               onClick={() => setActiveTab("camera")}
-              className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-sm font-medium transition-all
                          ${activeTab === "camera"
                            ? 'bg-white text-gray-900 shadow-sm'
                            : 'text-gray-500 hover:text-gray-700'}`}
             >
-              📷 Kamera
+              <CameraIcon className="w-4 h-4" aria-hidden />
+              Kamera
             </button>
             <button
               onClick={() => setActiveTab("batch")}
-              className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-sm font-medium transition-all
                          ${activeTab === "batch"
                            ? 'bg-white text-gray-900 shadow-sm'
                            : 'text-gray-500 hover:text-gray-700'}`}
             >
-              📁 Upload
+              <FolderOpen className="w-4 h-4" aria-hidden />
+              Upload
             </button>
             <button
               onClick={() => setActiveTab("manual")}
-              className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-sm font-medium transition-all
                          ${activeTab === "manual"
                            ? 'bg-white text-gray-900 shadow-sm'
                            : 'text-gray-500 hover:text-gray-700'}`}
             >
-              ⌨️ Manuel
+              <Keyboard className="w-4 h-4" aria-hidden />
+              Manuel
             </button>
           </div>
         )}
@@ -417,17 +439,19 @@ export default function ScanPage() {
                 <div className="flex gap-3">
                   <button
                     onClick={handleCameraConfirm}
-                    className="flex-1 bg-primary-600 text-white py-3 rounded-xl font-semibold
+                    className="flex-1 flex items-center justify-center gap-2 bg-primary-600 text-white py-3 rounded-xl font-semibold
                                hover:bg-primary-700 active:scale-95 transition-all"
                   >
-                    🔍 Scan med AI
+                    <ScanLine className="w-5 h-5" aria-hidden />
+                    Scan med AI
                   </button>
                   <button
                     onClick={handleRetake}
-                    className="px-6 py-3 bg-gray-200 rounded-xl font-semibold
+                    className="flex items-center justify-center gap-2 px-6 py-3 bg-gray-200 rounded-xl font-semibold
                                hover:bg-gray-300 active:scale-95 transition-all"
                   >
-                    📷 Tag igen
+                    <CameraIcon className="w-5 h-5" aria-hidden />
+                    Tag igen
                   </button>
                 </div>
               </div>
@@ -443,7 +467,7 @@ export default function ScanPage() {
                   />
                 )}
                 <div className="animate-pulse text-lg text-gray-600">
-                  <p className="text-3xl mb-2">🔍</p>
+                  <ScanLine className="w-10 h-10 mx-auto mb-2 text-primary-600" aria-hidden />
                   <p>Scanner måling med AI...</p>
                   <p className="text-sm text-gray-400 mt-2">Ca. 60-90 sekunder</p>
                 </div>
@@ -530,14 +554,14 @@ export default function ScanPage() {
                     className="flex-1 bg-primary-600 text-white py-4 rounded-xl text-lg font-semibold
                                hover:bg-primary-700 active:scale-95 transition-all disabled:opacity-50"
                   >
-                    {isSaving ? "Gemmer..." : "✓ Gem måling"}
+                    {isSaving ? "Gemmer..." : <span className="inline-flex items-center gap-2"><Check className="w-5 h-5" /> Gem måling</span>}
                   </button>
                   <button
                     onClick={handleCameraReset}
                     className="w-14 h-14 bg-gray-200 rounded-xl text-lg font-semibold
                                hover:bg-gray-300 active:scale-95 transition-all flex items-center justify-center"
                   >
-                    ✕
+                    <X className="w-6 h-6" />
                   </button>
                 </div>
               </div>
@@ -545,7 +569,7 @@ export default function ScanPage() {
 
             {cameraStep === "saved" && (
               <div className="text-center py-12">
-                <p className="text-5xl mb-4">✅</p>
+                <CircleCheckBig className="w-16 h-16 text-green-600 mx-auto mb-4" />
                 <p className="text-xl font-semibold text-gray-900">Måling gemt!</p>
                 <button
                   onClick={handleCameraReset}
@@ -559,7 +583,7 @@ export default function ScanPage() {
 
             {cameraStep === "error" && (
               <div className="text-center py-12">
-                <p className="text-5xl mb-4">❌</p>
+                <XCircle className="w-16 h-16 text-danger-600 mx-auto mb-4" />
                 <p className="text-xl font-semibold text-danger-600">Fejl</p>
                 <p className="text-gray-600 mt-2">{errorMsg}</p>
                 <button
@@ -604,7 +628,7 @@ export default function ScanPage() {
 
             {batchStep === "saved" && (
               <div className="text-center py-12">
-                <p className="text-5xl mb-4">✅</p>
+                <CircleCheckBig className="w-16 h-16 text-green-600 mx-auto mb-4" />
                 <p className="text-xl font-semibold text-gray-900">
                   {batchResults.filter(r => r.reading).length} måling{batchResults.filter(r => r.reading).length !== 1 ? 'er' : ''} gemt!
                 </p>
@@ -620,7 +644,7 @@ export default function ScanPage() {
 
             {batchStep === "error" && (
               <div className="text-center py-12">
-                <p className="text-5xl mb-4">❌</p>
+                <XCircle className="w-16 h-16 text-danger-600 mx-auto mb-4" />
                 <p className="text-xl font-semibold text-danger-600">Fejl</p>
                 <p className="text-gray-600 mt-2">{batchErrorMsg}</p>
                 <button
@@ -747,7 +771,7 @@ export default function ScanPage() {
                 {/* Inline fejl fra API-validering */}
                 {manualError && (
                   <div className="bg-red-50 border border-red-200 rounded-xl p-3 flex items-start gap-2">
-                    <span>⚠️</span>
+                    <TriangleAlert className="w-4 h-4 shrink-0 mt-0.5" />
                     <p className="text-sm text-danger-600 font-medium">{manualError}</p>
                   </div>
                 )}
@@ -759,7 +783,7 @@ export default function ScanPage() {
                     className="flex-1 bg-primary-600 text-white py-4 rounded-xl text-lg font-semibold
                                hover:bg-primary-700 active:scale-95 transition-all disabled:opacity-50"
                   >
-                    {isSavingManual ? "Gemmer..." : "✓ Gem måling"}
+                    {isSavingManual ? "Gemmer..." : <span className="inline-flex items-center gap-2"><Check className="w-5 h-5" /> Gem måling</span>}
                   </button>
                   <button
                     type="button"
@@ -767,7 +791,7 @@ export default function ScanPage() {
                     className="w-14 h-14 bg-gray-200 rounded-xl text-lg font-semibold
                                hover:bg-gray-300 active:scale-95 transition-all flex items-center justify-center"
                   >
-                    ✕
+                    <X className="w-6 h-6" />
                   </button>
                 </div>
               </form>
@@ -775,7 +799,7 @@ export default function ScanPage() {
 
             {manualStep === "saved" && (
               <div className="text-center py-12">
-                <p className="text-5xl mb-4">✅</p>
+                <CircleCheckBig className="w-16 h-16 text-green-600 mx-auto mb-4" />
                 <p className="text-xl font-semibold text-gray-900">Måling gemt!</p>
                 <div className="mt-6 flex gap-3 justify-center">
                   <button
