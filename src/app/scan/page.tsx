@@ -500,6 +500,7 @@ export default function ScanPage() {
                 onSaveAll={handleSaveBatch}
                 isSaving={isSaving}
                 onReset={handleBatchReset}
+                age={userAge}
               />
             )}
 

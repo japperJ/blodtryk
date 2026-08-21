@@ -1,7 +1,7 @@
 "use client";
 import jsPDF from "jspdf";
 import type { Reading } from "@/types";
-import { getBPStatus, getAgeGroupLabel } from "@/lib/bpClassification";
+import { getBPStatus, getAgeGroupLabel, type Severity } from "@/lib/bpClassification";
 
 interface Props {
   readings: Reading[];
@@ -38,22 +38,23 @@ export default function PdfExport({ readings, personName }: Props) {
       }
     };
 
-    const setStatusColor = (label: string) => {
-      switch (label) {
-        case "Krise":
+    // Farver styres af maskinlæsbar sværhedsgrad (ikke label-tekst),
+    // så labels kan omdøbes frit uden at ødelægge PDF-farverne
+    const setStatusColor = (severity: Severity) => {
+      switch (severity) {
+        case "crisis":
           doc.setTextColor(180, 0, 0);
           break;
-        case "Højt":
+        case "stage2":
           doc.setTextColor(200, 0, 0);
           break;
-        case "Forhøjet":
+        case "stage1":
           doc.setTextColor(220, 100, 0);
           break;
-        case "Let forhøjet":
-        case "Acceptabelt":
+        case "elevated":
           doc.setTextColor(200, 150, 0);
           break;
-        default:
+        default: // normal
           doc.setTextColor(0, 140, 0);
       }
     };
@@ -155,7 +156,7 @@ export default function PdfExport({ readings, personName }: Props) {
       doc.text(String(reading.diastolic), colDia, y);
       doc.text(String(reading.pulse), colPulse, y);
 
-      setStatusColor(status.label);
+      setStatusColor(status.severity);
       doc.text(status.label, colStatus, y);
 
       y += 6;
