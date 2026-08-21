@@ -1,6 +1,7 @@
 "use client";
 import type { ScanResult } from "./BatchProgress";
 import type { UploadImage } from "./BatchUpload";
+import { getBPStatus } from "@/lib/bpClassification";
 
 interface Props {
   images: UploadImage[];
@@ -8,9 +9,10 @@ interface Props {
   onSaveAll: () => void;
   isSaving: boolean;
   onReset: () => void;
+  age?: number | null; // Personens alder til aldersjusteret klassificering
 }
 
-export default function BatchTimeline({ images, results, onSaveAll, isSaving, onReset }: Props) {
+export default function BatchTimeline({ images, results, onSaveAll, isSaving, onReset, age }: Props) {
   // Sorter resultater efter tidspunkt (nyeste først)
   const sortedResults = [...results]
     .filter(r => r.reading !== null) // Kun succesfulde
@@ -48,7 +50,7 @@ export default function BatchTimeline({ images, results, onSaveAll, isSaving, on
           if (!image || !result.reading) return null;
 
           const date = result.timestamp;
-          const status = getBPStatus(result.reading.systolic, result.reading.diastolic);
+          const status = getBPStatus(result.reading.systolic, result.reading.diastolic, age);
 
           return (
             <div
@@ -144,9 +146,3 @@ export default function BatchTimeline({ images, results, onSaveAll, isSaving, on
   );
 }
 
-function getBPStatus(systolic: number, diastolic: number): { label: string; color: string } {
-  if (systolic < 120 && diastolic < 80) return { label: 'Normal', color: 'bg-green-100 text-green-800' };
-  if (systolic < 130 && diastolic < 80) return { label: 'Forhøjet', color: 'bg-yellow-100 text-yellow-800' };
-  if (systolic < 140 || diastolic < 90) return { label: 'Let forhøjet', color: 'bg-orange-100 text-orange-800' };
-  return { label: 'Forhøjet', color: 'bg-red-100 text-red-800' };
-}

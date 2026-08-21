@@ -82,7 +82,7 @@ export function useCamera() {
             resolve();
             return;
           }
-          if ("requestVideoFrameCallback" in video) {
+          if (typeof video.requestVideoFrameCallback === "function") {
             const timeout = setTimeout(() => resolve(), 3000);
             video.requestVideoFrameCallback(() => {
               clearTimeout(timeout);
@@ -143,7 +143,10 @@ export function useCamera() {
     const track = stream?.getVideoTracks()[0];
     if (track && typeof ImageCapture !== "undefined") {
       try {
-        const imageCapture = new ImageCapture(track);
+        // grabFrame mangler i de aktuelle TS lib-typings — udvid typen lokalt
+        const imageCapture = new ImageCapture(track) as ImageCapture & {
+          grabFrame(): Promise<ImageBitmap>;
+        };
         const bitmap = await imageCapture.grabFrame();
 
         const maxW = 1920;
