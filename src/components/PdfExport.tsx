@@ -9,6 +9,7 @@ import { LINE_COLORS } from "@/components/charts/BPLineChart";
 interface Props {
   readings: Reading[];
   personName?: string;
+  medications?: { name: string; dose: string; active: boolean }[];
 }
 
 // Dagligt gennemsnit beregnet lokalt af den filtrerede målliste (chart-grundlag)
@@ -195,7 +196,7 @@ async function rasterizeSvgToPng(
   });
 }
 
-export default function PdfExport({ readings, personName }: Props) {
+export default function PdfExport({ readings, personName, medications }: Props) {
   const [generating, setGenerating] = useState(false);
 
   const exportPdf = async () => {
@@ -290,6 +291,17 @@ export default function PdfExport({ readings, personName }: Props) {
           );
           y += 5;
         }
+      }
+
+      // Aktive medicin (#14) — listes under personens navn når de findes
+      const activeMeds = (medications ?? []).filter((m) => m.active);
+      if (activeMeds.length > 0) {
+        doc.text(
+          `Medicin: ${activeMeds.map((m) => `${m.name} ${m.dose}`).join(", ")}`,
+          margin,
+          y
+        );
+        y += 5;
       }
 
       // === Resumé (side 1, før tabellen) ===
