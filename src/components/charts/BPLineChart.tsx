@@ -1,0 +1,192 @@
+// Håndrullet SVG-linjediagram for blodtryk (#10) — ingen eksterne chart-biblioteker.
+// Rener polyline + cirkler: ingen per-punkt React-state, så ~500+ målinger er OK.
+"use client";
+
+import type { DailyAverage } from "@/types";
+
+// Målbånd (grøn zone) for personens aldersgruppe — se getTargetBand i app/trends/page.tsx
+export interface TargetBand {
+  sysMin: number;
+  sysMax: number;
+  diaMin: number;
+  diaMax: number;
+}
+
+interface BPLineChartProps {
+  data: DailyAverage[]; // daglige gennemsnit (allerede aggregeret fra stats-API'en)
+  band: TargetBand;
+  showPulse: boolean;
+}
+
+// Farver deles med legenden på trends-siden
+export const LINE_COLORS = {
+  systolic: "#2563eb", // primary-600
+  diastolic: "#0d9488", // teal-600
+  pulse: "#9333ea", // purple-600
+  band: "#22c55e", // green-500
+} as const;
+
+// Fast viewBox — skalerer responsivt via CSS (w-full h-auto)
+const WIDTH = 360;
+const HEIGHT = 220;
+const PAD = { top: 12, right: 10, bottom: 24, left: 34 };
+
+// Y-akse: "pæne" trin (multipla af 5) med luft i kanterne
+function niceScale(min: number, max: number): { lo: number; hi: number; ticks: number[] } {
+  const span = Math.max(20, max - min); // minimumsspand så få punkter ikke fladtrykker akserne
+  const step = Math.max(5, Math.ceil(span / 4 / 5) * 5); // ~4 gridlines
+  const lo = Math.floor((min - span * 0.05) / step) * step;
+  const hi = Math.ceil((max + span * 0.05) / step) * step;
+  const ticks: number[] = [];
+  for (let t = lo; t <= hi; t += step) ticks.push(t);
+  return { lo, hi, ticks };
+}
+
+// Dansk kort dato: "20/8"
+function shortDate(iso: string): string {
+  const d = new Date(`${iso}T00:00:00`);
+  return `${d.getDate()}/${d.getMonth() + 1}`;
+}
+
+export default function BPLineChart({ data, band, showPulse }: BPLineChartProps) {
+  if (data.length === 0) return null;
+
+  // Y-domæne: alle dataværdier + hele målbåndet, så båndet altid er synligt
+  const values: number[] = [band.sysMin, band.sysMax, band.diaMin, band.diaMax];
+  for (const p of data) {
+    values.push(p.sysAvg, p.diaAvg);
+    if (showPulse) values.push(p.pulseAvg);
+  }
+  const { lo, hi, ticks } = niceScale(Math.min(...values), Math.max(...values));
+
+  const innerW = WIDTH - PAD.left - PAD.right;
+  const innerH = HEIGHT - PAD.top - PAD.bottom;
+
+  // Kategorisk x-akse: jævn fordeling efter punkt-indeks (undgår huller ved fraværende dage)
+  const xAt = (i: number): number =>
+    PAD.left + (data.length === 1 ? innerW / 2 : (i / (data.length - 1)) * innerW);
+  const yAt = (v: number): number => PAD.top + innerH - ((v - lo) / (hi - lo)) * innerH;
+
+  const toPoints = (get: (p: DailyAverage) => number): string =>
+    data.map((p, i) => `${xAt(i)},${yAt(get(p))}`).join(" ");
+
+  // Sparsomme x-labels: første/sidste altid, plus op til 3 mellem-punkter
+  const labelIndexes = new Set<number>([0, data.length - 1]);
+  if (data.length > 2) labelIndexes.add(Math.floor((data.length - 1) / 2));
+  if (data.length > 8) {
+    labelIndexes.add(Math.floor((data.length - 1) / 4));
+    labelIndexes.add(Math.floor((3 * (data.length - 1)) / 4));
+  }
+
+  // Prikker (med <title>-hover) kun ved overkommeligt antal punkter — ellers ren polyline
+  const showDots = data.length <= 62;
+
+  return (
+    <svg
+      viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
+      className="w-full h-auto"
+      role="img"
+      aria-label="Linjediagram over daglige gennemsnit af systolisk og diastolisk blodtryk"
+    >
+      {/* Gridlines + y-labels */}
+      {ticks.map((t) => (
+        <g key={t}>
+          <line
+            x1={PAD.left}
+            x2={WIDTH - PAD.right}
+            y1={yAt(t)}
+            y2={yAt(t)}
+            stroke="#e5e7eb"
+            strokeWidth="1"
+          />
+          <text x={PAD.left - 4} y={yAt(t) + 3} textAnchor="end" fontSize="9" fill="#9ca3af">
+            {t}
+          </text>
+        </g>
+      ))}
+
+      {/* Målbånd: grøn zone mellem aldersgruppens nedre og øvre grænse */}
+      <rect
+        x={PAD.left}
+        y={yAt(band.sysMax)}
+        width={innerW}
+        height={Math.max(1, yAt(band.sysMin) - yAt(band.sysMax))}
+        fill={LINE_COLORS.band}
+        opacity="0.10"
+      >
+        <title>{`Målbånd systolisk: ${band.sysMin}–${band.sysMax}`}</title>
+      </rect>
+      <rect
+        x={PAD.left}
+        y={yAt(band.diaMax)}
+        width={innerW}
+        height={Math.max(1, yAt(band.diaMin) - yAt(band.diaMax))}
+        fill={LINE_COLORS.band}
+        opacity="0.06"
+      >
+        <title>{`Målbånd diastolisk: ${band.diaMin}–${band.diaMax}`}</title>
+      </rect>
+
+          {/* Kurver */}
+      <polyline
+        points={toPoints((p) => p.diaAvg)}
+        fill="none"
+        stroke={LINE_COLORS.diastolic}
+        strokeWidth="2"
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      />
+      <polyline
+        points={toPoints((p) => p.sysAvg)}
+        fill="none"
+        stroke={LINE_COLORS.systolic}
+        strokeWidth="2"
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      />
+      {showPulse && (
+        <polyline
+          points={toPoints((p) => p.pulseAvg)}
+          fill="none"
+          stroke={LINE_COLORS.pulse}
+          strokeWidth="1.5"
+          strokeDasharray="4 3"
+          strokeLinejoin="round"
+          strokeLinecap="round"
+        />
+      )}
+
+      {/* Værdi-prikker med <title> som hover-tooltip */}
+      {showDots &&
+        data.map((p, i) => (
+          <g key={p.date}>
+            <circle cx={xAt(i)} cy={yAt(p.diaAvg)} r="2.5" fill={LINE_COLORS.diastolic}>
+              <title>{`${shortDate(p.date)}: Diastolisk ${p.diaAvg} (${p.count} måling${p.count !== 1 ? "er" : ""})`}</title>
+            </circle>
+            <circle cx={xAt(i)} cy={yAt(p.sysAvg)} r="2.5" fill={LINE_COLORS.systolic}>
+              <title>{`${shortDate(p.date)}: Systolisk ${p.sysAvg} (${p.count} måling${p.count !== 1 ? "er" : ""})`}</title>
+            </circle>
+            {showPulse && (
+              <circle cx={xAt(i)} cy={yAt(p.pulseAvg)} r="2" fill={LINE_COLORS.pulse}>
+                <title>{`${shortDate(p.date)}: Puls ${p.pulseAvg}`}</title>
+              </circle>
+            )}
+          </g>
+        ))}
+
+      {/* Sparsomme x-labels */}
+      {Array.from(labelIndexes).map((i) => (
+        <text
+          key={`x-${i}`}
+          x={xAt(i)}
+          y={HEIGHT - 6}
+          textAnchor={i === 0 ? "start" : i === data.length - 1 ? "end" : "middle"}
+          fontSize="9"
+          fill="#9ca3af"
+        >
+          {shortDate(data[i].date)}
+        </text>
+      ))}
+    </svg>
+  );
+}
