@@ -12,6 +12,10 @@ const AGE_MIN = 1;
 const AGE_MAX = 120;
 const NOTE_MAX_LENGTH = 500;
 
+// Tolerance for urforskel mellem klient og server — tidspunkter mere end dette
+// i fremtiden afvises som "far-future"
+const CREATED_AT_FUTURE_TOLERANCE_MS = 5 * 60 * 1000;
+
 // Grænse for gyldigt fødselsår (maksimum er indeværende år)
 export const BIRTH_YEAR_MIN = 1900;
 
@@ -24,6 +28,8 @@ export interface ValidatedReadingInput {
   note: string | null;
   image: string | null;
   personId: number;
+  // Valgfrit målingstidspunkt (null = serveren sætter tidspunktet selv)
+  createdAt: Date | null;
 }
 
 export type ReadingValidationResult =
@@ -128,6 +134,23 @@ export function validateReadingInput(body: unknown): ReadingValidationResult {
     image = raw.image;
   }
 
+  // Tidspunkt: valgfri ISO-dato/tid som streng (fraværende = serveren bruger "nu")
+  let createdAt: Date | null = null;
+  if (!isAbsent(raw.createdAt)) {
+    if (typeof raw.createdAt !== "string" || raw.createdAt.trim() === "") {
+      return { ok: false, error: "Tidspunkt skal være en dato/tid (ISO-format)" };
+    }
+    const parsed = new Date(raw.createdAt);
+    if (isNaN(parsed.getTime())) {
+      return { ok: false, error: "Ugyldigt tidspunkt — angiv en gyldig dato og tid" };
+    }
+    // Målinger kan ikke være foretaget i fremtiden (lille tolerance til urforskel)
+    if (parsed.getTime() > Date.now() + CREATED_AT_FUTURE_TOLERANCE_MS) {
+      return { ok: false, error: "Tidspunktet kan ikke ligge i fremtiden" };
+    }
+    createdAt = parsed;
+  }
+
   return {
     ok: true,
     data: {
@@ -138,6 +161,7 @@ export function validateReadingInput(body: unknown): ReadingValidationResult {
       note,
       image,
       personId: raw.personId,
+      createdAt,
     },
   };
 }

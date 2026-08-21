@@ -1,6 +1,7 @@
 "use client";
 import { useState, useRef, useCallback, useEffect } from "react";
 import Camera from "@/components/Camera";
+import ReadingStepper from "@/components/ReadingStepper";
 import BatchUpload, { type UploadImage } from "@/components/BatchUpload";
 import BatchProgress, { type ScanResult } from "@/components/BatchProgress";
 import BatchTimeline from "@/components/BatchTimeline";
@@ -13,8 +14,20 @@ type CameraStep = "camera" | "preview" | "scanning" | "confirm" | "saved" | "err
 // Batch-flow steps
 type BatchStep = "upload" | "scanning" | "results" | "saved" | "error";
 
+// Manuel-flow steps
+type ManualStep = "form" | "saved";
+
 // Aktiv fane
-type Tab = "camera" | "batch";
+type Tab = "camera" | "batch" | "manual";
+
+// Standardværdier for manuel indtastning
+const MANUAL_DEFAULTS: BloodPressureReading = { systolic: 120, diastolic: 80, pulse: 70 };
+
+// Hjælper: Dato -> værdi til <input type="datetime-local"> i lokal tid
+function toLocalInputValue(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
 
 export default function ScanPage() {
   // Valgt person
@@ -109,9 +122,9 @@ export default function ScanPage() {
     }
   };
 
-  const handleCameraUpdate = (field: keyof BloodPressureReading, value: string) => {
+  const handleCameraUpdate = (field: keyof BloodPressureReading, value: number) => {
     if (!reading) return;
-    setReading({ ...reading, [field]: Number(value) || 0 });
+    setReading({ ...reading, [field]: value });
   };
 
   const handleCameraReset = () => {
@@ -241,6 +254,65 @@ export default function ScanPage() {
     setBatchErrorMsg("");
   };
 
+  // ========== MANUEL-FLOW ==========
+  const [manualStep, setManualStep] = useState<ManualStep>("form");
+  const [manualValues, setManualValues] = useState<BloodPressureReading>(MANUAL_DEFAULTS);
+  const [measuredAt, setMeasuredAt] = useState(""); // sat efter mount (undgår hydration-mismatch)
+  const [manualNote, setManualNote] = useState("");
+  const [manualError, setManualError] = useState("");
+  const [isSavingManual, setIsSavingManual] = useState(false);
+
+  useEffect(() => {
+    setMeasuredAt(toLocalInputValue(new Date()));
+  }, []);
+
+  const handleManualUpdate = (key: keyof BloodPressureReading, value: number) => {
+    setManualValues((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleManualSave = async () => {
+    if (!selectedPerson) return;
+    setIsSavingManual(true);
+    setManualError("");
+
+    try {
+      const res = await fetch("/api/readings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          systolic: manualValues.systolic,
+          diastolic: manualValues.diastolic,
+          pulse: manualValues.pulse,
+          age: derivedAge ?? userAge,
+          note: manualNote.trim() ? manualNote.trim() : null,
+          personId: selectedPerson.id,
+          createdAt: measuredAt ? new Date(measuredAt).toISOString() : undefined,
+        }),
+      });
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        // Vis API-valideringsfejl inline på formularen
+        setManualError(data?.error || "Kunne ikke gemme måling");
+        return;
+      }
+
+      setManualStep("saved");
+    } catch {
+      setManualError("Kunne ikke gemme måling");
+    } finally {
+      setIsSavingManual(false);
+    }
+  };
+
+  const handleManualReset = () => {
+    setManualStep("form");
+    setManualValues(MANUAL_DEFAULTS);
+    setMeasuredAt(toLocalInputValue(new Date()));
+    setManualNote("");
+    setManualError("");
+  };
+
   // Ingen person valgt — vis besked
   if (!selectedPerson) {
     return (
@@ -280,7 +352,7 @@ export default function ScanPage() {
         </div>
 
         {/* Faneblad */}
-        {cameraStep === "camera" && batchStep === "upload" && (
+        {cameraStep === "camera" && batchStep === "upload" && manualStep === "form" && (
           <div className="flex gap-1 p-1 bg-gray-200 rounded-xl mb-6">
             <button
               onClick={() => setActiveTab("camera")}
@@ -299,6 +371,15 @@ export default function ScanPage() {
                            : 'text-gray-500 hover:text-gray-700'}`}
             >
               📁 Upload
+            </button>
+            <button
+              onClick={() => setActiveTab("manual")}
+              className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all
+                         ${activeTab === "manual"
+                           ? 'bg-white text-gray-900 shadow-sm'
+                           : 'text-gray-500 hover:text-gray-700'}`}
+            >
+              ⌨️ Manuel
             </button>
           </div>
         )}
@@ -367,41 +448,10 @@ export default function ScanPage() {
                     AI aflæste — ret hvis nødvendigt:
                   </p>
 
-                  <div className="space-y-3">
-                    {([
-                      { key: "systolic" as const, label: "Systolisk", unit: "mmHg", color: "text-red-600" },
-                      { key: "diastolic" as const, label: "Diastolisk", unit: "mmHg", color: "text-orange-600" },
-                      { key: "pulse" as const, label: "Puls", unit: "bpm", color: "text-blue-600" },
-                    ]).map(({ key, label, unit, color }) => (
-                      <div key={key} className="flex items-center gap-3">
-                        <div className="w-20 shrink-0">
-                          <p className="text-sm font-medium text-gray-600">{label}</p>
-                          <p className="text-[10px] text-gray-400">{unit}</p>
-                        </div>
-                        <button
-                          onClick={() => handleCameraUpdate(key, String(reading[key] - 1))}
-                          className="w-12 h-12 rounded-full bg-gray-100 text-2xl font-bold text-gray-600
-                                     hover:bg-gray-200 active:scale-90 transition-all flex items-center justify-center shrink-0"
-                        >
-                          −
-                        </button>
-                        <input
-                          type="number"
-                          value={reading[key]}
-                          onChange={(e) => handleCameraUpdate(key, e.target.value)}
-                          className={`flex-1 text-center text-4xl font-bold border-2 border-gray-200 rounded-xl
-                                       py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 min-w-0 ${color}`}
-                        />
-                        <button
-                          onClick={() => handleCameraUpdate(key, String(reading[key] + 1))}
-                          className="w-12 h-12 rounded-full bg-gray-100 text-2xl font-bold text-gray-600
-                                     hover:bg-gray-200 active:scale-90 transition-all flex items-center justify-center shrink-0"
-                        >
-                          +
-                        </button>
-                      </div>
-                    ))}
-                  </div>
+                  <ReadingStepper
+                    values={reading}
+                    onChange={handleCameraUpdate}
+                  />
                 </div>
 
                 {/* Alder — beregnet ud fra fødselsår, eller manuel indtastning som fallback */}
@@ -550,6 +600,156 @@ export default function ScanPage() {
                 >
                   Prøv igen
                 </button>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* ========== MANUEL-FLOW ========== */}
+        {activeTab === "manual" && (
+          <>
+            {manualStep === "form" && (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleManualSave();
+                }}
+                className="space-y-4"
+              >
+                {/* Målingsværdier */}
+                <div className="bg-white rounded-2xl p-4 shadow-sm border">
+                  <p className="text-xs text-gray-400 text-center mb-3">
+                    Indtast målingen manuelt:
+                  </p>
+
+                  <ReadingStepper values={manualValues} onChange={handleManualUpdate} />
+                </div>
+
+                {/* Alder — beregnet ud fra fødselsår, eller manuel indtastning som fallback */}
+                {derivedAge != null ? (
+                  <div className="bg-white rounded-2xl p-4 shadow-sm border">
+                    <div className="flex items-center gap-3">
+                      <div className="w-20 shrink-0">
+                        <p className="text-sm font-medium text-gray-600">Alder</p>
+                        <p className="text-[10px] text-gray-400">ud fra fødselsår</p>
+                      </div>
+                      <p className="flex-1 text-center text-2xl font-bold text-gray-900">
+                        {derivedAge} år
+                      </p>
+                      <div className="w-12 shrink-0" />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-white rounded-2xl p-4 shadow-sm border">
+                    <div className="flex items-center gap-3">
+                      <div className="w-20 shrink-0">
+                        <p className="text-sm font-medium text-gray-600">Alder</p>
+                        <p className="text-[10px] text-gray-400">for bedre vurdering</p>
+                      </div>
+                      <input
+                        type="number"
+                        min={1}
+                        max={120}
+                        value={userAge ?? ""}
+                        onChange={(e) => setUserAge(e.target.value ? Number(e.target.value) : null)}
+                        placeholder="f.eks. 65"
+                        className="flex-1 text-center text-2xl font-bold border-2 border-gray-200 rounded-xl
+                                   py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 min-w-0
+                                   text-gray-900 placeholder-gray-300"
+                      />
+                      <div className="w-12 shrink-0 text-center">
+                        <p className="text-sm text-gray-500">år</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Tidspunkt for målingen */}
+                <div className="bg-white rounded-2xl p-4 shadow-sm border">
+                  <label className="block">
+                    <span className="text-sm font-medium text-gray-600">Tidspunkt</span>
+                    <span className="text-[10px] text-gray-400 block">hvornår blev der målt?</span>
+                    <input
+                      type="datetime-local"
+                      value={measuredAt}
+                      onChange={(e) => setMeasuredAt(e.target.value)}
+                      className="mt-2 w-full text-center text-lg font-bold border-2 border-gray-200 rounded-xl
+                                 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500
+                                 text-gray-900"
+                    />
+                  </label>
+                </div>
+
+                {/* Note — valgfri */}
+                <div className="bg-white rounded-2xl p-4 shadow-sm border">
+                  <label className="block">
+                    <span className="text-sm font-medium text-gray-600">Note</span>
+                    <span className="text-[10px] text-gray-400 block">valgfri</span>
+                    <textarea
+                      value={manualNote}
+                      onChange={(e) => setManualNote(e.target.value)}
+                      maxLength={500}
+                      rows={3}
+                      placeholder="f.eks. målt efter morgenmotion"
+                      className="mt-2 w-full text-base border-2 border-gray-200 rounded-xl px-3 py-2
+                                 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-none
+                                 text-gray-900 placeholder-gray-300"
+                    />
+                    <span className="text-[10px] text-gray-400 block text-right">
+                      {manualNote.length}/500
+                    </span>
+                  </label>
+                </div>
+
+                {/* Inline fejl fra API-validering */}
+                {manualError && (
+                  <div className="bg-red-50 border border-red-200 rounded-xl p-3 flex items-start gap-2">
+                    <span>⚠️</span>
+                    <p className="text-sm text-danger-600 font-medium">{manualError}</p>
+                  </div>
+                )}
+
+                <div className="flex gap-3">
+                  <button
+                    type="submit"
+                    disabled={isSavingManual}
+                    className="flex-1 bg-primary-600 text-white py-4 rounded-xl text-lg font-semibold
+                               hover:bg-primary-700 active:scale-95 transition-all disabled:opacity-50"
+                  >
+                    {isSavingManual ? "Gemmer..." : "✓ Gem måling"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleManualReset}
+                    className="w-14 h-14 bg-gray-200 rounded-xl text-lg font-semibold
+                               hover:bg-gray-300 active:scale-95 transition-all flex items-center justify-center"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {manualStep === "saved" && (
+              <div className="text-center py-12">
+                <p className="text-5xl mb-4">✅</p>
+                <p className="text-xl font-semibold text-gray-900">Måling gemt!</p>
+                <div className="mt-6 flex gap-3 justify-center">
+                  <button
+                    onClick={handleManualReset}
+                    className="bg-primary-600 text-white px-8 py-3 rounded-xl font-semibold
+                               hover:bg-primary-700 active:scale-95 transition-all"
+                  >
+                    Tilføj ny
+                  </button>
+                  <Link
+                    href="/readings"
+                    className="px-8 py-3 bg-gray-200 rounded-xl font-semibold inline-block
+                               hover:bg-gray-300 active:scale-95 transition-all"
+                  >
+                    Se målinger
+                  </Link>
+                </div>
               </div>
             )}
           </>
