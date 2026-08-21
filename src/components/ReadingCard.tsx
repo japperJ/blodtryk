@@ -7,13 +7,18 @@ import ImageViewer from "./ImageViewer";
 interface Props {
   reading: Reading;
   onDelete: (id: number) => void;
+  onEdit?: (reading: Reading) => void;
 }
 
-export default function ReadingCard({ reading, onDelete }: Props) {
+export default function ReadingCard({ reading, onDelete, onEdit }: Props) {
   const [showImageViewer, setShowImageViewer] = useState(false);
+  const [showFullNote, setShowFullNote] = useState(false);
   const date = new Date(reading.createdAt);
   const status = getBPStatus(reading.systolic, reading.diastolic, reading.age);
   const ageGroupLabel = getAgeGroupLabel(reading.age);
+
+  // Note — blank streng behandles som ingen note
+  const noteText = reading.note?.trim() ?? "";
 
   // Tjek om der er et billede
   const hasImage = !!reading.image;
@@ -89,6 +94,24 @@ export default function ReadingCard({ reading, onDelete }: Props) {
           </p>
         )}
 
+        {/* Note — afkortet til én linje, tryk for at folde ud/sammen */}
+        {noteText && (
+          <button
+            type="button"
+            onClick={() => setShowFullNote((v) => !v)}
+            title={showFullNote ? "Skjul note" : "Vis hele noten"}
+            className="w-full text-left mt-2"
+          >
+            {showFullNote ? (
+              <p className="text-xs text-gray-600 bg-gray-50 rounded-lg px-2.5 py-1.5 whitespace-pre-wrap break-words">
+                📝 {noteText}
+              </p>
+            ) : (
+              <p className="text-xs text-gray-500 truncate">📝 {noteText}</p>
+            )}
+          </button>
+        )}
+
         {/* Handlinger */}
         <div className="mt-3 pt-3 border-t flex justify-between items-center">
           {hasImage ? (
@@ -102,12 +125,22 @@ export default function ReadingCard({ reading, onDelete }: Props) {
             <span className="text-xs text-gray-400">Ingen billede</span>
           )}
 
-          <button
-            onClick={() => onDelete(reading.id)}
-            className="text-xs text-gray-400 hover:text-danger-600 transition-colors"
-          >
-            Slet
-          </button>
+          <div className="flex items-center gap-3">
+            {onEdit && (
+              <button
+                onClick={() => onEdit(reading)}
+                className="text-xs text-gray-400 hover:text-primary-600 transition-colors"
+              >
+                ✏️ Rediger
+              </button>
+            )}
+            <button
+              onClick={() => onDelete(reading.id)}
+              className="text-xs text-gray-400 hover:text-danger-600 transition-colors"
+            >
+              Slet
+            </button>
+          </div>
         </div>
       </div>
 

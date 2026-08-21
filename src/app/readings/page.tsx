@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import ReadingCard from "@/components/ReadingCard";
+import EditReadingDialog from "@/components/EditReadingDialog";
 import PdfExport from "@/components/PdfExport";
 import type { Reading, PersonSummary } from "@/types";
 import Link from "next/link";
@@ -12,6 +13,7 @@ export default function ReadingsPage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<FilterType>("all");
   const [selectedPerson, setSelectedPerson] = useState<PersonSummary | null>(null);
+  const [editingReading, setEditingReading] = useState<Reading | null>(null);
 
   const fetchReadings = useCallback(async () => {
     const savedId = localStorage.getItem("selectedPersonId");
@@ -55,6 +57,13 @@ export default function ReadingsPage() {
     } catch (err) {
       console.error("Failed to delete:", err);
     }
+  };
+
+  // Efter vellykket PATCH: opdatér målingen direkte i liste-state (uden refetch).
+  // Status-badge og farver genberegnes automatisk i ReadingCard ud fra de nye værdier.
+  const handleEditSaved = (updated: Reading) => {
+    setReadings((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
+    setEditingReading(null);
   };
 
   const filteredReadings = readings.filter((r) => {
@@ -170,12 +179,26 @@ export default function ReadingsPage() {
             </p>
             <div className="space-y-3">
               {filteredReadings.map((r) => (
-                <ReadingCard key={r.id} reading={r} onDelete={handleDelete} />
+                <ReadingCard
+                  key={r.id}
+                  reading={r}
+                  onDelete={handleDelete}
+                  onEdit={setEditingReading}
+                />
               ))}
             </div>
           </>
         )}
       </div>
+
+      {/* Rediger-dialog */}
+      {editingReading && (
+        <EditReadingDialog
+          reading={editingReading}
+          onClose={() => setEditingReading(null)}
+          onSaved={handleEditSaved}
+        />
+      )}
     </main>
   );
 }

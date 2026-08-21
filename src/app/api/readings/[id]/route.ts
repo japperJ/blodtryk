@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { validateReadingInput } from "@/lib/validation";
 
 // GET single reading
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
@@ -18,16 +19,59 @@ export async function DELETE(_req: NextRequest, { params }: { params: { id: stri
   }
 }
 
-// PATCH update reading
+// PATCH update reading — delvise opdateringer af systolisk/diastolisk/puls/note.
+// Felter der udelades beholdes uændret; valideringen kører på det sammensatte
+// (fulde) payload ligesom POST, så ugyldige værdier afvises med de samme
+// danske fejlbeskeder.
 export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const body = await request.json();
+    let body: unknown;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json({ error: "Ugyldigt JSON-format" }, { status: 400 });
+    }
+
+    const id = Number(params.id);
+    const existing = await prisma.reading.findUnique({ where: { id } });
+    if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+    // Flet patch ind over de gemte værdier (null/undefined = ikke sendt)
+    const raw =
+      typeof body === "object" && body !== null && !Array.isArray(body)
+        ? (body as Record<string, unknown>)
+        : {};
+    const merged = {
+      personId: existing.personId,
+      systolic: raw.systolic ?? existing.systolic,
+      diastolic: raw.diastolic ?? existing.diastolic,
+      pulse: raw.pulse ?? existing.pulse,
+      note: raw.note !== undefined ? raw.note : existing.note,
+    };
+
+    // Samme validering som POST — nonsense-værdier giver 400 med dansk fejlbesked
+    const validation = validateReadingInput(merged);
+    if (!validation.ok) {
+      return NextResponse.json({ error: validation.error }, { status: 400 });
+    }
+
+    // Tom/blank note gemmes som null (noten er ryddet)
+    const note =
+      validation.data.note && validation.data.note.trim() !== "" ? validation.data.note : null;
+
     const reading = await prisma.reading.update({
-      where: { id: Number(params.id) },
-      data: body,
+      where: { id },
+      data: {
+        systolic: validation.data.systolic,
+        diastolic: validation.data.diastolic,
+        pulse: validation.data.pulse,
+        note,
+      },
     });
+
     return NextResponse.json(reading);
-  } catch {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  } catch (error) {
+    console.error("Update reading error:", error);
+    return NextResponse.json({ error: "Kunne ikke opdatere måling" }, { status: 500 });
   }
 }

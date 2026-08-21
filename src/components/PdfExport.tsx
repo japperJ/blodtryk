@@ -100,6 +100,9 @@ export default function PdfExport({ readings, personName }: Props) {
     y += 5;
 
     // === Tabel ===
+    // Note-kolonne vises kun hvis mindst én måling har en note
+    const hasNotes = readings.some((r) => r.note != null && r.note.trim() !== "");
+
     const colDate = margin;
     const colTime = margin + 25;
     const colAge = margin + 48;
@@ -107,6 +110,8 @@ export default function PdfExport({ readings, personName }: Props) {
     const colDia = margin + 85;
     const colPulse = margin + 105;
     const colStatus = margin + 125;
+    const colNote = margin + 155;
+    const noteWidth = pageWidth - margin - colNote;
 
     const drawTableHeader = () => {
       doc.setFontSize(8);
@@ -119,6 +124,9 @@ export default function PdfExport({ readings, personName }: Props) {
       doc.text("Dia", colDia, y);
       doc.text("Puls", colPulse, y);
       doc.text("Vurdering", colStatus, y);
+      if (hasNotes) {
+        doc.text("Note", colNote, y);
+      }
       y += 2;
       doc.setDrawColor(180);
       doc.line(margin, y, pageWidth - margin, y);
@@ -136,10 +144,24 @@ export default function PdfExport({ readings, personName }: Props) {
     );
 
     for (const reading of sorted) {
-      checkPage(10);
-
       const date = new Date(reading.createdAt);
       const status = getBPStatus(reading.systolic, reading.diastolic, reading.age);
+
+      // Note pakkes til kolonnebredden (maks. 2 linjer, … ved afkortning)
+      let noteLines: string[] = [];
+      if (hasNotes) {
+        const noteText = reading.note?.trim() ?? "";
+        if (noteText) {
+          const wrapped = doc.splitTextToSize(noteText, noteWidth) as string[];
+          if (wrapped.length > 2) {
+            noteLines = [wrapped[0], `${wrapped[1].trimEnd()}…`];
+          } else {
+            noteLines = wrapped;
+          }
+        }
+      }
+
+      checkPage(10 + (noteLines.length - 1) * 4);
 
       const dateStr = `${String(date.getDate()).padStart(2, "0")}/${String(date.getMonth() + 1).padStart(2, "0")}/${String(date.getFullYear()).slice(2)}`;
       const timeStr = `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
@@ -159,7 +181,12 @@ export default function PdfExport({ readings, personName }: Props) {
       setStatusColor(status.severity);
       doc.text(status.label, colStatus, y);
 
-      y += 6;
+      if (noteLines.length > 0) {
+        doc.setTextColor(100);
+        noteLines.forEach((line, i) => doc.text(line, colNote, y + i * 4));
+      }
+
+      y += 6 + (noteLines.length - 1) * 4;
       doc.setDrawColor(230);
       doc.line(margin, y - 2, pageWidth - margin, y - 2);
     }
