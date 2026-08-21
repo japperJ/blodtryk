@@ -19,7 +19,12 @@ export default function PersonDialog({
 }: Props) {
   const [isAdding, setIsAdding] = useState(false);
   const [newName, setNewName] = useState("");
+  const [newBirthYear, setNewBirthYear] = useState("");
+  const [formError, setFormError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+
+  // Indeværende år — bruges som maksimum for fødselsår
+  const currentYear = new Date().getFullYear();
 
   const handleAddPerson = async () => {
     if (!newName.trim() || isSaving) return;
@@ -29,7 +34,10 @@ export default function PersonDialog({
       const res = await fetch("/api/persons", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: newName.trim() }),
+        body: JSON.stringify({
+          name: newName.trim(),
+          birthYear: newBirthYear ? Number(newBirthYear) : null,
+        }),
       });
 
       if (res.ok) {
@@ -37,7 +45,12 @@ export default function PersonDialog({
         await onRefresh();
         onSelect({ ...person, readingCount: 0, lastReadingAt: null });
         setNewName("");
+        setNewBirthYear("");
+        setFormError("");
         setIsAdding(false);
+      } else {
+        const data = await res.json();
+        setFormError(data.error || "Kunne ikke oprette person");
       }
     } catch (err) {
       console.error("Failed to create person:", err);
@@ -102,32 +115,49 @@ export default function PersonDialog({
         {/* Tilføj person */}
         <div className="mt-4 pt-4 border-t">
           {isAdding ? (
-            <div className="flex gap-2">
+            <div>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleAddPerson()}
+                  placeholder="Navn på ny person"
+                  autoFocus
+                  className="flex-1 px-3 py-2 border-2 border-gray-200 rounded-xl
+                             focus:ring-2 focus:ring-primary-500 focus:border-primary-500
+                             text-gray-900"
+                />
+                <button
+                  onClick={handleAddPerson}
+                  disabled={!newName.trim() || isSaving}
+                  className="px-4 py-2 bg-primary-600 text-white rounded-xl font-medium
+                             hover:bg-primary-700 disabled:opacity-50 transition-colors"
+                >
+                  {isSaving ? "..." : "Tilføj"}
+                </button>
+                <button
+                  onClick={() => { setIsAdding(false); setNewName(""); setNewBirthYear(""); setFormError(""); }}
+                  className="px-3 py-2 text-gray-500 hover:text-gray-700"
+                >
+                  Annuller
+                </button>
+              </div>
               <input
-                type="text"
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
+                type="number"
+                min={1900}
+                max={currentYear}
+                value={newBirthYear}
+                onChange={(e) => setNewBirthYear(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleAddPerson()}
-                placeholder="Navn på ny person"
-                autoFocus
-                className="flex-1 px-3 py-2 border-2 border-gray-200 rounded-xl
+                placeholder={`Fødselsår (f.eks. 1950)`}
+                className="w-40 px-3 py-2 border-2 border-gray-200 rounded-xl mt-2
                            focus:ring-2 focus:ring-primary-500 focus:border-primary-500
-                           text-gray-900"
+                           text-gray-900 placeholder-gray-300"
               />
-              <button
-                onClick={handleAddPerson}
-                disabled={!newName.trim() || isSaving}
-                className="px-4 py-2 bg-primary-600 text-white rounded-xl font-medium
-                           hover:bg-primary-700 disabled:opacity-50 transition-colors"
-              >
-                {isSaving ? "..." : "Tilføj"}
-              </button>
-              <button
-                onClick={() => { setIsAdding(false); setNewName(""); }}
-                className="px-3 py-2 text-gray-500 hover:text-gray-700"
-              >
-                Annuller
-              </button>
+              {formError && (
+                <p className="text-sm text-red-600 mt-2">{formError}</p>
+              )}
             </div>
           ) : (
             <button

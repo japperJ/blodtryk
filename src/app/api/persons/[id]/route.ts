@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { validateBirthYear } from "@/lib/validation";
 
-// PATCH update person name
+// PATCH update person — navn og/eller fødselsår
 export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -13,15 +14,39 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const { name } = body;
+    const hasName = "name" in body;
+    const hasBirthYear = "birthYear" in body;
 
-    if (!name || typeof name !== "string" || name.trim().length === 0) {
-      return NextResponse.json({ error: "Navn er påkrævet" }, { status: 400 });
+    // Mindst ét felt skal være med i anmodningen
+    if (!hasName && !hasBirthYear) {
+      return NextResponse.json(
+        { error: "Angiv mindst ét felt at opdatere (navn eller fødselsår)" },
+        { status: 400 }
+      );
+    }
+
+    const data: { name?: string; birthYear?: number | null } = {};
+
+    if (hasName) {
+      const { name } = body;
+      if (!name || typeof name !== "string" || name.trim().length === 0) {
+        return NextResponse.json({ error: "Navn er påkrævet" }, { status: 400 });
+      }
+      data.name = name.trim();
+    }
+
+    if (hasBirthYear) {
+      // Fødselsår: valgfrit heltal mellem 1900 og indeværende år (null rydder feltet)
+      const yearCheck = validateBirthYear(body.birthYear);
+      if (!yearCheck.ok) {
+        return NextResponse.json({ error: yearCheck.error }, { status: 400 });
+      }
+      data.birthYear = yearCheck.value;
     }
 
     const person = await prisma.person.update({
       where: { id },
-      data: { name: name.trim() },
+      data,
     });
 
     return NextResponse.json(person);

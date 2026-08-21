@@ -12,6 +12,9 @@ const AGE_MIN = 1;
 const AGE_MAX = 120;
 const NOTE_MAX_LENGTH = 500;
 
+// Grænse for gyldigt fødselsår (maksimum er indeværende år)
+export const BIRTH_YEAR_MIN = 1900;
+
 // Valideret og koordineret input klar til Prisma
 export interface ValidatedReadingInput {
   systolic: number;
@@ -35,6 +38,26 @@ function isInt(value: unknown): value is number {
 // Hjælper: valgfelt — null/undefined betragtes som "ikke udfyldt"
 function isAbsent(value: unknown): boolean {
   return value === null || value === undefined;
+}
+
+/**
+ * Validerer et valgfrit fødselsår (bruges af POST/PATCH /api/persons).
+ * Returnerer enten { ok: true, value } (null = ikke udfyldt)
+ * eller { ok: false, error } med en dansk fejlbesked.
+ */
+export function validateBirthYear(
+  value: unknown
+): { ok: true; value: number | null } | { ok: false; error: string } {
+  if (isAbsent(value)) {
+    return { ok: true, value: null };
+  }
+
+  const max = new Date().getFullYear();
+  if (!isInt(value) || (value as number) < BIRTH_YEAR_MIN || (value as number) > max) {
+    return { ok: false, error: `Årstal skal være mellem ${BIRTH_YEAR_MIN} og ${max}` };
+  }
+
+  return { ok: true, value: value as number };
 }
 
 /**

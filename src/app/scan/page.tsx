@@ -31,6 +31,11 @@ export default function ScanPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [userAge, setUserAge] = useState<number | null>(null);
 
+  // Alder beregnet ud fra personens fødselsår (null hvis ikke oplyst)
+  const currentYear = new Date().getFullYear();
+  const derivedAge =
+    selectedPerson?.birthYear != null ? currentYear - selectedPerson.birthYear : null;
+
   // Hent valgt person
   useEffect(() => {
     const fetchPerson = async () => {
@@ -90,7 +95,7 @@ export default function ScanPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...reading,
-          age: userAge,
+          age: derivedAge ?? userAge,
           image: capturedImage || null,
           personId: selectedPerson?.id,
         }),
@@ -130,11 +135,10 @@ export default function ScanPage() {
   const [batchErrorMsg, setBatchErrorMsg] = useState("");
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  const handleImagesReady = useCallback((images: UploadImage[], age: number | null) => {
+  const handleImagesReady = useCallback((images: UploadImage[]) => {
     setBatchImages(images);
     setBatchResults([]);
     setBatchCurrentIndex(0);
-    setUserAge(age);
     setBatchStep("scanning");
     startBatchScan(images);
   }, []);
@@ -210,7 +214,7 @@ export default function ScanPage() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               ...result.reading,
-              age: userAge,
+              age: derivedAge,
               image: `data:image/jpeg;base64,${image.compressedBase64}`,
               personId: selectedPerson?.id,
             }),
@@ -235,7 +239,6 @@ export default function ScanPage() {
     setBatchResults([]);
     setBatchCurrentIndex(0);
     setBatchErrorMsg("");
-    setUserAge(null);
   };
 
   // Ingen person valgt — vis besked
@@ -401,29 +404,44 @@ export default function ScanPage() {
                   </div>
                 </div>
 
-                {/* Alder-input */}
-                <div className="bg-white rounded-2xl p-4 shadow-sm border">
-                  <div className="flex items-center gap-3">
-                    <div className="w-20 shrink-0">
-                      <p className="text-sm font-medium text-gray-600">Alder</p>
-                      <p className="text-[10px] text-gray-400">for bedre vurdering</p>
-                    </div>
-                    <input
-                      type="number"
-                      min={1}
-                      max={120}
-                      value={userAge ?? ""}
-                      onChange={(e) => setUserAge(e.target.value ? Number(e.target.value) : null)}
-                      placeholder="f.eks. 65"
-                      className="flex-1 text-center text-2xl font-bold border-2 border-gray-200 rounded-xl
-                                 py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 min-w-0
-                                 text-gray-900 placeholder-gray-300"
-                    />
-                    <div className="w-12 shrink-0 text-center">
-                      <p className="text-sm text-gray-500">år</p>
+                {/* Alder — beregnet ud fra fødselsår, eller manuel indtastning som fallback */}
+                {derivedAge != null ? (
+                  <div className="bg-white rounded-2xl p-4 shadow-sm border">
+                    <div className="flex items-center gap-3">
+                      <div className="w-20 shrink-0">
+                        <p className="text-sm font-medium text-gray-600">Alder</p>
+                        <p className="text-[10px] text-gray-400">ud fra fødselsår</p>
+                      </div>
+                      <p className="flex-1 text-center text-2xl font-bold text-gray-900">
+                        {derivedAge} år
+                      </p>
+                      <div className="w-12 shrink-0" />
                     </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="bg-white rounded-2xl p-4 shadow-sm border">
+                    <div className="flex items-center gap-3">
+                      <div className="w-20 shrink-0">
+                        <p className="text-sm font-medium text-gray-600">Alder</p>
+                        <p className="text-[10px] text-gray-400">for bedre vurdering</p>
+                      </div>
+                      <input
+                        type="number"
+                        min={1}
+                        max={120}
+                        value={userAge ?? ""}
+                        onChange={(e) => setUserAge(e.target.value ? Number(e.target.value) : null)}
+                        placeholder="f.eks. 65"
+                        className="flex-1 text-center text-2xl font-bold border-2 border-gray-200 rounded-xl
+                                   py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 min-w-0
+                                   text-gray-900 placeholder-gray-300"
+                      />
+                      <div className="w-12 shrink-0 text-center">
+                        <p className="text-sm text-gray-500">år</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <div className="flex gap-3">
                   <button
@@ -500,7 +518,7 @@ export default function ScanPage() {
                 onSaveAll={handleSaveBatch}
                 isSaving={isSaving}
                 onReset={handleBatchReset}
-                age={userAge}
+                age={derivedAge}
               />
             )}
 
