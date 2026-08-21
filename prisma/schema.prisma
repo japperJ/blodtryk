@@ -24,6 +24,9 @@ model Reading {
   age       Int?
   note      String?
   image     String?
+  // Kontekst-tags: morgen/aften og arm (valgfri, valideres i API-laget)
+  timeOfDay String?
+  arm       String?
   personId  Int
   person    Person   @relation(fields: [personId], references: [id])
   createdAt DateTime @default(now())

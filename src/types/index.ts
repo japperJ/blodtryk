@@ -4,11 +4,17 @@ export interface BloodPressureReading {
   pulse: number;
 }
 
+// Målingskontekst-tags (matcher de tilladte værdier i lib/validation.ts)
+export type TimeOfDay = "morning" | "evening";
+export type Arm = "left" | "right";
+
 export interface Reading extends BloodPressureReading {
   id: number;
   age: number | null;
   note: string | null;
   image: string | null;
+  timeOfDay?: TimeOfDay | null;
+  arm?: Arm | null;
   personId: number;
   createdAt: string;
   updatedAt: string;

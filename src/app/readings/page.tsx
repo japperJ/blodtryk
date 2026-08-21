@@ -7,11 +7,13 @@ import type { Reading, PersonSummary } from "@/types";
 import Link from "next/link";
 
 type FilterType = "all" | "with-image" | "without-image";
+type TimeFilterType = "all" | "morning" | "evening";
 
 export default function ReadingsPage() {
   const [readings, setReadings] = useState<Reading[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<FilterType>("all");
+  const [timeFilter, setTimeFilter] = useState<TimeFilterType>("all");
   const [selectedPerson, setSelectedPerson] = useState<PersonSummary | null>(null);
   const [editingReading, setEditingReading] = useState<Reading | null>(null);
 
@@ -67,18 +69,31 @@ export default function ReadingsPage() {
   };
 
   const filteredReadings = readings.filter((r) => {
+    // Billedfilter
     switch (filter) {
       case "with-image":
-        return !!r.image;
+        if (!r.image) return false;
+        break;
       case "without-image":
-        return !r.image;
-      default:
-        return true;
+        if (r.image) return false;
+        break;
     }
+    // Tidspunkt-filter (kombineres med billedfilteret)
+    switch (timeFilter) {
+      case "morning":
+        if (r.timeOfDay !== "morning") return false;
+        break;
+      case "evening":
+        if (r.timeOfDay !== "evening") return false;
+        break;
+    }
+    return true;
   });
 
   const withImageCount = readings.filter(r => r.image).length;
   const withoutImageCount = readings.filter(r => !r.image).length;
+  const morningCount = readings.filter(r => r.timeOfDay === "morning").length;
+  const eveningCount = readings.filter(r => r.timeOfDay === "evening").length;
 
   // Ingen person valgt
   if (!selectedPerson && !loading) {
@@ -149,6 +164,39 @@ export default function ReadingsPage() {
           </div>
         )}
 
+        {/* Tidspunkt-filter — kan kombineres med billedfilteret */}
+        {readings.length > 0 && (morningCount > 0 || eveningCount > 0) && (
+          <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
+            <button
+              onClick={() => setTimeFilter("all")}
+              className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all
+                         ${timeFilter === "all"
+                           ? 'bg-primary-600 text-white'
+                           : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+            >
+              Alle tider
+            </button>
+            <button
+              onClick={() => setTimeFilter("morning")}
+              className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all
+                         ${timeFilter === "morning"
+                           ? 'bg-primary-600 text-white'
+                           : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+            >
+              🌅 Morgen ({morningCount})
+            </button>
+            <button
+              onClick={() => setTimeFilter("evening")}
+              className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all
+                         ${timeFilter === "evening"
+                           ? 'bg-primary-600 text-white'
+                           : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+            >
+              🌙 Aften ({eveningCount})
+            </button>
+          </div>
+        )}
+
         {loading ? (
           <div className="text-center py-12 text-gray-400 animate-pulse">Indlæser...</div>
         ) : filteredReadings.length === 0 ? (
@@ -175,7 +223,7 @@ export default function ReadingsPage() {
           <>
             <p className="text-sm text-gray-500 mb-4">
               {filteredReadings.length} måling{filteredReadings.length !== 1 ? 'er' : ''}
-              {filter !== "all" && ` (filtreret)`}
+              {(filter !== "all" || timeFilter !== "all") && ` (filtreret)`}
             </p>
             <div className="space-y-3">
               {filteredReadings.map((r) => (

@@ -5,7 +5,8 @@ import ReadingStepper from "@/components/ReadingStepper";
 import BatchUpload, { type UploadImage } from "@/components/BatchUpload";
 import BatchProgress, { type ScanResult } from "@/components/BatchProgress";
 import BatchTimeline from "@/components/BatchTimeline";
-import type { BloodPressureReading, PersonSummary } from "@/types";
+import ContextTagChips from "@/components/ContextTagChips";
+import type { BloodPressureReading, PersonSummary, TimeOfDay, Arm } from "@/types";
 import Link from "next/link";
 
 // Kamera-flow steps
@@ -43,6 +44,10 @@ export default function ScanPage() {
   const [errorMsg, setErrorMsg] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [userAge, setUserAge] = useState<number | null>(null);
+
+  // Kontekst-tags for kamera-flowets bekræftelsestrin
+  const [cameraTimeOfDay, setCameraTimeOfDay] = useState<TimeOfDay | null>(null);
+  const [cameraArm, setCameraArm] = useState<Arm | null>(null);
 
   // Alder beregnet ud fra personens fødselsår (null hvis ikke oplyst)
   const currentYear = new Date().getFullYear();
@@ -110,6 +115,8 @@ export default function ScanPage() {
           ...reading,
           age: derivedAge ?? userAge,
           image: capturedImage || null,
+          timeOfDay: cameraTimeOfDay,
+          arm: cameraArm,
           personId: selectedPerson?.id,
         }),
       });
@@ -133,6 +140,8 @@ export default function ScanPage() {
     setReading(null);
     setErrorMsg("");
     setUserAge(null);
+    setCameraTimeOfDay(null);
+    setCameraArm(null);
   };
 
   const handleRetake = () => {
@@ -262,6 +271,10 @@ export default function ScanPage() {
   const [manualError, setManualError] = useState("");
   const [isSavingManual, setIsSavingManual] = useState(false);
 
+  // Kontekst-tags for manuel indtastning
+  const [manualTimeOfDay, setManualTimeOfDay] = useState<TimeOfDay | null>(null);
+  const [manualArm, setManualArm] = useState<Arm | null>(null);
+
   useEffect(() => {
     setMeasuredAt(toLocalInputValue(new Date()));
   }, []);
@@ -285,6 +298,8 @@ export default function ScanPage() {
           pulse: manualValues.pulse,
           age: derivedAge ?? userAge,
           note: manualNote.trim() ? manualNote.trim() : null,
+          timeOfDay: manualTimeOfDay,
+          arm: manualArm,
           personId: selectedPerson.id,
           createdAt: measuredAt ? new Date(measuredAt).toISOString() : undefined,
         }),
@@ -310,6 +325,8 @@ export default function ScanPage() {
     setManualValues(MANUAL_DEFAULTS);
     setMeasuredAt(toLocalInputValue(new Date()));
     setManualNote("");
+    setManualTimeOfDay(null);
+    setManualArm(null);
     setManualError("");
   };
 
@@ -451,6 +468,19 @@ export default function ScanPage() {
                   <ReadingStepper
                     values={reading}
                     onChange={handleCameraUpdate}
+                  />
+                </div>
+
+                {/* Kontekst-tags — morgen/aften og arm (valgfri) */}
+                <div className="bg-white rounded-2xl p-4 shadow-sm border">
+                  <ContextTagChips
+                    timeOfDay={cameraTimeOfDay}
+                    arm={cameraArm}
+                    onChange={(field, value) =>
+                      field === "timeOfDay"
+                        ? setCameraTimeOfDay(value as TimeOfDay | null)
+                        : setCameraArm(value as Arm | null)
+                    }
                   />
                 </div>
 
@@ -623,6 +653,19 @@ export default function ScanPage() {
                   </p>
 
                   <ReadingStepper values={manualValues} onChange={handleManualUpdate} />
+                </div>
+
+                {/* Kontekst-tags — morgen/aften og arm (valgfri) */}
+                <div className="bg-white rounded-2xl p-4 shadow-sm border">
+                  <ContextTagChips
+                    timeOfDay={manualTimeOfDay}
+                    arm={manualArm}
+                    onChange={(field, value) =>
+                      field === "timeOfDay"
+                        ? setManualTimeOfDay(value as TimeOfDay | null)
+                        : setManualArm(value as Arm | null)
+                    }
+                  />
                 </div>
 
                 {/* Alder — beregnet ud fra fødselsår, eller manuel indtastning som fallback */}

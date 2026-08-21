@@ -1,7 +1,8 @@
 "use client";
 import { useState } from "react";
-import type { Reading } from "@/types";
+import type { Reading, TimeOfDay, Arm } from "@/types";
 import ReadingStepper, { type ReadingStepperKey } from "./ReadingStepper";
+import ContextTagChips from "./ContextTagChips";
 
 // Samme grænse som serverens validering (NOTE_MAX_LENGTH i lib/validation.ts)
 const NOTE_MAX_LENGTH = 500;
@@ -19,8 +20,18 @@ export default function EditReadingDialog({ reading, onClose, onSaved }: Props) 
     pulse: reading.pulse,
   });
   const [note, setNote] = useState(reading.note ?? "");
+  const [timeOfDay, setTimeOfDay] = useState<TimeOfDay | null>(reading.timeOfDay ?? null);
+  const [arm, setArm] = useState<Arm | null>(reading.arm ?? null);
   const [formError, setFormError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+
+  const handleTagChange = (field: "timeOfDay" | "arm", value: string | null) => {
+    if (field === "timeOfDay") {
+      setTimeOfDay(value as TimeOfDay | null);
+    } else {
+      setArm(value as Arm | null);
+    }
+  };
 
   const handleSave = async () => {
     if (isSaving) return;
@@ -36,6 +47,9 @@ export default function EditReadingDialog({ reading, onClose, onSaved }: Props) 
           pulse: values.pulse,
           // Tom note = ryddet note
           note: note.trim() === "" ? null : note.trim(),
+          // Tags sendes altid med, så de kan sættes eller ryddes
+          timeOfDay,
+          arm,
         }),
       });
 
@@ -83,6 +97,11 @@ export default function EditReadingDialog({ reading, onClose, onSaved }: Props) 
             values={values}
             onChange={(key, value) => setValues((prev) => ({ ...prev, [key]: value }))}
           />
+        </div>
+
+        {/* Kontekst-tags — morgen/aften og arm (valgfri) */}
+        <div className="bg-gray-50 rounded-xl p-3 mb-3">
+          <ContextTagChips timeOfDay={timeOfDay} arm={arm} onChange={handleTagChange} />
         </div>
 
         {/* Note */}
