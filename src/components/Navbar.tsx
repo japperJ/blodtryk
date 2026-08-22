@@ -3,6 +3,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  House,
   Camera,
   ClipboardList,
   TrendingUp,
@@ -23,6 +24,7 @@ import {
 } from "@/lib/reminder";
 
 const links: { href: string; label: string; icon: LucideIcon }[] = [
+  { href: "/", label: "Dashboard", icon: House },
   { href: "/scan", label: "Scan", icon: Camera },
   { href: "/readings", label: "Målinger", icon: ClipboardList },
   { href: "/trends", label: "Tendenser", icon: TrendingUp },
