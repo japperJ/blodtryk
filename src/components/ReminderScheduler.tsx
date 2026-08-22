@@ -37,8 +37,8 @@ export default function ReminderScheduler() {
         const options: NotificationOptions = {
           body: "Din daglige blodtryksmåling venter – det tager kun et minut.",
           tag: NOTIFICATION_TAG, // én ad gangen; ny erstatter gammel
+          icon: "/icons/icon-192.png",
         };
-        // Ikon udeladt: /icons/icon-192.png findes ikke i public/ endnu.
 
         // Vis via service worker når den findes (PWA), ellers fallback til Notification-konstruktoren.
         let shown = false;
