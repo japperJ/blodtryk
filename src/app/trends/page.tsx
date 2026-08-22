@@ -6,18 +6,19 @@ import BPLineChart, { LINE_COLORS } from "@/components/charts/BPLineChart";
 import type { TargetBand } from "@/components/charts/BPLineChart";
 import DistributionBar from "@/components/charts/DistributionBar";
 import type { ClassificationSegment } from "@/components/charts/DistributionBar";
-import { getAgeGroupLabel, type Severity } from "@/lib/bpClassification";
+import { getAgeGroupKey, type Severity } from "@/lib/bpClassification";
 import EmptyState from "@/components/EmptyState";
 import { TrendsSkeleton } from "@/components/Skeleton";
+import { useI18n } from "@/lib/I18nProvider";
 import type { PersonSummary, ReadingStats } from "@/types";
 
 type RangeValue = "7" | "30" | "90" | "all";
 
-const RANGES: { value: RangeValue; label: string }[] = [
-  { value: "7", label: "7 dage" },
-  { value: "30", label: "30 dage" },
-  { value: "90", label: "90 dage" },
-  { value: "all", label: "Alt" },
+const RANGES: { value: RangeValue; labelKey: string }[] = [
+  { value: "7", labelKey: "trends.range7" },
+  { value: "30", labelKey: "trends.range30" },
+  { value: "90", labelKey: "trends.range90" },
+  { value: "all", labelKey: "trends.rangeAll" },
 ];
 
 // Målbånd pr. aldersgruppe — matcher grænserne i lib/bpClassification.ts (#10-spec)
@@ -34,6 +35,7 @@ function shortDate(iso: string): string {
 }
 
 export default function TrendsPage() {
+  const { t } = useI18n();
   const [person, setPerson] = useState<PersonSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [range, setRange] = useState<RangeValue>("30");
@@ -80,11 +82,11 @@ export default function TrendsPage() {
   const age =
     person?.birthYear != null ? new Date().getFullYear() - person.birthYear : null;
   const band = getTargetBand(age);
-  const ageGroupLabel = age == null ? "Under 65 år" : getAgeGroupLabel(age);
+  const ageGroupKey = age == null ? "ageGroup.under65" : getAgeGroupKey(age);
 
   // Klassificerings-segmenter med sværhedsgrad-farver som resten af appen
   const classificationSegments: ClassificationSegment[] = (stats?.classification ?? []).map(
-    (c) => ({ severity: c.severity as Severity, label: c.label, count: c.count })
+    (c) => ({ severity: c.severity as Severity, label: t(c.labelKey), count: c.count })
   );
 
   // Ingen person valgt — samme tom-state-mønster som /readings
@@ -94,15 +96,15 @@ export default function TrendsPage() {
         <div className="max-w-lg mx-auto p-4 pt-12">
           <EmptyState
             icon={User}
-            title="Vælg en person"
-            description="Du skal vælge en person for at se tendenser."
+            title={t("dash.choosePersonTitle")}
+            description={t("trends.choosePersonDesc")}
             action={
               <Link
                 href="/persons"
                 className="inline-block bg-primary-600 text-white px-6 py-3 rounded-xl font-semibold
                            hover:bg-primary-700 active:scale-95 transition-all"
               >
-                Gå til personer
+                {t("trends.goToPersons")}
               </Link>
             }
           />
@@ -117,7 +119,7 @@ export default function TrendsPage() {
         <div className="mb-5">
           <h1 className="flex items-center gap-2 text-2xl font-bold text-gray-900 dark:text-gray-100">
             <TrendingUp className="w-6 h-6 text-primary-600 dark:text-primary-400" aria-hidden />
-            Tendenser
+            {t("trends.heading")}
           </h1>
           {person && (
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{person.name}</p>
@@ -135,14 +137,14 @@ export default function TrendsPage() {
                            ? 'bg-primary-600 text-white'
                            : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
             >
-              {r.label}
+              {t(r.labelKey)}
             </button>
           ))}
         </div>
 
         {statsLoading ? (
           /* Skelet-layout (#12): nøgletal + diagramblok + bar-rækker */
-          <div aria-busy="true" aria-label="Indlæser tendenser">
+          <div aria-busy="true" aria-label={t("trends.loading")}>
             <TrendsSkeleton />
           </div>
         ) : !stats || stats.count === 0 ? (
@@ -150,8 +152,8 @@ export default function TrendsPage() {
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
             <EmptyState
               icon={TrendingDown}
-              title="Ingen målinger i denne periode"
-              description="Prøv et længere interval, eller scan en ny måling."
+              title={t("trends.emptyTitle")}
+              description={t("trends.emptyDesc")}
               action={
                 <Link
                   href="/scan"
@@ -159,7 +161,7 @@ export default function TrendsPage() {
                              hover:bg-primary-700 active:scale-95 transition-all"
                 >
                   <Camera className="w-5 h-5" aria-hidden />
-                  Scan en måling
+                  {t("trends.emptyCta")}
                 </Link>
               }
             />
@@ -169,17 +171,17 @@ export default function TrendsPage() {
             {/* Nøgletal */}
             <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-700 grid grid-cols-3 gap-2 text-center">
               <div>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Gennemsnit</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{t("trends.average")}</p>
                 <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
                   {stats.avg.systolic}/{stats.avg.diastolic}
                 </p>
               </div>
               <div>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Puls</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{t("field.pulse")}</p>
                 <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{stats.avg.pulse}</p>
               </div>
               <div>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Streak</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{t("trends.streak")}</p>
                 <p className="flex items-center justify-center gap-1 text-lg font-bold text-gray-900 dark:text-gray-100">
                   <Flame className="w-5 h-5 text-orange-500" aria-hidden />
                   {stats.streakDays > 0 ? stats.streakDays : "0"}
@@ -190,7 +192,7 @@ export default function TrendsPage() {
             {/* Linjediagram: daglige gennemsnit + målbånd */}
             <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-700">
               <div className="flex items-center justify-between mb-2">
-                <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Daglige gennemsnit</h2>
+                <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{t("trends.dailyAvg")}</h2>
                 <button
                   onClick={() => setShowPulse((v) => !v)}
                   className={`px-3 py-1 rounded-full text-xs font-medium transition-all
@@ -198,7 +200,7 @@ export default function TrendsPage() {
                                ? "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300"
                                : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"}`}
                 >
-                  Puls
+                  {t("field.pulse")}
                 </button>
               </div>
               <BPLineChart data={stats.daily} band={band} showPulse={showPulse} />
@@ -209,7 +211,7 @@ export default function TrendsPage() {
                     style={{ backgroundColor: LINE_COLORS.systolic }}
                     aria-hidden
                   />
-                  Systolisk
+                  {t("field.systolic")}
                 </span>
                 <span className="flex items-center gap-1.5">
                   <span
@@ -217,7 +219,7 @@ export default function TrendsPage() {
                     style={{ backgroundColor: LINE_COLORS.diastolic }}
                     aria-hidden
                   />
-                  Diastolisk
+                  {t("field.diastolic")}
                 </span>
                 {showPulse && (
                   <span className="flex items-center gap-1.5">
@@ -226,7 +228,7 @@ export default function TrendsPage() {
                       style={{ backgroundColor: LINE_COLORS.pulse }}
                       aria-hidden
                     />
-                    Puls
+                    {t("field.pulse")}
                   </span>
                 )}
                 <span className="flex items-center gap-1.5">
@@ -234,19 +236,19 @@ export default function TrendsPage() {
                     className="inline-block h-2 w-2 rounded-sm bg-green-500/25 border border-green-500/40"
                     aria-hidden
                   />
-                  Målbånd ({ageGroupLabel})
+                  {ageGroupKey ? t("trends.bandLegend", { group: t(ageGroupKey) }) : t("trends.bandLegend", { group: "" })}
                 </span>
               </div>
               <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
                 Sys {band.sysMin}–{band.sysMax} · Dia {band.diaMin}–{band.diaMax} mmHg ·{" "}
-                {stats.count} målinger
+                {t("trends.legendCount", { count: stats.count })}
               </p>
             </div>
 
             {/* Ugentlige gennemsnit — kompakte bar-rækker */}
             {stats.weekly.length > 0 && (
               <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-700">
-                <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">Ugentlige gennemsnit</h2>
+                <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">{t("trends.weeklyAvg")}</h2>
                 <div className="space-y-3">
                   {stats.weekly.map((w) => (
                     <div key={w.weekStart} className="flex items-center gap-2">
@@ -289,7 +291,7 @@ export default function TrendsPage() {
             {classificationSegments.length > 0 && (
               <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-700">
                 <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">
-                  Klassificering af målinger
+                  {t("trends.classification")}
                 </h2>
                 <DistributionBar segments={classificationSegments} />
               </div>
@@ -302,11 +304,11 @@ export default function TrendsPage() {
                   <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-700 text-center">
                     <p className="flex items-center justify-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
                       <Sunrise className="w-4 h-4 text-amber-500" aria-hidden />
-                      Morgen
+                      {t("tod.morning")}
                     </p>
                     <p className="text-xl font-bold text-gray-900 dark:text-gray-100 mt-0.5">
                       {stats.byTimeOfDay.morning.sysAvg}
-                      <span className="text-xs font-normal text-gray-500 dark:text-gray-400"> mmHg sys</span>
+                      <span className="text-xs font-normal text-gray-500 dark:text-gray-400"> {t("trends.mmhgSys")}</span>
                     </p>
                   </div>
                 )}
@@ -314,11 +316,11 @@ export default function TrendsPage() {
                   <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-700 text-center">
                     <p className="flex items-center justify-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
                       <Moon className="w-4 h-4 text-indigo-500" aria-hidden />
-                      Aften
+                      {t("tod.evening")}
                     </p>
                     <p className="text-xl font-bold text-gray-900 dark:text-gray-100 mt-0.5">
                       {stats.byTimeOfDay.evening.sysAvg}
-                      <span className="text-xs font-normal text-gray-500 dark:text-gray-400"> mmHg sys</span>
+                      <span className="text-xs font-normal text-gray-500 dark:text-gray-400"> {t("trends.mmhgSys")}</span>
                     </p>
                   </div>
                 )}
@@ -327,10 +329,10 @@ export default function TrendsPage() {
                     {(() => {
                       const diff =
                         stats.byTimeOfDay!.evening!.sysAvg - stats.byTimeOfDay!.morning!.sysAvg;
-                      if (diff === 0) return "Morgen og aften er ens";
+                      if (diff === 0) return t("trends.timesEqual");
                       return diff > 0
-                        ? `Aftenen ligger ${diff} mmHg over morgenen`
-                        : `Morgenen ligger ${-diff} mmHg over aftenen`;
+                        ? t("trends.eveningHigher", { diff })
+                        : t("trends.morningHigher", { diff: -diff });
                     })()}
                   </div>
                 )}

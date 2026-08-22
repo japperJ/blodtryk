@@ -9,14 +9,14 @@ export async function POST(request: NextRequest) {
     console.log(`Scan: base64 size: ${base64Data.length} chars`);
 
     if (!base64Data || base64Data.length < 100) {
-      return NextResponse.json({ error: "No image provided" }, { status: 400 });
+      return NextResponse.json({ error: "noImageProvided" }, { status: 400 });
     }
 
     // Check image quality
     const estimatedBytes = Math.round((base64Data.length * 3) / 4);
     if (estimatedBytes < 37000) { // ~37KB minimum
       return NextResponse.json({
-        error: "Billedet er for lille eller utydeligt. Prøv igen med bedre lysning."
+        error: "imageTooSmall"
       }, { status: 422 });
     }
 
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("Scan error:", error);
-    const message = error instanceof Error ? error.message : "Scan failed";
+    const message = error instanceof Error ? error.message : "scanFailed";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

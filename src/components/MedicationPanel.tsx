@@ -7,6 +7,7 @@ import {
   Power,
   Trash2,
 } from "lucide-react";
+import { useI18n } from "@/lib/I18nProvider";
 
 // Medicin-indslag som returneret af API'en
 export interface Medication {
@@ -32,6 +33,7 @@ export default function MedicationPanel({ personId, onActiveMedsChanged }: Props
   const [newDose, setNewDose] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const { t, tError } = useI18n();
 
   const load = async () => {
     try {
@@ -39,7 +41,7 @@ export default function MedicationPanel({ personId, onActiveMedsChanged }: Props
       if (!res.ok) throw new Error();
       setMeds(await res.json());
     } catch {
-      setError("Kunne ikke hente medicin");
+      setError(t("meds.loadError"));
     }
   };
 
@@ -61,7 +63,7 @@ export default function MedicationPanel({ personId, onActiveMedsChanged }: Props
       });
       if (!res.ok) {
         const data = await res.json().catch(() => null);
-        setError(data?.error || "Kunne ikke tilføje medicin");
+        setError(data?.error ? tError(data.error) : t("meds.addError"));
         return;
       }
       setNewName("");
@@ -92,7 +94,7 @@ export default function MedicationPanel({ personId, onActiveMedsChanged }: Props
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm("Sikker på du vil slette denne medicin?")) return;
+    if (!confirm(t("meds.confirmDelete"))) return;
     setBusy(true);
     try {
       const res = await fetch(`/api/medications/${id}`, { method: "DELETE" });
@@ -114,7 +116,7 @@ export default function MedicationPanel({ personId, onActiveMedsChanged }: Props
                    hover:text-primary-600 dark:hover:text-primary-400 transition-colors min-h-[44px]"
       >
         <Pill className="w-4 h-4" aria-hidden />
-        Medicin
+        {t("meds.panel")}
         <ChevronDown
           className={`w-4 h-4 ml-auto transition-transform ${open ? "rotate-180" : ""}`}
           aria-hidden
@@ -125,10 +127,10 @@ export default function MedicationPanel({ personId, onActiveMedsChanged }: Props
         <div className="mt-2 space-y-2">
           {/* Liste */}
           {meds === null ? (
-            <p className="text-xs text-gray-500 dark:text-gray-400">Indlæser...</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">{t("meds.loading")}</p>
           ) : meds.length === 0 ? (
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              Ingen medicin registreret
+              {t("meds.none")}
             </p>
           ) : (
             <ul className="space-y-1.5">
@@ -148,14 +150,14 @@ export default function MedicationPanel({ personId, onActiveMedsChanged }: Props
                     <span className="font-medium">{med.name}</span>{" "}
                     <span className="text-gray-500 dark:text-gray-400">{med.dose}</span>
                     {!med.active && (
-                      <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">(inaktiv)</span>
+                      <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">{t("meds.inactive")}</span>
                     )}
                   </span>
                   <span className="flex shrink-0 items-center gap-1">
                     <button
                       onClick={() => toggleActive(med)}
                       disabled={busy}
-                      title={med.active ? "Deaktivér" : "Genaktivér"}
+                      title={med.active ? t("meds.deactivate") : t("meds.reactivate")}
                       className="flex h-9 w-9 items-center justify-center rounded-full text-gray-400 dark:text-gray-500
                                  hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
                     >
@@ -164,7 +166,7 @@ export default function MedicationPanel({ personId, onActiveMedsChanged }: Props
                     <button
                       onClick={() => handleDelete(med.id)}
                       disabled={busy}
-                      title="Slet"
+                      title={t("common.delete")}
                       className="flex h-9 w-9 items-center justify-center rounded-full text-gray-400 dark:text-gray-500
                                  hover:text-danger-600 dark:hover:text-red-400 transition-colors"
                     >
@@ -183,7 +185,7 @@ export default function MedicationPanel({ personId, onActiveMedsChanged }: Props
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleAdd()}
-              placeholder="Navn (f.eks. Losartan)"
+              placeholder={t("meds.namePlaceholder")}
               maxLength={100}
               className="flex-1 min-w-[140px] px-3 py-2 border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-900 rounded-xl
                          focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm
@@ -194,7 +196,7 @@ export default function MedicationPanel({ personId, onActiveMedsChanged }: Props
               value={newDose}
               onChange={(e) => setNewDose(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleAdd()}
-              placeholder="Dosis (f.eks. 5 mg)"
+              placeholder={t("meds.dosePlaceholder")}
               maxLength={100}
               className="flex-1 min-w-[120px] px-3 py-2 border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-900 rounded-xl
                          focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm
@@ -203,12 +205,12 @@ export default function MedicationPanel({ personId, onActiveMedsChanged }: Props
             <button
               onClick={handleAdd}
               disabled={busy || !newName.trim() || !newDose.trim()}
-              title="Tilføj medicin"
+              title={t("meds.addTitle")}
               className="inline-flex items-center gap-1.5 bg-primary-600 text-white px-4 rounded-xl text-sm font-semibold
                          hover:bg-primary-700 active:scale-95 transition-all disabled:opacity-50 min-h-[44px]"
             >
               <Plus className="w-4 h-4" aria-hidden />
-              Tilføj
+              {t("common.add")}
             </button>
           </div>
           {error && (

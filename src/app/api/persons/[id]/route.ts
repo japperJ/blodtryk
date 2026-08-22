@@ -10,7 +10,7 @@ export async function PATCH(
   try {
     const id = parseInt((await params).id);
     if (isNaN(id)) {
-      return NextResponse.json({ error: "Ugyldigt ID" }, { status: 400 });
+      return NextResponse.json({ error: "invalidId" }, { status: 400 });
     }
 
     const body = await request.json();
@@ -20,7 +20,7 @@ export async function PATCH(
     // Mindst ét felt skal være med i anmodningen
     if (!hasName && !hasBirthYear) {
       return NextResponse.json(
-        { error: "Angiv mindst ét felt at opdatere (navn eller fødselsår)" },
+        { error: "noFieldsToUpdate" },
         { status: 400 }
       );
     }
@@ -30,7 +30,7 @@ export async function PATCH(
     if (hasName) {
       const { name } = body;
       if (!name || typeof name !== "string" || name.trim().length === 0) {
-        return NextResponse.json({ error: "Navn er påkrævet" }, { status: 400 });
+        return NextResponse.json({ error: "nameRequired" }, { status: 400 });
       }
       data.name = name.trim();
     }
@@ -52,7 +52,7 @@ export async function PATCH(
     return NextResponse.json(person);
   } catch (error) {
     console.error("Update person error:", error);
-    return NextResponse.json({ error: "Kunne ikke opdatere person" }, { status: 500 });
+    return NextResponse.json({ error: "personUpdateFailed" }, { status: 500 });
   }
 }
 
@@ -64,13 +64,13 @@ export async function DELETE(
   try {
     const id = parseInt((await params).id);
     if (isNaN(id)) {
-      return NextResponse.json({ error: "Ugyldigt ID" }, { status: 400 });
+      return NextResponse.json({ error: "invalidId" }, { status: 400 });
     }
 
     // Kan ikke slette Standard-personen
     if (id === 1) {
       return NextResponse.json(
-        { error: "Kan ikke slette Standard-personen" },
+        { error: "cannotDeleteStandard" },
         { status: 400 }
       );
     }
@@ -86,6 +86,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Delete person error:", error);
-    return NextResponse.json({ error: "Kunne ikke slette person" }, { status: 500 });
+    return NextResponse.json({ error: "personDeleteFailed" }, { status: 500 });
   }
 }

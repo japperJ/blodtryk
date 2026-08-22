@@ -7,7 +7,7 @@ import { join } from "path";
 // GET single reading
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const reading = await prisma.reading.findUnique({ where: { id: Number((await params).id) } });
-  if (!reading) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (!reading) return NextResponse.json({ error: "readingNotFound" }, { status: 404 });
   return NextResponse.json(reading);
 }
 
@@ -18,7 +18,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
 
     // Hent målingen først så vi kender billedfilnavnet til oprydning
     const reading = await prisma.reading.findUnique({ where: { id } });
-    if (!reading) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    if (!reading) return NextResponse.json({ error: "readingNotFound" }, { status: 404 });
 
     await prisma.reading.delete({ where: { id } });
 
@@ -36,7 +36,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
 
     return NextResponse.json({ ok: true });
   } catch {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
+    return NextResponse.json({ error: "readingNotFound" }, { status: 404 });
   }
 }
 
@@ -50,12 +50,12 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     try {
       body = await request.json();
     } catch {
-      return NextResponse.json({ error: "Ugyldigt JSON-format" }, { status: 400 });
+      return NextResponse.json({ error: "invalidJson" }, { status: 400 });
     }
 
     const id = Number((await params).id);
     const existing = await prisma.reading.findUnique({ where: { id } });
-    if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    if (!existing) return NextResponse.json({ error: "readingNotFound" }, { status: 404 });
 
     // Flet patch ind over de gemte værdier (null/undefined = ikke sendt)
     const raw =
@@ -99,6 +99,6 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     return NextResponse.json(reading);
   } catch (error) {
     console.error("Update reading error:", error);
-    return NextResponse.json({ error: "Kunne ikke opdatere måling" }, { status: 500 });
+    return NextResponse.json({ error: "readingUpdateFailed" }, { status: 500 });
   }
 }

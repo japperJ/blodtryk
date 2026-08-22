@@ -32,8 +32,11 @@ import StatusPill from "@/components/StatusPill";
 import EmptyState from "@/components/EmptyState";
 import { DashboardSkeleton } from "@/components/Skeleton";
 import type { Medication } from "@/components/MedicationPanel";
+import { useI18n } from "@/lib/I18nProvider";
+import { countKey, INTL_LOCALE } from "@/lib/i18n";
 
 export default function DashboardPage() {
+  const { t, locale } = useI18n();
   const [person, setPerson] = useState<PersonSummary | null>(null);
   const [medications, setMedications] = useState<Medication[]>([]);
   const [readings, setReadings] = useState<Reading[]>([]);
@@ -126,15 +129,15 @@ export default function DashboardPage() {
         <div className="max-w-lg mx-auto p-4 pt-12">
           <EmptyState
             icon={User}
-            title="Vælg en person"
-            description="Du skal vælge en person for at se dit dashboard."
+            title={t("dash.choosePersonTitle")}
+            description={t("dash.choosePersonDesc")}
             action={
               <Link
                 href="/persons"
                 className="inline-block bg-primary-600 text-white px-6 py-3 rounded-xl font-semibold
                            hover:bg-primary-700 active:scale-95 transition-all"
               >
-                Gå til personer
+                {t("trends.goToPersons")}
               </Link>
             }
           />
@@ -173,7 +176,7 @@ export default function DashboardPage() {
         {/* Overskrift */}
         <h1 className="flex items-center gap-2 text-2xl font-bold text-gray-900 dark:text-gray-100 mb-1">
           <House className="w-6 h-6 text-primary-600 dark:text-primary-400" aria-hidden />
-          Dashboard
+          {t("dash.title")}
         </h1>
         <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{person?.name}</p>
 
@@ -184,7 +187,7 @@ export default function DashboardPage() {
             {/* Påmindelses-banner (#16) — fallback når notifikationer ikke kan vises */}
             {showReminderBanner && (
               <section
-                aria-label="Påmindelse om måling"
+                aria-label={t("reminder.bannerTitle")}
                 className="mb-4 flex items-center gap-3 rounded-2xl border border-amber-300 dark:border-amber-500/40 bg-amber-50 dark:bg-amber-500/10 p-4 shadow-sm"
               >
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-500/20">
@@ -192,21 +195,21 @@ export default function DashboardPage() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                    Tid til at måle blodtryk
+                    {t("reminder.bannerText")}
                   </p>
                   <Link
                     href="/scan"
                     className="mt-1 inline-flex items-center gap-1.5 text-sm font-medium text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300"
                   >
                     <Pill className="w-4 h-4" aria-hidden />
-                    Mål nu
+                    {t("reminder.measureNow")}
                   </Link>
                 </div>
                 <button
                   type="button"
                   onClick={dismissReminderBanner}
-                  aria-label="Afvis påmindelse for i dag"
-                  title="Afvis for i dag"
+                  aria-label={t("reminder.dismissLong")}
+                  title={t("reminder.dismissShort")}
                   className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-gray-400 dark:text-gray-500 hover:bg-amber-100 dark:hover:bg-amber-500/20 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
                 >
                   <X className="w-5 h-5" aria-hidden />
@@ -215,11 +218,11 @@ export default function DashboardPage() {
             )}
 
             {/* Hero-kort: seneste måling */}
-            <section className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-700 mb-4" aria-label="Seneste måling">
+            <section className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-700 mb-4" aria-label={t("dash.latest")}>
               {latest && latestStatus ? (
                 <>
                   <div className="flex justify-between items-start mb-2">
-                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Seneste måling</p>
+                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{t("dash.latest")}</p>
                     <StatusPill status={latestStatus} />
                   </div>
                   <div className="flex items-baseline gap-3">
@@ -230,17 +233,17 @@ export default function DashboardPage() {
                   </div>
                   <p className="flex items-center gap-1.5 text-base text-gray-600 dark:text-gray-300 mt-1">
                     <HeartPulse className="w-4 h-4 text-red-500" aria-hidden />
-                    {latest.pulse} slag/min
+                    {latest.pulse} {t("field.bpm")}
                   </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">{formatRelativeTime(latest.createdAt)}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">{formatRelativeTime(latest.createdAt, locale)}</p>
                 </>
               ) : (
                 /* Nul-målinger: venlig CTA i stedet for tomme tal */
                 <EmptyState
                   compact
                   icon={Camera}
-                  title="Ingen målinger endnu"
-                  description="Tag din første måling for at se dit blodtryk her"
+                  title={t("dash.emptyTitle")}
+                  description={t("dash.emptyDesc")}
                   action={
                     <Link
                       href="/scan"
@@ -248,7 +251,7 @@ export default function DashboardPage() {
                                  hover:bg-primary-700 active:scale-95 transition-all"
                     >
                       <Camera className="w-5 h-5" aria-hidden />
-                      Tag en måling
+                      {t("dash.emptyCta")}
                     </Link>
                   }
                 />
@@ -259,8 +262,8 @@ export default function DashboardPage() {
             {sparkValues.length > 0 && (
               <section className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-700 mb-4 flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Systolisk</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Seneste {sparkValues.length} dage</p>
+                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">{t("field.systolic")}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{t("dash.sparkLastDays", { days: sparkValues.length })}</p>
                 </div>
                 <Sparkline values={sparkValues} />
               </section>
@@ -273,14 +276,14 @@ export default function DashboardPage() {
                   <Flame className="w-5 h-5 text-orange-500" aria-hidden />
                   {streakDays}
                 </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">dag{streakDays === 1 ? "" : "e"} i træk</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{t(countKey("streak.day", streakDays), { count: streakDays })}</p>
               </div>
               <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-700">
                 <p className="flex items-center gap-1.5 text-xl font-bold text-gray-900 dark:text-gray-100">
                   <CalendarDays className="w-5 h-5 text-primary-600 dark:text-primary-400" aria-hidden />
                   {weekCount}
                 </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">målinger denne uge</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{t("streak.thisWeek", { count: weekCount })}</p>
               </div>
             </div>
 
@@ -302,7 +305,7 @@ export default function DashboardPage() {
                            hover:bg-primary-700 active:scale-95 transition-all"
               >
                 <Camera className="w-5 h-5" aria-hidden />
-                Scan nu
+                {t("dash.scanNow")}
               </Link>
               <Link
                 href="/scan?tab=manual"
@@ -310,17 +313,17 @@ export default function DashboardPage() {
                            border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 active:scale-95 transition-all"
               >
                 <Keyboard className="w-5 h-5" aria-hidden />
-                Manuelt
+                {t("dash.manually")}
               </Link>
             </div>
 
             {/* Seneste 3 målinger */}
             {latest && (
-              <section aria-label="Seneste målinger">
+              <section aria-label={t("dash.recent")}>
                 <div className="flex justify-between items-center mb-2">
-                  <h2 className="text-sm font-medium text-gray-500 dark:text-gray-400">Seneste målinger</h2>
+                  <h2 className="text-sm font-medium text-gray-500 dark:text-gray-400">{t("dash.recent")}</h2>
                   <Link href="/readings" className="text-sm text-primary-600 dark:text-primary-400 font-medium hover:text-primary-700 dark:hover:text-primary-300">
-                    Se alle målinger →
+                    {t("dash.viewAll")}
                   </Link>
                 </div>
                 <div className="space-y-2">
@@ -330,8 +333,8 @@ export default function DashboardPage() {
                     return (
                       <div key={r.id} className="bg-white dark:bg-gray-800 rounded-2xl px-4 py-3 shadow-sm border border-gray-200 dark:border-gray-700 flex items-center justify-between">
                         <span className="text-sm text-gray-600 dark:text-gray-300 truncate">
-                          {date.toLocaleDateString("da-DK", { day: "numeric", month: "short" })},{" "}
-                          {date.toLocaleTimeString("da-DK", { hour: "2-digit", minute: "2-digit" })}
+                          {date.toLocaleDateString(INTL_LOCALE[locale], { day: "numeric", month: "short" })},{" "}
+                          {date.toLocaleTimeString(INTL_LOCALE[locale], { hour: "2-digit", minute: "2-digit" })}
                         </span>
                         <div className="flex items-center gap-2 shrink-0">
                           <span className="text-sm font-semibold text-gray-900 dark:text-gray-100 tabular-nums">

@@ -2,6 +2,8 @@
 
 import { ArrowLeft, ImageOff, Pencil } from "lucide-react";
 import { useState } from "react";
+import { INTL_LOCALE } from "@/lib/i18n";
+import { useI18n } from "@/lib/I18nProvider";
 
 interface Props {
   imageUrl: string | null;
@@ -17,6 +19,7 @@ interface Props {
 export default function ImageViewer({ imageUrl, reading, timestamp, onClose }: Props) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedReading, setEditedReading] = useState(reading);
+  const { t, locale } = useI18n();
 
   if (!imageUrl) return null;
 
@@ -35,17 +38,17 @@ export default function ImageViewer({ imageUrl, reading, timestamp, onClose }: P
           onClick={onClose}
           className="text-white text-sm font-medium flex items-center gap-1"
         >
-          <ArrowLeft className="w-4 h-4" /> Tilbage
+          <ArrowLeft className="w-4 h-4" /> {t("common.back")}
         </button>
         <p className="text-white/80 text-sm">
-          {date.toLocaleDateString('da-DK', {
+          {date.toLocaleDateString(INTL_LOCALE[locale], {
             weekday: 'long',
             day: 'numeric',
             month: 'long',
             year: 'numeric',
           })}
           {' '}
-          {date.toLocaleTimeString('da-DK', { hour: '2-digit', minute: '2-digit' })}
+          {date.toLocaleTimeString(INTL_LOCALE[locale], { hour: '2-digit', minute: '2-digit' })}
         </p>
       </div>
 
@@ -53,7 +56,7 @@ export default function ImageViewer({ imageUrl, reading, timestamp, onClose }: P
       <div className="flex-1 flex items-center justify-center p-4 overflow-auto">
         <img
           src={imageSrc}
-          alt="Blodtryksmåling"
+          alt={t("viewer.imageAlt")}
           className="max-w-full max-h-full object-contain rounded-lg"
         />
       </div>
@@ -63,27 +66,27 @@ export default function ImageViewer({ imageUrl, reading, timestamp, onClose }: P
         {reading && !isEditing && (
           <>
             <div className="flex justify-between items-center mb-3">
-              <p className="text-sm text-gray-500 dark:text-gray-400">AI aflæste:</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{t("viewer.aiRead")}</p>
               <button
                 onClick={() => setIsEditing(true)}
                 className="text-sm text-primary-600 dark:text-primary-400 font-medium"
               >
-                <span className="inline-flex items-center gap-1"><Pencil className="w-3.5 h-3.5" /> Ret</span>
+                <span className="inline-flex items-center gap-1"><Pencil className="w-3.5 h-3.5" /> {t("viewer.fix")}</span>
               </button>
             </div>
 
             <div className="grid grid-cols-3 gap-4 text-center">
               <div>
                 <p className="text-3xl font-bold text-red-600 dark:text-red-400">{reading.systolic}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Systolisk</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{t("field.systolic")}</p>
               </div>
               <div>
                 <p className="text-3xl font-bold text-orange-600 dark:text-orange-400">{reading.diastolic}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Diastolisk</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{t("field.diastolic")}</p>
               </div>
               <div>
                 <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">{reading.pulse}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Puls</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{t("field.pulse")}</p>
               </div>
             </div>
           </>
@@ -91,15 +94,15 @@ export default function ImageViewer({ imageUrl, reading, timestamp, onClose }: P
 
         {isEditing && editedReading && (
           <div className="space-y-3">
-            <p className="text-sm text-gray-500 dark:text-gray-400">Ret måling:</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{t("viewer.fixTitle")}</p>
 
             {([
-              { key: "systolic" as const, label: "Systolisk", color: "text-red-600 dark:text-red-400" },
-              { key: "diastolic" as const, label: "Diastolisk", color: "text-orange-600 dark:text-orange-400" },
-              { key: "pulse" as const, label: "Puls", color: "text-blue-600 dark:text-blue-400" },
-            ]).map(({ key, label, color }) => (
+              { key: "systolic" as const, labelKey: "field.systolic", color: "text-red-600 dark:text-red-400" },
+              { key: "diastolic" as const, labelKey: "field.diastolic", color: "text-orange-600 dark:text-orange-400" },
+              { key: "pulse" as const, labelKey: "field.pulse", color: "text-blue-600 dark:text-blue-400" },
+            ]).map(({ key, labelKey, color }) => (
               <div key={key} className="flex items-center gap-3">
-                <span className="w-20 text-sm text-gray-600 dark:text-gray-300">{label}</span>
+                <span className="w-20 text-sm text-gray-600 dark:text-gray-300">{t(labelKey)}</span>
                 <button
                   onClick={() => setEditedReading({
                     ...editedReading,
@@ -140,7 +143,7 @@ export default function ImageViewer({ imageUrl, reading, timestamp, onClose }: P
                 }}
                 className="flex-1 bg-primary-600 text-white py-3 rounded-lg font-semibold"
               >
-                Gem rettelse
+                {t("viewer.saveFix")}
               </button>
               <button
                 onClick={() => {
@@ -149,7 +152,7 @@ export default function ImageViewer({ imageUrl, reading, timestamp, onClose }: P
                 }}
                 className="px-4 py-3 bg-gray-200 dark:bg-gray-700 dark:text-gray-100 rounded-lg font-semibold"
               >
-                Annuller
+                {t("common.cancel")}
               </button>
             </div>
           </div>
@@ -157,7 +160,7 @@ export default function ImageViewer({ imageUrl, reading, timestamp, onClose }: P
 
         {!reading && (
           <div className="text-center py-4">
-            <p className="text-red-600 dark:text-red-400"><ImageOff className="w-4 h-4 inline mr-1" /> Billedet kunne ikke aflæses</p>
+            <p className="text-red-600 dark:text-red-400"><ImageOff className="w-4 h-4 inline mr-1" /> {t("viewer.unreadable")}</p>
           </div>
         )}
       </div>

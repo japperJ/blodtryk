@@ -2,21 +2,22 @@
 
 // Genanvendelig tal-stepper til målingsværdier (systolisk/diastolisk/puls).
 // Bruges af både kamera-bekræftelses-steppet og den manuelle indtastning.
+import { useI18n } from "@/lib/I18nProvider";
 
 export type ReadingStepperKey = "systolic" | "diastolic" | "pulse";
 
 export interface ReadingStepperField {
   key: ReadingStepperKey;
-  label: string;
-  unit: string;
+  labelKey: string;
+  unitKey: string;
   color?: string;
 }
 
 // Standardfelter — samme rækkefølge/farver som kamera-flowet altid har brugt
 export const READING_STEPPER_FIELDS: ReadingStepperField[] = [
-  { key: "systolic", label: "Systolisk", unit: "mmHg", color: "text-red-600 dark:text-red-400" },
-  { key: "diastolic", label: "Diastolisk", unit: "mmHg", color: "text-orange-600 dark:text-orange-400" },
-  { key: "pulse", label: "Puls", unit: "bpm", color: "text-blue-600 dark:text-blue-400" },
+  { key: "systolic", labelKey: "field.systolic", unitKey: "field.mmHg", color: "text-red-600 dark:text-red-400" },
+  { key: "diastolic", labelKey: "field.diastolic", unitKey: "field.mmHg", color: "text-orange-600 dark:text-orange-400" },
+  { key: "pulse", labelKey: "field.pulse", unitKey: "field.bpm", color: "text-blue-600 dark:text-blue-400" },
 ];
 
 interface ReadingStepperProps {
@@ -30,13 +31,14 @@ export default function ReadingStepper({
   values,
   onChange,
 }: ReadingStepperProps) {
+  const { t } = useI18n();
   return (
     <div className="space-y-3">
-      {fields.map(({ key, label, unit, color }) => (
+      {fields.map(({ key, labelKey, unitKey, color }) => (
         <div key={key} className="flex items-center gap-3">
           <div className="w-20 shrink-0">
-            <p className="text-sm font-medium text-gray-600 dark:text-gray-300">{label}</p>
-            <p className="text-[10px] text-gray-500 dark:text-gray-400">{unit}</p>
+            <p className="text-sm font-medium text-gray-600 dark:text-gray-300">{t(labelKey)}</p>
+            <p className="text-[10px] text-gray-500 dark:text-gray-400">{t(unitKey)}</p>
           </div>
           <button
             type="button"

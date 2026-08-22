@@ -14,6 +14,7 @@ import {
   Monitor,
   BellRing,
   Check,
+  Languages,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -22,13 +23,14 @@ import {
   DEFAULT_REMINDER_TIME,
   isValidTime,
 } from "@/lib/reminder";
+import { useI18n } from "@/lib/I18nProvider";
 
-const links: { href: string; label: string; icon: LucideIcon }[] = [
-  { href: "/", label: "Dashboard", icon: House },
-  { href: "/scan", label: "Scan", icon: Camera },
-  { href: "/readings", label: "Målinger", icon: ClipboardList },
-  { href: "/trends", label: "Tendenser", icon: TrendingUp },
-  { href: "/persons", label: "Personer", icon: User },
+const links: { href: string; labelKey: string; icon: LucideIcon }[] = [
+  { href: "/", labelKey: "nav.dashboard", icon: House },
+  { href: "/scan", labelKey: "nav.scan", icon: Camera },
+  { href: "/readings", labelKey: "nav.readings", icon: ClipboardList },
+  { href: "/trends", labelKey: "nav.trends", icon: TrendingUp },
+  { href: "/persons", labelKey: "nav.persons", icon: User },
 ];
 
 type ThemePref = "light" | "dark" | "system";
@@ -48,6 +50,7 @@ function applyTheme(pref: ThemePref) {
 
 export default function Navbar() {
   const pathname = usePathname();
+  const { t, locale, setLocale } = useI18n();
   const [theme, setTheme] = useState<ThemePref>("system");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const settingsRef = useRef<HTMLDivElement>(null);
@@ -107,10 +110,10 @@ export default function Navbar() {
     setSettingsOpen(false);
   }, []);
 
-  const themeOptions: { value: ThemePref; label: string; icon: LucideIcon }[] = [
-    { value: "light", label: "Lys", icon: Sun },
-    { value: "dark", label: "Mørk", icon: Moon },
-    { value: "system", label: "System", icon: Monitor },
+  const themeOptions: { value: ThemePref; labelKey: string; icon: LucideIcon }[] = [
+    { value: "light", labelKey: "settings.light", icon: Sun },
+    { value: "dark", labelKey: "settings.dark", icon: Moon },
+    { value: "system", labelKey: "settings.system", icon: Monitor },
   ];
 
   // Toggle for daglig påmindelse (#16). Tilladelse spørges KUN ved eksplicit aktivering —
@@ -156,7 +159,7 @@ export default function Navbar() {
               }`}
             >
               <Icon className="w-6 h-6" strokeWidth={active ? 2.25 : 2} aria-hidden />
-              <span className="text-xs font-medium mt-1">{link.label}</span>
+              <span className="text-xs font-medium mt-1">{t(link.labelKey)}</span>
             </Link>
           );
         })}
@@ -168,8 +171,8 @@ export default function Navbar() {
             onClick={() => setSettingsOpen((v) => !v)}
             aria-haspopup="true"
             aria-expanded={settingsOpen}
-            aria-label="Indstillinger"
-            title="Indstillinger"
+            aria-label={t("nav.settings")}
+            title={t("nav.settings")}
             className="flex h-11 w-11 items-center justify-center rounded-full text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
           >
             <Settings className="w-6 h-6" aria-hidden />
@@ -178,13 +181,13 @@ export default function Navbar() {
           {settingsOpen && (
             <div
               role="menu"
-              aria-label="Indstillinger"
+              aria-label={t("nav.settings")}
               className="absolute bottom-[calc(100%+8px)] right-0 w-64 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg p-1.5"
             >
               <p className="px-2.5 pt-1 pb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                Tema
+                {t("settings.theme")}
               </p>
-              {themeOptions.map(({ value, label, icon: Icon }) => (
+              {themeOptions.map(({ value, labelKey, icon: Icon }) => (
                 <button
                   key={value}
                   type="button"
@@ -198,8 +201,35 @@ export default function Navbar() {
                   }`}
                 >
                   <Icon className="w-4 h-4 shrink-0" aria-hidden />
-                  {label}
+                  {t(labelKey)}
                   {theme === value && <Check className="w-4 h-4 ml-auto" aria-hidden />}
+                </button>
+              ))}
+
+              {/* Sprog (#24) */}
+              <div role="separator" className="my-1 border-t border-gray-200 dark:border-gray-700" />
+              <p className="flex items-center gap-1.5 px-2.5 pt-1 pb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                <Languages className="w-3.5 h-3.5" aria-hidden />
+                {t("settings.language")}
+              </p>
+              {([
+                { value: "da" as const, labelKey: "settings.danish" },
+                { value: "en" as const, labelKey: "settings.english" },
+              ]).map(({ value, labelKey }) => (
+                <button
+                  key={value}
+                  type="button"
+                  role="menuitemradio"
+                  aria-checked={locale === value}
+                  onClick={() => setLocale(value)}
+                  className={`w-full flex items-center gap-2 rounded-lg px-2.5 py-2.5 text-sm font-medium min-h-[44px] transition-colors ${
+                    locale === value
+                      ? "bg-primary-50 text-primary-700 dark:bg-primary-900/40 dark:text-primary-300"
+                      : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  }`}
+                >
+                  {t(labelKey)}
+                  {locale === value && <Check className="w-4 h-4 ml-auto" aria-hidden />}
                 </button>
               ))}
 
@@ -207,11 +237,11 @@ export default function Navbar() {
               <div role="separator" className="my-1 border-t border-gray-200 dark:border-gray-700" />
               <p className="flex items-center gap-1.5 px-2.5 pt-1 pb-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
                 <BellRing className="w-3.5 h-3.5" aria-hidden />
-                Daglig påmindelse
+                {t("settings.reminder")}
               </p>
               <div className="flex items-center justify-between rounded-lg px-2.5 py-2 min-h-[44px]">
                 <span id="reminder-toggle-label" className="text-sm font-medium text-gray-600 dark:text-gray-300">
-                  Påmind mig
+                  {t("settings.remindMe")}
                 </span>
                 <button
                   type="button"
@@ -219,7 +249,7 @@ export default function Navbar() {
                   aria-checked={reminderEnabled}
                   aria-labelledby="reminder-toggle-label"
                   onClick={toggleReminder}
-                  title={reminderEnabled ? "Påmindelse slået til" : "Påmindelse slået fra"}
+                  title={reminderEnabled ? t("settings.reminderOn") : t("settings.reminderOff")}
                   className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 ${
                     reminderEnabled ? "bg-primary-600" : "bg-gray-300 dark:bg-gray-600"
                   }`}
@@ -235,7 +265,7 @@ export default function Navbar() {
               {reminderEnabled && (
                 <div className="flex items-center justify-between rounded-lg px-2.5 py-2 min-h-[44px]">
                   <label htmlFor="reminder-time" className="text-sm font-medium text-gray-600 dark:text-gray-300">
-                    Tidspunkt
+                    {t("settings.time")}
                   </label>
                   <input
                     id="reminder-time"
@@ -248,7 +278,7 @@ export default function Navbar() {
               )}
               {reminderEnabled && reminderBlocked && (
                 <p className="px-2.5 pb-1.5 pt-1 text-xs leading-snug text-amber-600 dark:text-amber-400">
-                  Notifikationer er blokeret i din browser – påmindelsen vises som banner på forsiden.
+                  {t("settings.notificationsBlocked")}
                 </p>
               )}
             </div>

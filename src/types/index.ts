@@ -71,7 +71,7 @@ export interface ReadingStats {
   max: BloodPressureReading;
   daily: DailyAverage[];
   weekly: WeeklyAverage[];
-  classification: { severity: string; label: string; count: number }[];
+  classification: { severity: string; labelKey: string; count: number }[];
   byTimeOfDay?: TimeOfDayStats; // udelades når ingen målinger har tidspunkt-tags
   streakDays: number;
 }

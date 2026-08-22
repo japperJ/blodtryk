@@ -11,6 +11,17 @@ Danish blood pressure tracking app with AI-powered OCR. Photograph your blood pr
 - **📄 PDF Export** — Generate professional reports with color-coded status
 - **🌙 PWA** — Install on your phone's home screen
 
+## Internationalization
+
+The app supports **Danish** (default) and **English**.
+
+- Switch language with the toggle in the navbar; the choice is stored in `localStorage` (`lang`)
+- On first visit the browser language is detected (`da*` → Danish, `en*` → English)
+- All UI strings live in the dictionaries in `src/lib/i18n.ts` and are read through the `useI18n()` hook (`t`, `tError`, `countKey`)
+- API routes return bare error codes; they are translated client-side with `tError`
+- A pre-paint script in `src/app/layout.tsx` sets `<html lang>` before first render (no screen-reader flash)
+- **Limitation:** static metadata (page title/description) is defined at build time and stays Danish
+
 ## Tech Stack
 
 - **Frontend:** Next.js 14, React 18, TypeScript, Tailwind CSS

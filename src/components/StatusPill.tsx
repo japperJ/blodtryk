@@ -11,6 +11,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import type { BPStatus, Severity } from "@/lib/bpClassification";
+import { useI18n } from "@/lib/I18nProvider";
 
 // Ét ikon pr. sværhedsgrad — ikonet adskiller severities i grayscale
 export const SEVERITY_ICON: Record<Severity, LucideIcon> = {
@@ -27,6 +28,7 @@ interface StatusPillProps {
 }
 
 export default function StatusPill({ status, size = "md" }: StatusPillProps) {
+  const { t } = useI18n();
   const Icon = SEVERITY_ICON[status.severity];
   const sizing =
     size === "sm"
@@ -36,13 +38,13 @@ export default function StatusPill({ status, size = "md" }: StatusPillProps) {
   return (
     <span
       className={`inline-flex items-center rounded-full font-medium whitespace-nowrap ${sizing} ${status.color}`}
-      title={status.description}
+      title={t(status.descriptionKey)}
     >
       <Icon
         className={size === "sm" ? "w-3 h-3 shrink-0" : "w-3.5 h-3.5 shrink-0"}
         aria-hidden
       />
-      {status.label}
+      {t(status.labelKey)}
     </span>
   );
 }

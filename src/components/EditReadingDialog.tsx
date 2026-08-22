@@ -3,6 +3,7 @@
 import { X } from "lucide-react";
 import { useState } from "react";
 import type { Reading, TimeOfDay, Arm } from "@/types";
+import { useI18n } from "@/lib/I18nProvider";
 import ReadingStepper, { type ReadingStepperKey } from "./ReadingStepper";
 import ContextTagChips from "./ContextTagChips";
 
@@ -26,6 +27,7 @@ export default function EditReadingDialog({ reading, onClose, onSaved }: Props) 
   const [arm, setArm] = useState<Arm | null>(reading.arm ?? null);
   const [formError, setFormError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const { t, tError } = useI18n();
 
   const handleTagChange = (field: "timeOfDay" | "arm", value: string | null) => {
     if (field === "timeOfDay") {
@@ -60,11 +62,11 @@ export default function EditReadingDialog({ reading, onClose, onSaved }: Props) 
         onSaved(updated);
       } else {
         const data = await res.json().catch(() => null);
-        setFormError(data?.error || "Kunne ikke opdatere måling");
+        setFormError(data?.error ? tError(data.error) : t("edit.saveError"));
       }
     } catch (err) {
       console.error("Failed to update reading:", err);
-      setFormError("Kunne ikke opdatere måling");
+      setFormError(t("edit.saveError"));
     } finally {
       setIsSaving(false);
     }
@@ -84,12 +86,12 @@ export default function EditReadingDialog({ reading, onClose, onSaved }: Props) 
       >
         {/* Header */}
         <div className="flex justify-between items-center px-4 pt-4 shrink-0">
-          <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">Rediger måling</h2>
+          <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">{t("edit.title")}</h2>
           <button
             onClick={onClose}
             className="flex h-11 w-11 items-center justify-center text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 text-xl"
-            title="Luk"
-            aria-label="Luk"
+            title={t("common.close")}
+            aria-label={t("common.close")}
           >
             <X className="w-5 h-5" />
           </button>
@@ -103,7 +105,7 @@ export default function EditReadingDialog({ reading, onClose, onSaved }: Props) 
             className="px-6 py-3 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-xl font-semibold
                        hover:bg-gray-300 dark:hover:bg-gray-600 active:scale-95 transition-all disabled:opacity-50"
           >
-            Annuller
+            {t("common.cancel")}
           </button>
           <button
             onClick={handleSave}
@@ -111,7 +113,7 @@ export default function EditReadingDialog({ reading, onClose, onSaved }: Props) 
             className="flex-1 bg-primary-600 text-white py-3 rounded-xl font-semibold
                        hover:bg-primary-700 active:scale-95 transition-all disabled:opacity-50"
           >
-            {isSaving ? "Gemmer..." : "Gem"}
+            {isSaving ? t("common.saving") : t("common.save")}
           </button>
         </div>
 
@@ -134,13 +136,13 @@ export default function EditReadingDialog({ reading, onClose, onSaved }: Props) 
         {/* Note */}
         <div>
           <label htmlFor="reading-note" className="text-sm font-medium text-gray-600 dark:text-gray-300">
-            Note
+            {t("field.note")}
           </label>
           <textarea
             id="reading-note"
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            placeholder="Note til målingen..."
+            placeholder={t("edit.notePlaceholder")}
             rows={3}
             maxLength={NOTE_MAX_LENGTH}
             className="w-full mt-1 px-3 py-2 border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-900 rounded-xl resize-none

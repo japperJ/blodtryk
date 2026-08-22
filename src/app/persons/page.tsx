@@ -4,9 +4,12 @@ import { User, UserPlus, Pencil, Trash2, X, Check } from "lucide-react";
 import EmptyState from "@/components/EmptyState";
 import { PersonRowSkeleton } from "@/components/Skeleton";
 import MedicationPanel from "@/components/MedicationPanel";
+import { countKey, INTL_LOCALE } from "@/lib/i18n";
+import { useI18n } from "@/lib/I18nProvider";
 import type { PersonSummary } from "@/types";
 
 export default function PersonsPage() {
+  const { t, tError, locale } = useI18n();
   const [persons, setPersons] = useState<PersonSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
@@ -65,7 +68,7 @@ export default function PersonsPage() {
         await fetchPersons();
       } else {
         const data = await res.json();
-        setFormError(data.error || "Kunne ikke oprette person");
+        setFormError(data.error ? tError(data.error) : t("persons.createError"));
       }
     } catch (err) {
       console.error("Failed to create person:", err);
@@ -92,7 +95,7 @@ export default function PersonsPage() {
         await fetchPersons();
       } else {
         const data = await res.json();
-        setFormError(data.error || "Kunne ikke opdatere person");
+        setFormError(data.error ? tError(data.error) : t("persons.updateError"));
       }
     } catch (err) {
       console.error("Failed to update person:", err);
@@ -101,7 +104,7 @@ export default function PersonsPage() {
 
   // Slet person
   const handleDelete = async (id: number, name: string) => {
-    if (!confirm(`Er du sikker på du vil slette "${name}"?\n\nMålinger flyttes til Standard.`)) return;
+    if (!confirm(t("persons.confirmDelete", { name }))) return;
     try {
       const res = await fetch(`/api/persons/${id}`, { method: "DELETE" });
       if (res.ok) {
@@ -123,7 +126,7 @@ export default function PersonsPage() {
         <div className="flex justify-between items-center mb-6">
           <h1 className="flex items-center gap-2 text-2xl font-bold text-gray-900 dark:text-gray-100">
             <User className="w-6 h-6 text-primary-600 dark:text-primary-400" aria-hidden />
-            Personer
+            {t("persons.title")}
           </h1>
           <button
             onClick={() => setIsAdding(true)}
@@ -131,21 +134,21 @@ export default function PersonsPage() {
                        hover:bg-primary-700 active:scale-95 transition-all"
           >
             <UserPlus className="w-4 h-4" aria-hidden />
-            Tilføj
+            {t("persons.add")}
           </button>
         </div>
 
         {/* Opret ny */}
         {isAdding && (
           <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-700 mb-4">
-            <p className="text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">Ny person</p>
+            <p className="text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">{t("persons.newPerson")}</p>
             <div className="flex gap-2">
               <input
                 type="text"
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleAdd()}
-                placeholder="Navn"
+                placeholder={t("persons.namePlaceholder")}
                 autoFocus
                 className="flex-1 px-3 py-2 border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-900 rounded-xl
                            focus:ring-2 focus:ring-primary-500 focus:border-primary-500
@@ -157,12 +160,12 @@ export default function PersonsPage() {
                 className="px-4 py-2 min-h-[44px] bg-primary-600 text-white rounded-xl font-medium inline-flex items-center justify-center
                            hover:bg-primary-700 disabled:opacity-50"
               >
-                Gem
+                {t("common.save")}
               </button>
               <button
                 onClick={() => { setIsAdding(false); setNewName(""); setNewBirthYear(""); setFormError(""); }}
                 className="flex h-11 w-11 items-center justify-center text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
-                title="Annuller"
+                title={t("common.cancel")}
               >
                 <X className="w-5 h-5" aria-hidden />
               </button>
@@ -175,13 +178,13 @@ export default function PersonsPage() {
                 value={newBirthYear}
                 onChange={(e) => setNewBirthYear(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleAdd()}
-                placeholder={`Fødselsår (f.eks. 1950)`}
+                placeholder={t("persons.birthYearPlaceholder")}
                 className="w-40 px-3 py-2 border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-900 rounded-xl
                            focus:ring-2 focus:ring-primary-500 focus:border-primary-500
                            text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
               />
               <p className="text-xs text-gray-500 dark:text-gray-400">
-                Valgfri — bruges til automatisk aldersvurdering
+                {t("persons.birthYearHint")}
               </p>
             </div>
             {formError && (
@@ -193,7 +196,7 @@ export default function PersonsPage() {
         {/* Personer */}
         {loading ? (
           /* Skelet-layout (#12): rækker i samme form som personkortene */
-          <div className="space-y-3" aria-busy="true" aria-label="Indlæser personer">
+          <div className="space-y-3" aria-busy="true" aria-label={t("persons.loading")}>
             <PersonRowSkeleton />
             <PersonRowSkeleton />
             <PersonRowSkeleton />
@@ -201,8 +204,8 @@ export default function PersonsPage() {
         ) : persons.length === 0 ? (
           <EmptyState
             icon={UserPlus}
-            title="Ingen personer endnu"
-            description="Opret en person for at komme i gang"
+            title={t("persons.emptyTitle")}
+            description={t("persons.emptyDesc")}
             action={
               <button
                 onClick={() => setIsAdding(true)}
@@ -210,7 +213,7 @@ export default function PersonsPage() {
                            hover:bg-primary-700 active:scale-95 transition-all"
               >
                 <UserPlus className="w-5 h-5" aria-hidden />
-                Opret person
+                {t("persons.emptyCta")}
               </button>
             }
           />
@@ -242,14 +245,14 @@ export default function PersonsPage() {
                       <button
                         onClick={() => handleUpdate(person.id)}
                         className="flex h-11 w-11 items-center justify-center text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/40 rounded-full transition-colors"
-                        title="Gem"
+                        title={t("common.save")}
                       >
                         <Check className="w-5 h-5" aria-hidden />
                       </button>
                       <button
                         onClick={() => { setEditingId(null); setEditName(""); setEditBirthYear(""); setFormError(""); }}
                         className="flex h-11 w-11 items-center justify-center text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
-                        title="Annuller"
+                        title={t("common.cancel")}
                       >
                         <X className="w-5 h-5" aria-hidden />
                       </button>
@@ -261,7 +264,7 @@ export default function PersonsPage() {
                       value={editBirthYear}
                       onChange={(e) => setEditBirthYear(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && handleUpdate(person.id)}
-                      placeholder={`Fødselsår (f.eks. 1950)`}
+                      placeholder={t("persons.birthYearPlaceholder")}
                       className="w-40 px-3 py-2 border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-900 rounded-xl mt-2
                                  focus:ring-2 focus:ring-primary-500 focus:border-primary-500
                                  text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
@@ -292,11 +295,11 @@ export default function PersonsPage() {
                           <p className="font-medium text-gray-900 dark:text-gray-100">{person.name}</p>
                           <p className="text-xs text-gray-500 dark:text-gray-400">
                             {person.birthYear != null && (
-                              <>Født {person.birthYear} · </>
+                              <>{t("persons.born", { year: person.birthYear })}</>
                             )}
-                            {person.readingCount} måling{person.readingCount !== 1 ? "er" : ""}
+                            {t(countKey("persons.readingCount", person.readingCount), { count: person.readingCount })}
                             {person.lastReadingAt && (
-                              <> · Seneste: {new Date(person.lastReadingAt).toLocaleDateString("da-DK")}</>
+                              <>{t("persons.lastReading", { date: new Date(person.lastReadingAt).toLocaleDateString(INTL_LOCALE[locale]) })}</>
                             )}
                           </p>
                         </div>
@@ -312,7 +315,7 @@ export default function PersonsPage() {
                           setFormError("");
                         }}
                         className="flex h-11 w-11 items-center justify-center text-gray-500 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
-                        title="Rediger"
+                        title={t("common.edit")}
                       >
                         <Pencil className="w-4 h-4" aria-hidden />
                       </button>
@@ -320,7 +323,7 @@ export default function PersonsPage() {
                         <button
                           onClick={() => handleDelete(person.id, person.name)}
                           className="flex h-11 w-11 items-center justify-center text-gray-500 dark:text-gray-400 hover:text-danger-600 dark:hover:text-red-400 transition-colors"
-                          title="Slet"
+                          title={t("common.delete")}
                         >
                           <Trash2 className="w-4 h-4" aria-hidden />
                         </button>
@@ -336,7 +339,7 @@ export default function PersonsPage() {
 
         {/* Info */}
         <p className="text-xs text-gray-500 dark:text-gray-400 text-center mt-6">
-          Tryk på en person for at vælge den · Valgte person er fremhævet
+          {t("persons.footerHint")}
         </p>
       </div>
     </main>

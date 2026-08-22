@@ -15,12 +15,12 @@ export async function GET(
 ) {
   const id = Number((await params).id);
   if (isNaN(id)) {
-    return NextResponse.json({ error: "Ugyldigt ID" }, { status: 400 });
+    return NextResponse.json({ error: "invalidId" }, { status: 400 });
   }
 
   const person = await prisma.person.findUnique({ where: { id } });
   if (!person) {
-    return NextResponse.json({ error: "Personen findes ikke" }, { status: 404 });
+    return NextResponse.json({ error: "personNotFound" }, { status: 404 });
   }
 
   const medications = await prisma.medication.findMany({
@@ -39,19 +39,19 @@ export async function POST(
   try {
     const id = Number((await params).id);
     if (isNaN(id)) {
-      return NextResponse.json({ error: "Ugyldigt ID" }, { status: 400 });
+      return NextResponse.json({ error: "invalidId" }, { status: 400 });
     }
 
     const person = await prisma.person.findUnique({ where: { id } });
     if (!person) {
-      return NextResponse.json({ error: "Personen findes ikke" }, { status: 404 });
+      return NextResponse.json({ error: "personNotFound" }, { status: 404 });
     }
 
     let body: unknown;
     try {
       body = await request.json();
     } catch {
-      return NextResponse.json({ error: "Ugyldigt JSON-format" }, { status: 400 });
+      return NextResponse.json({ error: "invalidJson" }, { status: 400 });
     }
 
     const raw =
@@ -65,10 +65,7 @@ export async function POST(
       raw.name.trim() === "" ||
       raw.name.length > NAME_MAX
     ) {
-      return NextResponse.json(
-        { error: `Navn er påkrævet (højst ${NAME_MAX} tegn)` },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "nameTooLong" }, { status: 400 });
     }
 
     // Dosis: påkrævet fritekst ("5 mg", "1 tablet")
@@ -77,24 +74,21 @@ export async function POST(
       raw.dose.trim() === "" ||
       raw.dose.length > DOSE_MAX
     ) {
-      return NextResponse.json(
-        { error: `Dosis er påkrævet (højst ${DOSE_MAX} tegn)` },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "doseTooLong" }, { status: 400 });
     }
 
     // Valgfrie datoer
     let startDate: Date | null = null;
     if (raw.startDate != null) {
       if (!isValidDate(raw.startDate)) {
-        return NextResponse.json({ error: "Ugyldig startdato" }, { status: 400 });
+        return NextResponse.json({ error: "invalidStartDate" }, { status: 400 });
       }
       startDate = new Date(raw.startDate as string);
     }
     let endDate: Date | null = null;
     if (raw.endDate != null) {
       if (!isValidDate(raw.endDate)) {
-        return NextResponse.json({ error: "Ugyldig slutdato" }, { status: 400 });
+        return NextResponse.json({ error: "invalidEndDate" }, { status: 400 });
       }
       endDate = new Date(raw.endDate as string);
     }
@@ -113,6 +107,6 @@ export async function POST(
     return NextResponse.json(medication, { status: 201 });
   } catch (error) {
     console.error("Create medication error:", error);
-    return NextResponse.json({ error: "Kunne ikke tilføje medicin" }, { status: 500 });
+    return NextResponse.json({ error: "medicationCreateFailed" }, { status: 500 });
   }
 }

@@ -116,9 +116,9 @@ export function useCamera() {
     } catch (err) {
       console.error("Camera error:", err);
       if (err instanceof DOMException && err.name === "NotAllowedError") {
-        setError("Kameraadgang nægtet. Åbn browserindstillinger og tillad kamera for denne side.");
+        setError("camera.denied");
       } else {
-        setError("Kamera ikke tilgængeligt. Tillad kameradgang i browseren.");
+        setError("camera.unavailable");
       }
     }
   }, []);

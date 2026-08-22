@@ -22,6 +22,7 @@ import ContextTagChips from "@/components/ContextTagChips";
 import EmptyState from "@/components/EmptyState";
 import type { BloodPressureReading, PersonSummary, TimeOfDay, Arm } from "@/types";
 import Link from "next/link";
+import { useI18n } from "@/lib/I18nProvider";
 
 // Kamera-flow steps
 type CameraStep = "camera" | "preview" | "scanning" | "confirm" | "saved" | "error";
@@ -45,6 +46,7 @@ function toLocalInputValue(d: Date): string {
 }
 
 export default function ScanPage() {
+  const { t, tError } = useI18n();
   // Valgt person
   const [selectedPerson, setSelectedPerson] = useState<PersonSummary | null>(null);
 
@@ -106,13 +108,13 @@ export default function ScanPage() {
       const data = await scanRes.json();
 
       if (!scanRes.ok) {
-        throw new Error(data.error || "Scan failed");
+        throw new Error(data.error || "scanFailed");
       }
 
       setReading(data.reading);
       setCameraStep("confirm");
     } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : "Ukendt fejl");
+      setErrorMsg(err instanceof Error ? err.message : "unknown");
       setCameraStep("error");
     }
   };
@@ -136,7 +138,7 @@ export default function ScanPage() {
       });
       setCameraStep("saved");
     } catch {
-      setErrorMsg("Kunne ikke gemme måling");
+      setErrorMsg("readingSaveFailed");
       setCameraStep("error");
     } finally {
       setIsSaving(false);
@@ -209,7 +211,7 @@ export default function ScanPage() {
           results.push({
             imageId: img.id,
             reading: null,
-            error: data.error || "Scan fejlede",
+            error: data.error || "scanFailed",
             timestamp: img.exif.dateOriginal,
           });
         }
@@ -218,7 +220,7 @@ export default function ScanPage() {
         results.push({
           imageId: img.id,
           reading: null,
-          error: err instanceof Error ? err.message : "Ukendt fejl",
+          error: err instanceof Error ? err.message : "unknown",
           timestamp: img.exif.dateOriginal,
         });
       }
@@ -270,7 +272,7 @@ export default function ScanPage() {
 
       setBatchStep("saved");
     } catch {
-      setBatchErrorMsg("Kunne ikke gemme målinger");
+      setBatchErrorMsg("saveBatchFailed");
       setBatchStep("error");
     } finally {
       setIsSaving(false);
@@ -330,13 +332,13 @@ export default function ScanPage() {
 
       if (!res.ok) {
         // Vis API-valideringsfejl inline på formularen
-        setManualError(data?.error || "Kunne ikke gemme måling");
+        setManualError(data?.error || "readingSaveFailed");
         return;
       }
 
       setManualStep("saved");
     } catch {
-      setManualError("Kunne ikke gemme måling");
+      setManualError("readingSaveFailed");
     } finally {
       setIsSavingManual(false);
     }
@@ -352,6 +354,9 @@ export default function ScanPage() {
     setManualError("");
   };
 
+  // Antal gemte målinger i batch (til flertals-tekst)
+  const savedCount = batchResults.filter((r) => r.reading).length;
+
   // Ingen person valgt — vis besked
   if (!selectedPerson) {
     return (
@@ -359,15 +364,15 @@ export default function ScanPage() {
         <div className="max-w-lg mx-auto p-4 pt-12">
           <EmptyState
             icon={User}
-            title="Vælg en person"
-            description="Du skal vælge en person før du kan scanne målinger."
+            title={t("scan.choosePersonTitle")}
+            description={t("scan.choosePersonDesc")}
             action={
               <Link
                 href="/persons"
                 className="inline-block bg-primary-600 text-white px-6 py-3 rounded-xl font-semibold
                            hover:bg-primary-700 active:scale-95 transition-all"
               >
-                Gå til personer
+                {t("scan.goToPersons")}
               </Link>
             }
           />
@@ -383,7 +388,7 @@ export default function ScanPage() {
         <div className="flex items-center justify-between mb-4">
           <h1 className="flex items-center gap-2 text-2xl font-bold text-gray-900 dark:text-gray-100">
             <Stethoscope className="w-6 h-6 text-primary-600 dark:text-primary-400" aria-hidden />
-            Ny måling
+            {t("scan.title")}
           </h1>
           <Link
             href="/persons"
@@ -406,7 +411,7 @@ export default function ScanPage() {
                            : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
             >
               <CameraIcon className="w-4 h-4" aria-hidden />
-              Kamera
+              {t("scan.tabCamera")}
             </button>
             <button
               onClick={() => setActiveTab("batch")}
@@ -416,7 +421,7 @@ export default function ScanPage() {
                            : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
             >
               <FolderOpen className="w-4 h-4" aria-hidden />
-              Upload
+              {t("scan.tabUpload")}
             </button>
             <button
               onClick={() => setActiveTab("manual")}
@@ -426,7 +431,7 @@ export default function ScanPage() {
                            : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
             >
               <Keyboard className="w-4 h-4" aria-hidden />
-              Manuel
+              {t("scan.tabManual")}
             </button>
           </div>
         )}
@@ -438,7 +443,7 @@ export default function ScanPage() {
 
             {cameraStep === "preview" && capturedImage && (
               <div className="space-y-4">
-                <p className="text-sm text-gray-500 dark:text-gray-400 text-center">Tjek billedet inden AI-scanning:</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 text-center">{t("scan.reviewPrompt")}</p>
                 <img
                   src={capturedImage}
                   alt="Preview"
@@ -451,7 +456,7 @@ export default function ScanPage() {
                                hover:bg-primary-700 active:scale-95 transition-all"
                   >
                     <ScanLine className="w-5 h-5" aria-hidden />
-                    Scan med AI
+                    {t("scan.scanWithAi")}
                   </button>
                   <button
                     onClick={handleRetake}
@@ -459,7 +464,7 @@ export default function ScanPage() {
                                hover:bg-gray-300 dark:hover:bg-gray-600 active:scale-95 transition-all"
                   >
                     <CameraIcon className="w-5 h-5" aria-hidden />
-                    Tag igen
+                    {t("scan.retake")}
                   </button>
                 </div>
               </div>
@@ -476,8 +481,8 @@ export default function ScanPage() {
                 )}
                 <div className="animate-pulse text-lg text-gray-600 dark:text-gray-300">
                   <ScanLine className="w-10 h-10 mx-auto mb-2 text-primary-600 dark:text-primary-400" aria-hidden />
-                  <p>Scanner måling med AI...</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">Ca. 60-90 sekunder</p>
+                  <p>{t("scan.scanning")}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">{t("scan.estimatedTime")}</p>
                 </div>
               </div>
             )}
@@ -494,7 +499,7 @@ export default function ScanPage() {
 
                 <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-700">
                   <p className="text-xs text-gray-500 dark:text-gray-400 text-center mb-3">
-                    AI aflæste — ret hvis nødvendigt:
+                    {t("scan.aiReadTitle")}
                   </p>
 
                   <ReadingStepper
@@ -521,11 +526,11 @@ export default function ScanPage() {
                   <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-700">
                     <div className="flex items-center gap-3">
                       <div className="w-20 shrink-0">
-                        <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Alder</p>
-                        <p className="text-[10px] text-gray-500 dark:text-gray-400">ud fra fødselsår</p>
+                        <p className="text-sm font-medium text-gray-600 dark:text-gray-300">{t("scan.ageLabel")}</p>
+                        <p className="text-[10px] text-gray-500 dark:text-gray-400">{t("scan.ageFromBirthYear")}</p>
                       </div>
                       <p className="flex-1 text-center text-2xl font-bold text-gray-900 dark:text-gray-100">
-                        {derivedAge} år
+                        {derivedAge} {t("scan.yearsUnit")}
                       </p>
                       <div className="w-12 shrink-0" />
                     </div>
@@ -534,8 +539,8 @@ export default function ScanPage() {
                   <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-700">
                     <div className="flex items-center gap-3">
                       <div className="w-20 shrink-0">
-                        <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Alder</p>
-                        <p className="text-[10px] text-gray-500 dark:text-gray-400">for bedre vurdering</p>
+                        <p className="text-sm font-medium text-gray-600 dark:text-gray-300">{t("scan.ageLabel")}</p>
+                        <p className="text-[10px] text-gray-500 dark:text-gray-400">{t("scan.ageForBetter")}</p>
                       </div>
                       <input
                         type="number"
@@ -543,13 +548,13 @@ export default function ScanPage() {
                         max={120}
                         value={userAge ?? ""}
                         onChange={(e) => setUserAge(e.target.value ? Number(e.target.value) : null)}
-                        placeholder="f.eks. 65"
+                        placeholder={t("scan.agePlaceholder")}
                         className="flex-1 text-center text-2xl font-bold border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-900 rounded-xl
                                    py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 min-w-0
                                    text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
                       />
                       <div className="w-12 shrink-0 text-center">
-                        <p className="text-sm text-gray-500 dark:text-gray-400">år</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">{t("scan.yearsUnit")}</p>
                       </div>
                     </div>
                   </div>
@@ -562,7 +567,7 @@ export default function ScanPage() {
                     className="flex-1 bg-primary-600 text-white py-4 rounded-xl text-lg font-semibold
                                hover:bg-primary-700 active:scale-95 transition-all disabled:opacity-50"
                   >
-                    {isSaving ? "Gemmer..." : <span className="inline-flex items-center gap-2"><Check className="w-5 h-5" /> Gem måling</span>}
+                    {isSaving ? t("common.saving") : <span className="inline-flex items-center gap-2"><Check className="w-5 h-5" /> {t("scan.saveReading")}</span>}
                   </button>
                   <button
                     onClick={handleCameraReset}
@@ -578,13 +583,13 @@ export default function ScanPage() {
             {cameraStep === "saved" && (
               <div className="text-center py-12">
                 <CircleCheckBig className="w-16 h-16 text-green-600 mx-auto mb-4" />
-                <p className="text-xl font-semibold text-gray-900 dark:text-gray-100">Måling gemt!</p>
+                <p className="text-xl font-semibold text-gray-900 dark:text-gray-100">{t("scan.saved")}</p>
                 <button
                   onClick={handleCameraReset}
                   className="mt-6 bg-primary-600 text-white px-8 py-3 rounded-xl font-semibold
                              hover:bg-primary-700 active:scale-95 transition-all"
                 >
-                  Tag en ny måling
+                  {t("scan.takeNew")}
                 </button>
               </div>
             )}
@@ -592,14 +597,14 @@ export default function ScanPage() {
             {cameraStep === "error" && (
               <div className="text-center py-12">
                 <XCircle className="w-16 h-16 text-danger-600 mx-auto mb-4" />
-                <p className="text-xl font-semibold text-danger-600 dark:text-red-400">Fejl</p>
-                <p className="text-gray-600 dark:text-gray-300 mt-2">{errorMsg}</p>
+                <p className="text-xl font-semibold text-danger-600 dark:text-red-400">{t("common.error")}</p>
+                <p className="text-gray-600 dark:text-gray-300 mt-2">{tError(errorMsg)}</p>
                 <button
                   onClick={handleCameraReset}
                   className="mt-6 bg-primary-600 text-white px-8 py-3 rounded-xl font-semibold
                              hover:bg-primary-700 active:scale-95 transition-all"
                 >
-                  Prøv igen
+                  {t("common.retry")}
                 </button>
               </div>
             )}
@@ -638,14 +643,14 @@ export default function ScanPage() {
               <div className="text-center py-12">
                 <CircleCheckBig className="w-16 h-16 text-green-600 mx-auto mb-4" />
                 <p className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                  {batchResults.filter(r => r.reading).length} måling{batchResults.filter(r => r.reading).length !== 1 ? 'er' : ''} gemt!
+                  {savedCount === 1 ? t("scan.saved") : t("scan.savedMany", { count: savedCount })}
                 </p>
                 <button
                   onClick={handleBatchReset}
                   className="mt-6 bg-primary-600 text-white px-8 py-3 rounded-xl font-semibold
                              hover:bg-primary-700 active:scale-95 transition-all"
                 >
-                  Upload flere billeder
+                  {t("scan.uploadMore")}
                 </button>
               </div>
             )}
@@ -653,14 +658,14 @@ export default function ScanPage() {
             {batchStep === "error" && (
               <div className="text-center py-12">
                 <XCircle className="w-16 h-16 text-danger-600 mx-auto mb-4" />
-                <p className="text-xl font-semibold text-danger-600 dark:text-red-400">Fejl</p>
-                <p className="text-gray-600 dark:text-gray-300 mt-2">{batchErrorMsg}</p>
+                <p className="text-xl font-semibold text-danger-600 dark:text-red-400">{t("common.error")}</p>
+                <p className="text-gray-600 dark:text-gray-300 mt-2">{tError(batchErrorMsg)}</p>
                 <button
                   onClick={handleBatchReset}
                   className="mt-6 bg-primary-600 text-white px-8 py-3 rounded-xl font-semibold
                              hover:bg-primary-700 active:scale-95 transition-all"
                 >
-                  Prøv igen
+                  {t("common.retry")}
                 </button>
               </div>
             )}
@@ -681,7 +686,7 @@ export default function ScanPage() {
                 {/* Målingsværdier */}
                 <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-700">
                   <p className="text-xs text-gray-500 dark:text-gray-400 text-center mb-3">
-                    Indtast målingen manuelt:
+                    {t("scan.manualPrompt")}
                   </p>
 
                   <ReadingStepper values={manualValues} onChange={handleManualUpdate} />
@@ -705,11 +710,11 @@ export default function ScanPage() {
                   <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-700">
                     <div className="flex items-center gap-3">
                       <div className="w-20 shrink-0">
-                        <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Alder</p>
-                        <p className="text-[10px] text-gray-500 dark:text-gray-400">ud fra fødselsår</p>
+                        <p className="text-sm font-medium text-gray-600 dark:text-gray-300">{t("scan.ageLabel")}</p>
+                        <p className="text-[10px] text-gray-500 dark:text-gray-400">{t("scan.ageFromBirthYear")}</p>
                       </div>
                       <p className="flex-1 text-center text-2xl font-bold text-gray-900 dark:text-gray-100">
-                        {derivedAge} år
+                        {derivedAge} {t("scan.yearsUnit")}
                       </p>
                       <div className="w-12 shrink-0" />
                     </div>
@@ -718,8 +723,8 @@ export default function ScanPage() {
                   <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-700">
                     <div className="flex items-center gap-3">
                       <div className="w-20 shrink-0">
-                        <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Alder</p>
-                        <p className="text-[10px] text-gray-500 dark:text-gray-400">for bedre vurdering</p>
+                        <p className="text-sm font-medium text-gray-600 dark:text-gray-300">{t("scan.ageLabel")}</p>
+                        <p className="text-[10px] text-gray-500 dark:text-gray-400">{t("scan.ageForBetter")}</p>
                       </div>
                       <input
                         type="number"
@@ -727,13 +732,13 @@ export default function ScanPage() {
                         max={120}
                         value={userAge ?? ""}
                         onChange={(e) => setUserAge(e.target.value ? Number(e.target.value) : null)}
-                        placeholder="f.eks. 65"
+                        placeholder={t("scan.agePlaceholder")}
                         className="flex-1 text-center text-2xl font-bold border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-900 rounded-xl
                                    py-2 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 min-w-0
                                    text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
                       />
                       <div className="w-12 shrink-0 text-center">
-                        <p className="text-sm text-gray-500 dark:text-gray-400">år</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">{t("scan.yearsUnit")}</p>
                       </div>
                     </div>
                   </div>
@@ -742,8 +747,8 @@ export default function ScanPage() {
                 {/* Tidspunkt for målingen */}
                 <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-700">
                   <label className="block">
-                    <span className="text-sm font-medium text-gray-600 dark:text-gray-300">Tidspunkt</span>
-                    <span className="text-[10px] text-gray-500 dark:text-gray-400 block">hvornår blev der målt?</span>
+                    <span className="text-sm font-medium text-gray-600 dark:text-gray-300">{t("scan.whenLabel")}</span>
+                    <span className="text-[10px] text-gray-500 dark:text-gray-400 block">{t("scan.whenHint")}</span>
                     <input
                       type="datetime-local"
                       value={measuredAt}
@@ -758,14 +763,14 @@ export default function ScanPage() {
                 {/* Note — valgfri */}
                 <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-700">
                   <label className="block">
-                    <span className="text-sm font-medium text-gray-600 dark:text-gray-300">Note</span>
-                    <span className="text-[10px] text-gray-500 dark:text-gray-400 block">valgfri</span>
+                    <span className="text-sm font-medium text-gray-600 dark:text-gray-300">{t("scan.noteLabel")}</span>
+                    <span className="text-[10px] text-gray-500 dark:text-gray-400 block">{t("scan.noteOptional")}</span>
                     <textarea
                       value={manualNote}
                       onChange={(e) => setManualNote(e.target.value)}
                       maxLength={500}
                       rows={3}
-                      placeholder="f.eks. målt efter morgenmotion"
+                      placeholder={t("scan.noteExample")}
                       className="mt-2 w-full text-base border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-900 rounded-xl px-3 py-2
                                  focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-none
                                  text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
@@ -780,7 +785,7 @@ export default function ScanPage() {
                 {manualError && (
                   <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/60 rounded-xl p-3 flex items-start gap-2">
                     <TriangleAlert className="w-4 h-4 shrink-0 mt-0.5" />
-                    <p className="text-sm text-danger-600 dark:text-red-400 font-medium">{manualError}</p>
+                    <p className="text-sm text-danger-600 dark:text-red-400 font-medium">{tError(manualError)}</p>
                   </div>
                 )}
 
@@ -791,7 +796,7 @@ export default function ScanPage() {
                     className="flex-1 bg-primary-600 text-white py-4 rounded-xl text-lg font-semibold
                                hover:bg-primary-700 active:scale-95 transition-all disabled:opacity-50"
                   >
-                    {isSavingManual ? "Gemmer..." : <span className="inline-flex items-center gap-2"><Check className="w-5 h-5" /> Gem måling</span>}
+                    {isSavingManual ? t("common.saving") : <span className="inline-flex items-center gap-2"><Check className="w-5 h-5" /> {t("scan.saveReading")}</span>}
                   </button>
                   <button
                     type="button"
@@ -808,21 +813,21 @@ export default function ScanPage() {
             {manualStep === "saved" && (
               <div className="text-center py-12">
                 <CircleCheckBig className="w-16 h-16 text-green-600 mx-auto mb-4" />
-                <p className="text-xl font-semibold text-gray-900 dark:text-gray-100">Måling gemt!</p>
+                <p className="text-xl font-semibold text-gray-900 dark:text-gray-100">{t("scan.saved")}</p>
                 <div className="mt-6 flex gap-3 justify-center">
                   <button
                     onClick={handleManualReset}
                     className="bg-primary-600 text-white px-8 py-3 rounded-xl font-semibold
                                hover:bg-primary-700 active:scale-95 transition-all"
                   >
-                    Tilføj ny
+                    {t("scan.addNew")}
                   </button>
                   <Link
                     href="/readings"
                     className="px-8 py-3 bg-gray-200 dark:bg-gray-700 dark:text-gray-100 rounded-xl font-semibold inline-block
                                hover:bg-gray-300 dark:hover:bg-gray-600 active:scale-95 transition-all"
                   >
-                    Se målinger
+                    {t("scan.viewReadings")}
                   </Link>
                 </div>
               </div>

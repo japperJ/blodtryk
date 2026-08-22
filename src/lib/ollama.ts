@@ -10,7 +10,7 @@ export async function scanBloodPressure(
   const estimatedBytes = Math.round((imageBase64.length * 3) / 4);
   if (estimatedBytes < 50000) {
     console.log(`Image too small (${Math.round(estimatedBytes / 1024)}KB) — likely poor quality`);
-    return { error: "Billedet er for lille eller utydeligt. Prøv igen med bedre lysning." };
+    return { error: "imageTooSmall" };
   }
   const result = await runScan(imageBase64);
   if ("error" in result) return result;
@@ -47,7 +47,7 @@ async function runScan(
   console.log("Ollama raw:", content.substring(0, 200));
 
   const jsonMatch = content.match(/\{[^}]+\}/);
-  if (!jsonMatch) return { error: "Could not parse LLM response" };
+  if (!jsonMatch) return { error: "scanCouldNotParse" };
 
   try {
     const parsed = JSON.parse(jsonMatch[0]);
@@ -58,7 +58,7 @@ async function runScan(
       typeof parsed.diastolic !== "number" ||
       typeof parsed.pulse !== "number"
     ) {
-      return { error: "Invalid reading format" };
+      return { error: "scanInvalidFormat" };
     }
 
     return {
@@ -67,6 +67,6 @@ async function runScan(
       pulse: Math.round(parsed.pulse),
     };
   } catch {
-    return { error: "Failed to parse JSON" };
+    return { error: "scanParseFailed" };
   }
 }

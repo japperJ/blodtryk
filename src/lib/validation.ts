@@ -1,16 +1,24 @@
 // Server-side validering af målinger (bruges af POST /api/readings).
 // Ren logik uden DB-adgang — personId-tjek mod databasen sker i routen via Prisma.
+//
+// Fejl returneres som STABILE KODER (fx "invalidSystolic"), ikke danske sætninger —
+// klienten oversætter koden via src/lib/i18n.ts (#24). Grænsekonstanterne er
+// eksporteret, så i18n kan bygge de tilsvarende beskeder med samme tal.
 
 // Grænser for gyldige målingsværdier
-const SYSTOLIC_MIN = 50;
-const SYSTOLIC_MAX = 300;
-const DIASTOLIC_MIN = 20;
-const DIASTOLIC_MAX = 200;
-const PULSE_MIN = 20;
-const PULSE_MAX = 250;
-const AGE_MIN = 1;
-const AGE_MAX = 120;
-const NOTE_MAX_LENGTH = 500;
+export const SYSTOLIC_MIN = 50;
+export const SYSTOLIC_MAX = 300;
+export const DIASTOLIC_MIN = 20;
+export const DIASTOLIC_MAX = 200;
+export const PULSE_MIN = 20;
+export const PULSE_MAX = 250;
+export const AGE_MIN = 1;
+export const AGE_MAX = 120;
+export const NOTE_MAX_LENGTH = 500;
+
+// Grænser for medicin-felter (delt af begge /api/medications-routes)
+export const MEDICATION_NAME_MAX_LENGTH = 100;
+export const MEDICATION_DOSE_MAX_LENGTH = 100;
 
 // Tolerance for urforskel mellem klient og server — tidspunkter mere end dette
 // i fremtiden afvises som "far-future"
@@ -67,7 +75,7 @@ export function validateBirthYear(
 
   const max = new Date().getFullYear();
   if (!isInt(value) || (value as number) < BIRTH_YEAR_MIN || (value as number) > max) {
-    return { ok: false, error: `Årstal skal være mellem ${BIRTH_YEAR_MIN} og ${max}` };
+    return { ok: false, error: "birthYearRange" };
   }
 
   return { ok: true, value: value as number };
@@ -76,49 +84,49 @@ export function validateBirthYear(
 /**
  * Validerer body fra POST /api/readings.
  * Returnerer enten { ok: true, data } med rensede felter
- * eller { ok: false, error } med en dansk fejlbesked.
+ * eller { ok: false, error } med en stabil fejlkode (oversættes i klienten).
  */
 export function validateReadingInput(body: unknown): ReadingValidationResult {
   // Body skal være et JSON-objekt
   if (typeof body !== "object" || body === null || Array.isArray(body)) {
-    return { ok: false, error: "Ugyldigt anmodningsformat" };
+    return { ok: false, error: "invalidRequestFormat" };
   }
 
   const raw = body as Record<string, unknown>;
 
   // personId er påkrævet
   if (!isInt(raw.personId) || raw.personId < 1) {
-    return { ok: false, error: "personId er påkrævet" };
+    return { ok: false, error: "personIdRequired" };
   }
 
   // Systolisk: heltal mellem 50 og 300
   if (!isInt(raw.systolic) || raw.systolic < SYSTOLIC_MIN || raw.systolic > SYSTOLIC_MAX) {
-    return { ok: false, error: `Systolisk skal være et heltal mellem ${SYSTOLIC_MIN} og ${SYSTOLIC_MAX}` };
+    return { ok: false, error: "invalidSystolic" };
   }
 
   // Diastolisk: heltal mellem 20 og 200
   if (!isInt(raw.diastolic) || raw.diastolic < DIASTOLIC_MIN || raw.diastolic > DIASTOLIC_MAX) {
-    return { ok: false, error: `Diastolisk skal være et heltal mellem ${DIASTOLIC_MIN} og ${DIASTOLIC_MAX}` };
+    return { ok: false, error: "invalidDiastolic" };
   }
 
   // Puls: heltal mellem 20 og 250 (påkrævet — samme som schema og nuværende flows)
   if (!isInt(raw.pulse) || raw.pulse < PULSE_MIN || raw.pulse > PULSE_MAX) {
-    return { ok: false, error: `Puls skal være et heltal mellem ${PULSE_MIN} og ${PULSE_MAX}` };
+    return { ok: false, error: "invalidPulse" };
   }
 
   // Relation: systolisk skal være højere end diastolisk
   if (raw.systolic <= raw.diastolic) {
-    return { ok: false, error: "Systolisk skal være højere end diastolisk" };
+    return { ok: false, error: "systolicMustExceedDiastolic" };
   }
 
   // Note: valgfri streng på højst 500 tegn
   let note: string | null = null;
   if (!isAbsent(raw.note)) {
     if (typeof raw.note !== "string") {
-      return { ok: false, error: "Note skal være en tekststreng" };
+      return { ok: false, error: "invalidNoteType" };
     }
     if (raw.note.length > NOTE_MAX_LENGTH) {
-      return { ok: false, error: `Note må højst være ${NOTE_MAX_LENGTH} tegn` };
+      return { ok: false, error: "noteTooLong" };
     }
     note = raw.note;
   }
@@ -127,7 +135,7 @@ export function validateReadingInput(body: unknown): ReadingValidationResult {
   let age: number | null = null;
   if (!isAbsent(raw.age)) {
     if (!isInt(raw.age) || raw.age < AGE_MIN || raw.age > AGE_MAX) {
-      return { ok: false, error: `Alder skal være et heltal mellem ${AGE_MIN} og ${AGE_MAX}` };
+      return { ok: false, error: "invalidAge" };
     }
     age = raw.age;
   }
@@ -136,7 +144,7 @@ export function validateReadingInput(body: unknown): ReadingValidationResult {
   let image: string | null = null;
   if (!isAbsent(raw.image)) {
     if (typeof raw.image !== "string") {
-      return { ok: false, error: "Billede skal være en tekststreng (data-URL)" };
+      return { ok: false, error: "invalidImageType" };
     }
     image = raw.image;
   }
@@ -148,7 +156,7 @@ export function validateReadingInput(body: unknown): ReadingValidationResult {
       typeof raw.timeOfDay !== "string" ||
       !TIME_OF_DAY_VALUES.includes(raw.timeOfDay as (typeof TIME_OF_DAY_VALUES)[number])
     ) {
-      return { ok: false, error: "Tidspunkt skal være 'morning' eller 'evening'" };
+      return { ok: false, error: "invalidTimeOfDayValue" };
     }
     timeOfDay = raw.timeOfDay;
   }
@@ -157,7 +165,7 @@ export function validateReadingInput(body: unknown): ReadingValidationResult {
   let arm: string | null = null;
   if (!isAbsent(raw.arm)) {
     if (typeof raw.arm !== "string" || !ARM_VALUES.includes(raw.arm as (typeof ARM_VALUES)[number])) {
-      return { ok: false, error: "Arm skal være 'left' eller 'right'" };
+      return { ok: false, error: "invalidArmValue" };
     }
     arm = raw.arm;
   }
@@ -166,15 +174,15 @@ export function validateReadingInput(body: unknown): ReadingValidationResult {
   let createdAt: Date | null = null;
   if (!isAbsent(raw.createdAt)) {
     if (typeof raw.createdAt !== "string" || raw.createdAt.trim() === "") {
-      return { ok: false, error: "Tidspunkt skal være en dato/tid (ISO-format)" };
+      return { ok: false, error: "createdAtRequiredFormat" };
     }
     const parsed = new Date(raw.createdAt);
     if (isNaN(parsed.getTime())) {
-      return { ok: false, error: "Ugyldigt tidspunkt — angiv en gyldig dato og tid" };
+      return { ok: false, error: "invalidCreatedAt" };
     }
     // Målinger kan ikke være foretaget i fremtiden (lille tolerance til urforskel)
     if (parsed.getTime() > Date.now() + CREATED_AT_FUTURE_TOLERANCE_MS) {
-      return { ok: false, error: "Tidspunktet kan ikke ligge i fremtiden" };
+      return { ok: false, error: "createdAtInFuture" };
     }
     createdAt = parsed;
   }

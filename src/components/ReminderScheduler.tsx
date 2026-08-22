@@ -14,8 +14,11 @@ import {
   isReminderDue,
   isValidTime,
 } from "@/lib/reminder";
+import { useI18n } from "@/lib/I18nProvider";
 
 export default function ReminderScheduler() {
+  const { t, locale } = useI18n();
+
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -35,7 +38,7 @@ export default function ReminderScheduler() {
         if (!isReminderDue(enabled, reminderTime, lastShown, new Date())) return;
 
         const options: NotificationOptions = {
-          body: "Din daglige blodtryksmåling venter – det tager kun et minut.",
+          body: t("reminder.notificationBody"),
           tag: NOTIFICATION_TAG, // én ad gangen; ny erstatter gammel
           icon: "/icons/icon-192.png",
         };
@@ -45,13 +48,13 @@ export default function ReminderScheduler() {
         if ("serviceWorker" in navigator) {
           try {
             const registration = await navigator.serviceWorker.ready;
-            await registration.showNotification("📏 Tid til at måle blodtryk", options);
+            await registration.showNotification(t("reminder.notificationTitle"), options);
             shown = true;
           } catch {
             /* fald tilbage til konstruktoren nedenfor */
           }
         }
-        if (!shown) new Notification("📏 Tid til at måle blodtryk", options);
+        if (!shown) new Notification(t("reminder.notificationTitle"), options);
 
         // Sæt guarden straks — undgår dobbeltfyring mellem to ticks.
         localStorage.setItem(LAST_REMINDER_SHOWN_KEY, today);
@@ -68,7 +71,8 @@ export default function ReminderScheduler() {
       clearInterval(interval);
       document.removeEventListener("visibilitychange", check);
     };
-  }, []);
+    // Re-etabler intervallet hvis sproget skiftes, så notifikationsteksten følger med.
+  }, [t, locale]);
 
   return null;
 }

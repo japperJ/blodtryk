@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
 
   if (!personId) {
     return NextResponse.json(
-      { error: "personId er påkrævet" },
+      { error: "personIdRequired" },
       { status: 400 }
     );
   }
@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
   const id = parseInt(personId);
   if (isNaN(id)) {
     return NextResponse.json(
-      { error: "Ugyldigt personId" },
+      { error: "invalidPersonId" },
       { status: 400 }
     );
   }
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     try {
       body = await request.json();
     } catch {
-      return NextResponse.json({ error: "Ugyldigt JSON-format" }, { status: 400 });
+      return NextResponse.json({ error: "invalidJson" }, { status: 400 });
     }
 
     // Server-side validering før noget DB-arbejde
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
     // Tjek at personen eksisterer
     const person = await prisma.person.findUnique({ where: { id: personId } });
     if (!person) {
-      return NextResponse.json({ error: "Personen findes ikke" }, { status: 400 });
+      return NextResponse.json({ error: "personNotFound" }, { status: 400 });
     }
 
     // Billeder gemmes på disken (issue #15) — ikke som base64 i databasen.
@@ -97,6 +97,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(reading, { status: 201 });
   } catch (error) {
     console.error("Create reading error:", error);
-    return NextResponse.json({ error: "Failed to save reading" }, { status: 500 });
+    return NextResponse.json({ error: "readingSaveFailed" }, { status: 500 });
   }
 }
