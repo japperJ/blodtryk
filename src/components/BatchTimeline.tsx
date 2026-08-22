@@ -1,21 +1,19 @@
 "use client";
-import { ImageOff, Save, X } from "lucide-react";
-import type { ScanResult } from "./BatchProgress";
-import type { UploadImage } from "./BatchUpload";
+import { ImageOff, RotateCcw } from "lucide-react";
+import type { BatchItemView, ScanResult } from "./BatchProgress";
 import { getBPStatus } from "@/lib/bpClassification";
 import { useI18n } from "@/lib/I18nProvider";
 import { INTL_LOCALE, countKey } from "@/lib/i18n";
 
 interface Props {
-  images: UploadImage[];
+  items: BatchItemView[];
   results: ScanResult[];
-  onSaveAll: () => void;
-  isSaving: boolean;
   onReset: () => void;
   age?: number | null; // Personens alder til aldersjusteret klassificering
+  onRetryFailed?: () => void; // kun muligt når billederne stadig findes lokalt i browseren
 }
 
-export default function BatchTimeline({ images, results, onSaveAll, isSaving, onReset, age }: Props) {
+export default function BatchTimeline({ items, results, onReset, age, onRetryFailed }: Props) {
   const { t, locale, tError } = useI18n();
   // Sorter resultater efter tidspunkt (nyeste først)
   const sortedResults = [...results]
@@ -50,8 +48,8 @@ export default function BatchTimeline({ images, results, onSaveAll, isSaving, on
       {/* Tidslinje */}
       <div className="space-y-2">
         {sortedResults.map((result) => {
-          const image = images.find(img => img.id === result.imageId);
-          if (!image || !result.reading) return null;
+          const item = items.find(i => i.id === result.imageId);
+          if (!item || !result.reading) return null;
 
           const date = result.timestamp;
           const status = getBPStatus(result.reading.systolic, result.reading.diastolic, age);
@@ -62,11 +60,15 @@ export default function BatchTimeline({ images, results, onSaveAll, isSaving, on
               className="bg-white dark:bg-gray-800 rounded-xl p-3 shadow-sm border border-gray-200 dark:border-gray-700 flex items-center gap-3"
             >
               {/* Thumbnail */}
-              <img
-                src={image.thumbnail}
-                alt={t("card.imageAlt")}
-                className="w-14 h-14 rounded-lg object-cover shrink-0 border border-gray-200 dark:border-gray-600"
-              />
+              {item.thumbnail ? (
+                <img
+                  src={item.thumbnail}
+                  alt={t("card.imageAlt")}
+                  className="w-14 h-14 rounded-lg object-cover shrink-0 border border-gray-200 dark:border-gray-600"
+                />
+              ) : (
+                <div className="w-14 h-14 rounded-lg shrink-0 bg-gray-200 dark:bg-gray-700" />
+              )}
 
               {/* Info */}
               <div className="flex-1 min-w-0">
@@ -85,7 +87,7 @@ export default function BatchTimeline({ images, results, onSaveAll, isSaving, on
 
                 <p className="text-xs text-gray-500 dark:text-gray-400">
                   {date ? date.toLocaleTimeString(INTL_LOCALE[locale], { hour: '2-digit', minute: '2-digit' }) : ''}
-                  {image.exif.model && ` • ${image.exif.model}`}
+                  {item.exifModel && ` • ${item.exifModel}`}
                 </p>
               </div>
 
@@ -111,14 +113,18 @@ export default function BatchTimeline({ images, results, onSaveAll, isSaving, on
           </p>
           <div className="space-y-1">
             {results.filter(r => r.error).map((result) => {
-              const image = images.find(img => img.id === result.imageId);
+              const item = items.find(i => i.id === result.imageId);
               return (
                 <div key={result.imageId} className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400">
-                  <img
-                    src={image?.thumbnail}
-                    alt=""
-                    className="w-8 h-8 rounded object-cover opacity-50"
-                  />
+                  {item?.thumbnail ? (
+                    <img
+                      src={item.thumbnail}
+                      alt=""
+                      className="w-8 h-8 rounded object-cover opacity-50"
+                    />
+                  ) : (
+                    <div className="w-8 h-8 rounded bg-gray-200 dark:bg-gray-700 opacity-50" />
+                  )}
                   <span>{result.error ? tError(result.error) : ""}</span>
                 </div>
               );
@@ -127,24 +133,32 @@ export default function BatchTimeline({ images, results, onSaveAll, isSaving, on
         </div>
       )}
 
-      {/* Handlinger */}
-      <div className="flex gap-3">
-        <button
-          onClick={onSaveAll}
-          disabled={isSaving || successCount === 0}
-          className="flex-1 bg-primary-600 text-white py-4 rounded-xl text-lg font-semibold
-                     hover:bg-primary-700 active:scale-95 transition-all disabled:opacity-50"
-        >
-          {isSaving ? t("common.saving") : t(countKey("batch.saveAll", successCount), { count: successCount })}
-        </button>
+      {/* Handlinger — målinger er allerede gemt automatisk på serveren */}
+      <div className="space-y-3">
+        <p className="text-xs text-center text-gray-500 dark:text-gray-400">
+          {t("batch.autoSaved")}
+        </p>
 
-        <button
-          onClick={onReset}
-          className="w-14 h-14 bg-gray-200 dark:bg-gray-700 dark:text-gray-100 rounded-xl text-lg font-semibold
-                     hover:bg-gray-300 dark:hover:bg-gray-600 active:scale-95 transition-all flex items-center justify-center"
-        >
-          <X className="w-6 h-6" />
-        </button>
+        <div className="flex gap-3">
+          {onRetryFailed && (
+            <button
+              onClick={onRetryFailed}
+              className="flex-1 bg-gray-200 dark:bg-gray-700 dark:text-gray-100 text-gray-700 py-4 rounded-xl font-semibold
+                         hover:bg-gray-300 dark:hover:bg-gray-600 active:scale-95 transition-all"
+            >
+              <RotateCcw className="w-5 h-5 mr-1 inline" /> {t("batch.retryFailed")}
+            </button>
+          )}
+
+          <button
+            onClick={onReset}
+            className={`bg-primary-600 text-white py-4 rounded-xl text-lg font-semibold
+                       hover:bg-primary-700 active:scale-95 transition-all
+                       ${onRetryFailed ? "flex-1" : "w-full"}`}
+          >
+            {t("scan.uploadMore")}
+          </button>
+        </div>
       </div>
     </div>
   );

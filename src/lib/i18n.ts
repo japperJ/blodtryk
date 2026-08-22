@@ -175,7 +175,8 @@ const da: Record<string, string> = {
   "err.scanInvalidFormat": "Ugyldigt format på den scannede måling",
   "err.scanParseFailed": "Kunne ikke tolke svaret fra AI'en",
   "err.scanFailed": "Scan fejlede",
-  "err.saveBatchFailed": "Kunne ikke gemme målinger",
+  "err.batchJobFailed": "Kunne ikke starte scanning på serveren",
+  "err.tooManyImages": "For mange billeder i én upload (maks. 50)",
   "err.unknown": "Ukendt fejl",
   "err.fetchMedicationsFailed": "Kunne ikke hente medicin",
 
@@ -245,6 +246,8 @@ const da: Record<string, string> = {
   "batch.saveAllMany": "💾 Gem {count} målinger",
   "batch.unknownDate": "Ukendt dato",
   "batch.pulseValue": "Puls {value}",
+  "batch.autoSaved": "Målingerne gemmes automatisk på serveren, mens du scanner",
+  "batch.retryFailed": "Prøv de mislykkede billeder igen",
 
   // Målingsliste
   "readings.title": "Målinger",
@@ -567,7 +570,8 @@ const en: Record<string, string> = {
   "err.scanInvalidFormat": "Invalid format of the scanned reading",
   "err.scanParseFailed": "Could not interpret the AI response",
   "err.scanFailed": "Scan failed",
-  "err.saveBatchFailed": "Could not save readings",
+  "err.batchJobFailed": "Could not start scanning on the server",
+  "err.tooManyImages": "Too many images in one upload (max. 50)",
   "err.unknown": "Unknown error",
   "err.fetchMedicationsFailed": "Could not load medications",
 
@@ -638,6 +642,8 @@ const en: Record<string, string> = {
   "batch.saveAllMany": "💾 Save {count} readings",
   "batch.unknownDate": "Unknown date",
   "batch.pulseValue": "Pulse {value}",
+  "batch.autoSaved": "Readings are saved automatically on the server while you scan",
+  "batch.retryFailed": "Retry the failed images",
 
   // Readings list
   "readings.title": "Readings",
