@@ -71,7 +71,7 @@ export default function EditReadingDialog({ reading, onClose, onSaved }: Props) 
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center pb-[calc(72px+env(safe-area-inset-bottom))] sm:pb-0">
+    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center pb-[calc(72px+env(safe-area-inset-bottom,0px))] sm:pb-0">
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
 
@@ -89,6 +89,7 @@ export default function EditReadingDialog({ reading, onClose, onSaved }: Props) 
             onClick={onClose}
             className="flex h-11 w-11 items-center justify-center text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 text-xl"
             title="Luk"
+            aria-label="Luk"
           >
             <X className="w-5 h-5" />
           </button>
@@ -154,28 +155,6 @@ export default function EditReadingDialog({ reading, onClose, onSaved }: Props) 
         {formError && (
           <p className="text-sm text-red-600 dark:text-red-400 mt-1">{formError}</p>
         )}
-        </div>
-
-        {/* Fast footer — handlingerne er altid på skærmen */}
-        <div className="shrink-0 px-4 pt-3 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
-          <div className="flex gap-3">
-            <button
-              onClick={onClose}
-              disabled={isSaving}
-              className="px-6 py-3 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-xl font-semibold
-                         hover:bg-gray-300 dark:hover:bg-gray-600 active:scale-95 transition-all disabled:opacity-50"
-            >
-              Annuller
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={isSaving}
-              className="flex-1 bg-primary-600 text-white py-3 rounded-xl font-semibold
-                         hover:bg-primary-700 active:scale-95 transition-all disabled:opacity-50"
-            >
-              {isSaving ? "Gemmer..." : "Gem"}
-            </button>
-          </div>
         </div>
       </div>
     </div>
