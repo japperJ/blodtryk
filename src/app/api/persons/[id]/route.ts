@@ -5,10 +5,10 @@ import { validateBirthYear } from "@/lib/validation";
 // PATCH update person — navn og/eller fødselsår
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = parseInt(params.id);
+    const id = parseInt((await params).id);
     if (isNaN(id)) {
       return NextResponse.json({ error: "Ugyldigt ID" }, { status: 400 });
     }
@@ -59,10 +59,10 @@ export async function PATCH(
 // DELETE person — flyt målinger til Standard (id: 1)
 export async function DELETE(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = parseInt(params.id);
+    const id = parseInt((await params).id);
     if (isNaN(id)) {
       return NextResponse.json({ error: "Ugyldigt ID" }, { status: 400 });
     }

@@ -12,10 +12,10 @@ function isValidDate(value: unknown): value is string {
 // Deaktivering sker via active:false (historikken bevares).
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = Number(params.id);
+    const id = Number((await params).id);
     if (isNaN(id)) {
       return NextResponse.json({ error: "Ugyldigt ID" }, { status: 400 });
     }
@@ -114,10 +114,10 @@ export async function PATCH(
 // DELETE fjerner medicin-indslaget helt
 export async function DELETE(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = Number(params.id);
+    const id = Number((await params).id);
     if (isNaN(id)) {
       return NextResponse.json({ error: "Ugyldigt ID" }, { status: 400 });
     }

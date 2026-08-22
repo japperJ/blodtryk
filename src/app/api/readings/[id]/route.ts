@@ -5,16 +5,16 @@ import { unlink } from "fs/promises";
 import { join } from "path";
 
 // GET single reading
-export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
-  const reading = await prisma.reading.findUnique({ where: { id: Number(params.id) } });
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const reading = await prisma.reading.findUnique({ where: { id: Number((await params).id) } });
   if (!reading) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json(reading);
 }
 
 // DELETE reading
-export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const id = Number(params.id);
+    const id = Number((await params).id);
 
     // Hent målingen først så vi kender billedfilnavnet til oprydning
     const reading = await prisma.reading.findUnique({ where: { id } });
@@ -44,7 +44,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: { id: stri
 // Felter der udelades beholdes uændret; valideringen kører på det sammensatte
 // (fulde) payload ligesom POST, så ugyldige værdier afvises med de samme
 // danske fejlbeskeder.
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     let body: unknown;
     try {
@@ -53,7 +53,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       return NextResponse.json({ error: "Ugyldigt JSON-format" }, { status: 400 });
     }
 
-    const id = Number(params.id);
+    const id = Number((await params).id);
     const existing = await prisma.reading.findUnique({ where: { id } });
     if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 

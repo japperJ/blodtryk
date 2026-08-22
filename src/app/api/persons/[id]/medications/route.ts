@@ -11,9 +11,9 @@ function isValidDate(value: unknown): value is string {
 // GET alle medicin for en person — aktive først, derefter nyeste først
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const id = Number(params.id);
+  const id = Number((await params).id);
   if (isNaN(id)) {
     return NextResponse.json({ error: "Ugyldigt ID" }, { status: 400 });
   }
@@ -34,10 +34,10 @@ export async function GET(
 // POST nyt medicin-indslag — name og dose er påkrævet
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = Number(params.id);
+    const id = Number((await params).id);
     if (isNaN(id)) {
       return NextResponse.json({ error: "Ugyldigt ID" }, { status: 400 });
     }
