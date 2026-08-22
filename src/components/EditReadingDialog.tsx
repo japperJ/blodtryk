@@ -75,14 +75,14 @@ export default function EditReadingDialog({ reading, onClose, onSaved }: Props) 
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
 
-      {/* Dialog */}
+      {/* Dialog — fleks-kolonne: header + rulbart indhold + fast footer,
+          så Gem-knappen altid er synlig, også når tastaturet er åbent */}
       <div
-        className="relative bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-2xl w-full max-w-md p-4 pb-6
-                        shadow-xl animate-in slide-in-from-bottom duration-200
-                        max-h-[90vh] overflow-y-auto"
+        className="relative dialog-sheet flex flex-col bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-2xl w-full max-w-md
+                        shadow-xl animate-in slide-in-from-bottom duration-200"
       >
         {/* Header */}
-        <div className="flex justify-between items-center mb-4">
+        <div className="flex justify-between items-center mb-4 px-4 pt-4 shrink-0">
           <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">Rediger måling</h2>
           <button
             onClick={onClose}
@@ -92,6 +92,9 @@ export default function EditReadingDialog({ reading, onClose, onSaved }: Props) 
             <X className="w-5 h-5" />
           </button>
         </div>
+
+        {/* Rulbart indhold */}
+        <div className="flex-1 min-h-0 overflow-y-auto px-4">
 
         {/* Værdier — samme stepper som kamera-flow og manuel indtastning */}
         <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-3 mb-3">
@@ -130,25 +133,28 @@ export default function EditReadingDialog({ reading, onClose, onSaved }: Props) 
         {formError && (
           <p className="text-sm text-red-600 dark:text-red-400 mt-1">{formError}</p>
         )}
+        </div>
 
-        {/* Handlinger */}
-        <div className="flex gap-3 mt-3">
-          <button
-            onClick={onClose}
-            disabled={isSaving}
-            className="px-6 py-3 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-xl font-semibold
-                       hover:bg-gray-300 dark:hover:bg-gray-600 active:scale-95 transition-all disabled:opacity-50"
-          >
-            Annuller
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={isSaving}
-            className="flex-1 bg-primary-600 text-white py-3 rounded-xl font-semibold
-                       hover:bg-primary-700 active:scale-95 transition-all disabled:opacity-50"
-          >
-            {isSaving ? "Gemmer..." : "Gem"}
-          </button>
+        {/* Fast footer — handlingerne er altid på skærmen */}
+        <div className="shrink-0 px-4 pt-3 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+          <div className="flex gap-3">
+            <button
+              onClick={onClose}
+              disabled={isSaving}
+              className="px-6 py-3 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-xl font-semibold
+                         hover:bg-gray-300 dark:hover:bg-gray-600 active:scale-95 transition-all disabled:opacity-50"
+            >
+              Annuller
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={isSaving}
+              className="flex-1 bg-primary-600 text-white py-3 rounded-xl font-semibold
+                         hover:bg-primary-700 active:scale-95 transition-all disabled:opacity-50"
+            >
+              {isSaving ? "Gemmer..." : "Gem"}
+            </button>
+          </div>
         </div>
       </div>
     </div>

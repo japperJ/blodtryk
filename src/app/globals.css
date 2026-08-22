@@ -24,6 +24,20 @@ body {
   }
 }
 
+/* Dialog-ark på mobil: brug dynamisk viewport-højde så arket skrumper,
+   når tastaturet åbner — handlinger (Gem) forbliver synlige (issue #40) */
+@layer components {
+  .dialog-sheet {
+    max-height: calc(100vh - 1rem);
+  }
+
+  @supports (height: 100dvh) {
+    .dialog-sheet {
+      max-height: calc(100dvh - 1rem);
+    }
+  }
+}
+
 /* PWA standalone mode */
 @media all and (display-mode: standalone) {
   body {
