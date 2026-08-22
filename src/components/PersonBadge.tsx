@@ -4,6 +4,7 @@ import { ChevronDown, UserRound } from "lucide-react";
 import { useState, useEffect } from "react";
 import type { PersonSummary } from "@/types";
 import PersonDialog from "./PersonDialog";
+import { useI18n } from "@/lib/I18nProvider";
 
 interface Props {
   onPersonChange?: (person: PersonSummary | null) => void;
@@ -13,6 +14,7 @@ export default function PersonBadge({ onPersonChange }: Props) {
   const [selectedPerson, setSelectedPerson] = useState<PersonSummary | null>(null);
   const [showDialog, setShowDialog] = useState(false);
   const [persons, setPersons] = useState<PersonSummary[]>([]);
+  const { t } = useI18n();
 
   // Hent personer
   const fetchPersons = async () => {
@@ -83,7 +85,7 @@ export default function PersonBadge({ onPersonChange }: Props) {
                    transition-colors"
       >
         <UserRound className="w-4 h-4" />
-        <span>{selectedPerson?.name || "Vælg person"}</span>
+        <span>{selectedPerson?.name || t("badge.selectPerson")}</span>
         <ChevronDown className="w-3.5 h-3.5 opacity-60" />
       </button>
 

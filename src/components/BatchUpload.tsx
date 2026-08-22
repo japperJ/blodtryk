@@ -4,6 +4,8 @@ import { Images, Loader2 } from "lucide-react";
 import { useState, useRef } from "react";
 import { extractExifData, formatExifDate, type ExifData } from "@/lib/exif";
 import { compressImageForOCR, createThumbnail } from "@/lib/imageUtils";
+import { useI18n } from "@/lib/I18nProvider";
+import { INTL_LOCALE, countKey } from "@/lib/i18n";
 
 export interface UploadImage {
   id: string;
@@ -19,6 +21,7 @@ interface Props {
 }
 
 export default function BatchUpload({ onImagesReady }: Props) {
+  const { t, locale } = useI18n();
   const [selectedImages, setSelectedImages] = useState<UploadImage[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
@@ -31,7 +34,7 @@ export default function BatchUpload({ onImagesReady }: Props) {
     // Filtrer kun billeder
     const imageFiles = files.filter(f => f.type.startsWith('image/'));
     if (imageFiles.length === 0) {
-      alert('Valgte filer er ikke billeder');
+      alert(t('batch.notImages'));
       return;
     }
 
@@ -110,7 +113,7 @@ export default function BatchUpload({ onImagesReady }: Props) {
           <div className="space-y-2">
             <p className="text-2xl"><Loader2 className="w-8 h-8 animate-spin text-primary-600 dark:text-primary-400 inline" /> </p>
             <p className="text-sm text-gray-600 dark:text-gray-300">
-              Behandler billede {progress.current} af {progress.total}...
+              {t("batch.processing", { current: progress.current, total: progress.total })}
             </p>
             <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mt-2">
               <div
@@ -123,10 +126,10 @@ export default function BatchUpload({ onImagesReady }: Props) {
           <>
             <p className="text-4xl mb-2">📁</p>
             <p className="text-lg font-medium text-gray-700 dark:text-gray-200">
-              Vælg billeder fra galleriet
+              {t("batch.chooseFromGallery")}
             </p>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Tryk for at vælge — kan vælge flere på én gang
+              {t("batch.tapToSelect")}
             </p>
           </>
         )}
@@ -136,7 +139,7 @@ export default function BatchUpload({ onImagesReady }: Props) {
       {selectedImages.length > 0 && !isProcessing && (
         <>
           <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-700">
-            <p className="text-sm font-medium text-gray-600 dark:text-gray-300 mb-3 flex items-center gap-2"><Images className="w-4 h-4" /> {selectedImages.length} billede{selectedImages.length !== 1 ? 'r' : ''} valgt</p>
+            <p className="text-sm font-medium text-gray-600 dark:text-gray-300 mb-3 flex items-center gap-2"><Images className="w-4 h-4" /> {t(countKey("batch.selected", selectedImages.length), { count: selectedImages.length })}</p>
 
             <div className="grid grid-cols-5 gap-2">
               {selectedImages.map((img) => (
@@ -149,7 +152,7 @@ export default function BatchUpload({ onImagesReady }: Props) {
                   <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[9px]
                                   text-center py-0.5 rounded-b-lg truncate px-1">
                     {img.exif.dateOriginal
-                      ? img.exif.dateOriginal.toLocaleTimeString('da-DK', { hour: '2-digit', minute: '2-digit' })
+                      ? img.exif.dateOriginal.toLocaleTimeString(INTL_LOCALE[locale], { hour: '2-digit', minute: '2-digit' })
                       : '?'}
                   </div>
                   <button
@@ -170,9 +173,9 @@ export default function BatchUpload({ onImagesReady }: Props) {
             {/* Oversigt over tidsstempler */}
             <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
               <p className="text-xs text-gray-500 dark:text-gray-400">
-                Tidsstempler fra kamera: {selectedImages.map(img =>
+                {t("batch.cameraTimestamps")} {selectedImages.map(img =>
                   img.exif.dateOriginal
-                    ? img.exif.dateOriginal.toLocaleTimeString('da-DK', { hour: '2-digit', minute: '2-digit' })
+                    ? img.exif.dateOriginal.toLocaleTimeString(INTL_LOCALE[locale], { hour: '2-digit', minute: '2-digit' })
                     : '?'
                 ).join(' → ')}
               </p>
@@ -185,7 +188,7 @@ export default function BatchUpload({ onImagesReady }: Props) {
             className="w-full bg-primary-600 text-white py-4 rounded-xl text-lg font-semibold
                        hover:bg-primary-700 active:scale-95 transition-all"
           >
-            🔍 Scan {selectedImages.length} billede{selectedImages.length !== 1 ? 'r' : ''}
+            🔍 {t(countKey("batch.scanImages", selectedImages.length), { count: selectedImages.length })}
           </button>
         </>
       )}

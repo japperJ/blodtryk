@@ -3,6 +3,8 @@
 import { CheckCircle2, Check, Circle, X } from "lucide-react";
 import { useState } from "react";
 import type { PersonSummary } from "@/types";
+import { useI18n } from "@/lib/I18nProvider";
+import { countKey } from "@/lib/i18n";
 
 interface Props {
   persons: PersonSummary[];
@@ -24,6 +26,7 @@ export default function PersonDialog({
   const [newBirthYear, setNewBirthYear] = useState("");
   const [formError, setFormError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const { t, tError } = useI18n();
 
   // Indeværende år — bruges som maksimum for fødselsår
   const currentYear = new Date().getFullYear();
@@ -74,10 +77,10 @@ export default function PersonDialog({
                       shadow-xl animate-in slide-in-from-bottom duration-200">
         {/* Header */}
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">Vælg person</h2>
+          <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">{t("dialog.choosePerson")}</h2>
           <button
             onClick={onClose}
-            aria-label="Luk"
+            aria-label={t("common.close")}
             className="flex h-11 w-11 items-center justify-center text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
           >
             <X className="w-5 h-5" />
@@ -104,7 +107,7 @@ export default function PersonDialog({
                 <div className="text-left">
                   <p className="font-medium text-gray-900 dark:text-gray-100">{person.name}</p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    {person.readingCount} måling{person.readingCount !== 1 ? "er" : ""}
+                    {t(countKey("persons.readingCount", person.readingCount), { count: person.readingCount })}
                   </p>
                 </div>
               </div>
@@ -125,7 +128,7 @@ export default function PersonDialog({
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleAddPerson()}
-                  placeholder="Navn på ny person"
+                  placeholder={t("dialog.newNamePlaceholder")}
                   autoFocus
                   className="flex-1 px-3 py-2 border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-900 rounded-xl
                              focus:ring-2 focus:ring-primary-500 focus:border-primary-500
@@ -137,13 +140,13 @@ export default function PersonDialog({
                   className="px-4 py-2 min-h-[44px] bg-primary-600 text-white rounded-xl font-medium inline-flex items-center justify-center
                              hover:bg-primary-700 disabled:opacity-50 transition-colors"
                 >
-                  {isSaving ? "..." : "Tilføj"}
+                  {isSaving ? "..." : t("common.add")}
                 </button>
                 <button
                   onClick={() => { setIsAdding(false); setNewName(""); setNewBirthYear(""); setFormError(""); }}
                   className="px-3 py-2 min-h-[44px] text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                 >
-                  Annuller
+                  {t("common.cancel")}
                 </button>
               </div>
               <input
@@ -153,7 +156,7 @@ export default function PersonDialog({
                 value={newBirthYear}
                 onChange={(e) => setNewBirthYear(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleAddPerson()}
-                placeholder={`Fødselsår (f.eks. 1950)`}
+                placeholder={t("persons.birthYearPlaceholder")}
                 className="w-40 px-3 py-2 border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-900 rounded-xl mt-2
                            focus:ring-2 focus:ring-primary-500 focus:border-primary-500
                            text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
@@ -169,7 +172,7 @@ export default function PersonDialog({
                          text-gray-500 dark:text-gray-400 font-medium hover:border-primary-300 dark:hover:border-primary-500
                          hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
             >
-              + Tilføj ny person
+              {t("dialog.addNewPerson")}
             </button>
           )}
         </div>

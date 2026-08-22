@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
     const { name, birthYear } = body;
 
     if (!name || typeof name !== "string" || name.trim().length === 0) {
-      return NextResponse.json({ error: "Navn er påkrævet" }, { status: 400 });
+      return NextResponse.json({ error: "nameRequired" }, { status: 400 });
     }
 
     // Fødselsår: valgfrit heltal mellem 1900 og indeværende år
@@ -51,6 +51,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(person, { status: 201 });
   } catch (error) {
     console.error("Create person error:", error);
-    return NextResponse.json({ error: "Kunne ikke oprette person" }, { status: 500 });
+    return NextResponse.json({ error: "personCreateFailed" }, { status: 500 });
   }
 }

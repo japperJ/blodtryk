@@ -2,6 +2,8 @@
 // Rener polyline + cirkler: ingen per-punkt React-state, så ~500+ målinger er OK.
 "use client";
 
+import { countKey } from "@/lib/i18n";
+import { useI18n } from "@/lib/I18nProvider";
 import type { DailyAverage } from "@/types";
 
 // Målbånd (grøn zone) for personens aldersgruppe — se getTargetBand i app/trends/page.tsx
@@ -49,6 +51,7 @@ function shortDate(iso: string): string {
 }
 
 export default function BPLineChart({ data, band, showPulse }: BPLineChartProps) {
+  const { t } = useI18n();
   if (data.length === 0) return null;
 
   // Y-domæne: alle dataværdier + hele målbåndet, så båndet altid er synligt
@@ -86,7 +89,7 @@ export default function BPLineChart({ data, band, showPulse }: BPLineChartProps)
       viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
       className="w-full h-auto text-gray-200 dark:text-gray-700"
       role="img"
-      aria-label="Linjediagram over daglige gennemsnit af systolisk og diastolisk blodtryk"
+      aria-label={t("chart.lineAria")}
     >
       {/* Gridlines + y-labels */}
       {ticks.map((t) => (
@@ -114,7 +117,7 @@ export default function BPLineChart({ data, band, showPulse }: BPLineChartProps)
         fill={LINE_COLORS.band}
         opacity="0.10"
       >
-        <title>{`Målbånd systolisk: ${band.sysMin}–${band.sysMax}`}</title>
+        <title>{t("chart.bandSys", { min: band.sysMin, max: band.sysMax })}</title>
       </rect>
       <rect
         x={PAD.left}
@@ -124,7 +127,7 @@ export default function BPLineChart({ data, band, showPulse }: BPLineChartProps)
         fill={LINE_COLORS.band}
         opacity="0.06"
       >
-        <title>{`Målbånd diastolisk: ${band.diaMin}–${band.diaMax}`}</title>
+        <title>{t("chart.bandDia", { min: band.diaMin, max: band.diaMax })}</title>
       </rect>
 
           {/* Kurver */}
@@ -161,14 +164,14 @@ export default function BPLineChart({ data, band, showPulse }: BPLineChartProps)
         data.map((p, i) => (
           <g key={p.date}>
             <circle cx={xAt(i)} cy={yAt(p.diaAvg)} r="2.5" fill={LINE_COLORS.diastolic}>
-              <title>{`${shortDate(p.date)}: Diastolisk ${p.diaAvg} (${p.count} måling${p.count !== 1 ? "er" : ""})`}</title>
+              <title>{t("chart.dot", { date: shortDate(p.date), field: t("field.diastolic"), value: p.diaAvg, readings: t(countKey("chart.reading", p.count), { count: p.count }) })}</title>
             </circle>
             <circle cx={xAt(i)} cy={yAt(p.sysAvg)} r="2.5" fill={LINE_COLORS.systolic}>
-              <title>{`${shortDate(p.date)}: Systolisk ${p.sysAvg} (${p.count} måling${p.count !== 1 ? "er" : ""})`}</title>
+              <title>{t("chart.dot", { date: shortDate(p.date), field: t("field.systolic"), value: p.sysAvg, readings: t(countKey("chart.reading", p.count), { count: p.count }) })}</title>
             </circle>
             {showPulse && (
               <circle cx={xAt(i)} cy={yAt(p.pulseAvg)} r="2" fill={LINE_COLORS.pulse}>
-                <title>{`${shortDate(p.date)}: Puls ${p.pulseAvg}`}</title>
+                <title>{t("chart.dotPlain", { date: shortDate(p.date), field: t("field.pulse"), value: p.pulseAvg })}</title>
               </circle>
             )}
           </g>

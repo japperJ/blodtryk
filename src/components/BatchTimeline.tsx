@@ -3,6 +3,8 @@ import { ImageOff, Save, X } from "lucide-react";
 import type { ScanResult } from "./BatchProgress";
 import type { UploadImage } from "./BatchUpload";
 import { getBPStatus } from "@/lib/bpClassification";
+import { useI18n } from "@/lib/I18nProvider";
+import { INTL_LOCALE, countKey } from "@/lib/i18n";
 
 interface Props {
   images: UploadImage[];
@@ -14,6 +16,7 @@ interface Props {
 }
 
 export default function BatchTimeline({ images, results, onSaveAll, isSaving, onReset, age }: Props) {
+  const { t, locale, tError } = useI18n();
   // Sorter resultater efter tidspunkt (nyeste først)
   const sortedResults = [...results]
     .filter(r => r.reading !== null) // Kun succesfulde
@@ -33,11 +36,11 @@ export default function BatchTimeline({ images, results, onSaveAll, isSaving, on
         <div className="flex justify-between items-center">
           <div>
             <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              📊 {successCount} måling{successCount !== 1 ? 'er' : ''} klar
+              {t(countKey("batch.ready", successCount), { count: successCount })}
             </p>
             {failedCount > 0 && (
               <p className="text-sm text-red-600 dark:text-red-400">
-                {failedCount} billede{failedCount !== 1 ? 'r' : ''} kunne ikke aflæses
+                {t(countKey("batch.failed", failedCount), { count: failedCount })}
               </p>
             )}
           </div>
@@ -61,7 +64,7 @@ export default function BatchTimeline({ images, results, onSaveAll, isSaving, on
               {/* Thumbnail */}
               <img
                 src={image.thumbnail}
-                alt="Billede"
+                alt={t("card.imageAlt")}
                 className="w-14 h-14 rounded-lg object-cover shrink-0 border border-gray-200 dark:border-gray-600"
               />
 
@@ -69,19 +72,19 @@ export default function BatchTimeline({ images, results, onSaveAll, isSaving, on
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
-                    {date ? date.toLocaleDateString('da-DK', {
+                    {date ? date.toLocaleDateString(INTL_LOCALE[locale], {
                       weekday: 'short',
                       day: 'numeric',
                       month: 'short',
-                    }) : 'Ukendt dato'}
+                    }) : t("batch.unknownDate")}
                   </p>
                   <span className={`text-xs px-2 py-0.5 rounded-full ${status.color}`}>
-                    {status.label}
+                    {t(status.labelKey)}
                   </span>
                 </div>
 
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  {date ? date.toLocaleTimeString('da-DK', { hour: '2-digit', minute: '2-digit' }) : ''}
+                  {date ? date.toLocaleTimeString(INTL_LOCALE[locale], { hour: '2-digit', minute: '2-digit' }) : ''}
                   {image.exif.model && ` • ${image.exif.model}`}
                 </p>
               </div>
@@ -92,7 +95,7 @@ export default function BatchTimeline({ images, results, onSaveAll, isSaving, on
                   {result.reading.systolic}/{result.reading.diastolic}
                 </p>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Puls {result.reading.pulse}
+                  {t("batch.pulseValue", { value: result.reading.pulse })}
                 </p>
               </div>
             </div>
@@ -104,7 +107,7 @@ export default function BatchTimeline({ images, results, onSaveAll, isSaving, on
       {failedCount > 0 && (
         <div className="bg-red-50 dark:bg-red-900/20 rounded-xl p-4 border border-red-200 dark:border-red-900/60">
           <p className="text-sm font-medium text-red-800 dark:text-red-300 mb-2">
-            <ImageOff className="w-4 h-4 inline mr-1 text-red-700 dark:text-red-300" />️ Billeder der ikke kunne aflæses:
+            <ImageOff className="w-4 h-4 inline mr-1 text-red-700 dark:text-red-300" />️ {t("batch.unreadableHeader")}
           </p>
           <div className="space-y-1">
             {results.filter(r => r.error).map((result) => {
@@ -116,7 +119,7 @@ export default function BatchTimeline({ images, results, onSaveAll, isSaving, on
                     alt=""
                     className="w-8 h-8 rounded object-cover opacity-50"
                   />
-                  <span>{result.error}</span>
+                  <span>{result.error ? tError(result.error) : ""}</span>
                 </div>
               );
             })}
@@ -132,7 +135,7 @@ export default function BatchTimeline({ images, results, onSaveAll, isSaving, on
           className="flex-1 bg-primary-600 text-white py-4 rounded-xl text-lg font-semibold
                      hover:bg-primary-700 active:scale-95 transition-all disabled:opacity-50"
         >
-          {isSaving ? 'Gemmer...' : `💾 Gem ${successCount} måling${successCount !== 1 ? 'er' : ''}`}
+          {isSaving ? t("common.saving") : t(countKey("batch.saveAll", successCount), { count: successCount })}
         </button>
 
         <button

@@ -18,6 +18,8 @@ import PdfExport from "@/components/PdfExport";
 import EmptyState from "@/components/EmptyState";
 import { ReadingCardSkeleton } from "@/components/Skeleton";
 import { downloadReadingsCsv, downloadReadingsJson } from "@/lib/exporters";
+import { useI18n } from "@/lib/I18nProvider";
+import { countKey } from "@/lib/i18n";
 import type { Reading, PersonSummary } from "@/types";
 import Link from "next/link";
 
@@ -25,6 +27,7 @@ type FilterType = "all" | "with-image" | "without-image";
 type TimeFilterType = "all" | "morning" | "evening";
 
 export default function ReadingsPage() {
+  const { t, locale, tError } = useI18n();
   const [readings, setReadings] = useState<Reading[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<FilterType>("all");
@@ -73,9 +76,13 @@ export default function ReadingsPage() {
   }, [fetchReadings]);
 
   const handleDelete = async (id: number) => {
-    if (!confirm("Sikker på du vil slette denne måling?")) return;
+    if (!confirm(t("readings.confirmDelete"))) return;
     try {
-      await fetch(`/api/readings/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/readings/${id}`, { method: "DELETE" });
+      if (!res.ok && res.status !== 404) {
+        const data = await res.json().catch(() => null);
+        if (data?.error) alert(tError(data.error));
+      }
       setReadings((prev) => prev.filter((r) => r.id !== id));
     } catch (err) {
       console.error("Failed to delete:", err);
@@ -123,15 +130,15 @@ export default function ReadingsPage() {
         <div className="max-w-lg mx-auto p-4 pt-12">
           <EmptyState
             icon={User}
-            title="Vælg en person"
-            description="Du skal vælge en person for at se målinger."
+            title={t("dash.choosePersonTitle")}
+            description={t("readings.choosePersonDesc")}
             action={
               <Link
                 href="/persons"
                 className="inline-block bg-primary-600 text-white px-6 py-3 rounded-xl font-semibold
                            hover:bg-primary-700 active:scale-95 transition-all"
               >
-                Gå til personer
+                {t("trends.goToPersons")}
               </Link>
             }
           />
@@ -147,7 +154,7 @@ export default function ReadingsPage() {
           <div>
             <h1 className="flex items-center gap-2 text-2xl font-bold text-gray-900 dark:text-gray-100">
               <ClipboardList className="w-6 h-6 text-primary-600 dark:text-primary-400" aria-hidden />
-              Målinger
+              {t("readings.title")}
             </h1>
             {selectedPerson && (
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{selectedPerson.name}</p>
@@ -158,9 +165,9 @@ export default function ReadingsPage() {
               {/* CSV/JSON eksporterer den FILTREREDE liste (#11) */}
               <button
                 onClick={() =>
-                  downloadReadingsCsv(filteredReadings, selectedPerson.name)
+                  downloadReadingsCsv(filteredReadings, selectedPerson.name, locale)
                 }
-                title="Eksportér filtrerede målinger til CSV (dansk Excel-venlig)"
+                title={t("readings.exportCsvTip")}
                 className="inline-flex items-center min-h-[44px] gap-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-sm px-3 py-2 rounded-lg font-medium
                            hover:bg-gray-50 dark:hover:bg-gray-700 active:scale-95 transition-all shadow-sm"
               >
@@ -171,7 +178,7 @@ export default function ReadingsPage() {
                 onClick={() =>
                   downloadReadingsJson(filteredReadings, selectedPerson.name)
                 }
-                title="Eksportér filtrerede målinger til JSON"
+                title={t("readings.exportJsonTip")}
                 className="inline-flex items-center min-h-[44px] gap-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-sm px-3 py-2 rounded-lg font-medium
                            hover:bg-gray-50 dark:hover:bg-gray-700 active:scale-95 transition-all shadow-sm"
               >
@@ -196,7 +203,7 @@ export default function ReadingsPage() {
                            ? 'bg-primary-600 text-white'
                            : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
             >
-              Alle ({readings.length})
+              {t("readings.filterAll")} ({readings.length})
             </button>
             <button
               onClick={() => setFilter("with-image")}
@@ -206,7 +213,7 @@ export default function ReadingsPage() {
                            : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
             >
               <ImageIcon className="w-4 h-4" aria-hidden />
-              Med billede ({withImageCount})
+              {t("readings.filterWithImage")} ({withImageCount})
             </button>
             <button
               onClick={() => setFilter("without-image")}
@@ -216,7 +223,7 @@ export default function ReadingsPage() {
                            : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
             >
               <FileText className="w-4 h-4" aria-hidden />
-              Uden billede ({withoutImageCount})
+              {t("readings.filterWithoutImage")} ({withoutImageCount})
             </button>
           </div>
         )}
@@ -231,7 +238,7 @@ export default function ReadingsPage() {
                            ? 'bg-primary-600 text-white'
                            : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
             >
-              Alle tider
+              {t("readings.timeAll")}
             </button>
             <button
               onClick={() => setTimeFilter("morning")}
@@ -241,7 +248,7 @@ export default function ReadingsPage() {
                            : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
             >
               <Sunrise className="w-4 h-4" aria-hidden />
-              Morgen ({morningCount})
+              {t("tod.morning")} ({morningCount})
             </button>
             <button
               onClick={() => setTimeFilter("evening")}
@@ -251,14 +258,14 @@ export default function ReadingsPage() {
                            : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
             >
               <Moon className="w-4 h-4" aria-hidden />
-              Aften ({eveningCount})
+              {t("tod.evening")} ({eveningCount})
             </button>
           </div>
         )}
 
         {loading ? (
           /* Skelet-layout (#12): samme form som kortene */
-          <div className="space-y-3" aria-busy="true" aria-label="Indlæser målinger">
+          <div className="space-y-3" aria-busy="true" aria-label={t("readings.loading")}>
             <ReadingCardSkeleton />
             <ReadingCardSkeleton />
             <ReadingCardSkeleton />
@@ -267,28 +274,28 @@ export default function ReadingsPage() {
           filter === "all" ? (
             <EmptyState
               icon={Stethoscope}
-              title="Ingen målinger endnu"
-              description="Tag din første måling for at komme i gang"
+              title={t("readings.emptyTitle")}
+              description={t("readings.emptyDesc")}
               action={
                 <Link
                   href="/scan"
                   className="inline-block bg-primary-600 text-white px-6 py-3 rounded-xl font-semibold
                              hover:bg-primary-700 active:scale-95 transition-all"
                 >
-                  Tag en måling
+                  {t("readings.emptyCta")}
                 </Link>
               }
             />
           ) : (
             <EmptyState
               icon={Filter}
-              title="Ingen målinger med dette filter"
+              title={t("readings.filteredEmptyTitle")}
               action={
                 <button
                   onClick={() => setFilter("all")}
                   className="text-sm text-primary-600 dark:text-primary-400 font-medium hover:text-primary-700 dark:hover:text-primary-300"
                 >
-                  Vis alle målinger
+                  {t("readings.filteredEmptyCta")}
                 </button>
               }
             />
@@ -296,8 +303,9 @@ export default function ReadingsPage() {
         ) : (
           <>
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-              {filteredReadings.length} måling{filteredReadings.length !== 1 ? 'er' : ''}
-              {(filter !== "all" || timeFilter !== "all") && ` (filtreret)`}
+              {(filter !== "all" || timeFilter !== "all")
+                ? t(countKey("readings.countFiltered", filteredReadings.length), { count: filteredReadings.length })
+                : t(countKey("count.readings", filteredReadings.length), { count: filteredReadings.length })}
             </p>
             <div className="space-y-3">
               {filteredReadings.map((r) => (

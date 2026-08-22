@@ -1,25 +1,26 @@
 // Eksport af målinger til CSV/JSON (#11) — kører 100% i browseren.
 // CSV: semikolon-separeret med UTF-8 BOM, så dansk Excel åbner den korrekt (æøå + ; som separator).
 import type { Arm, Reading, TimeOfDay } from "@/types";
+import { translate, type Locale } from "./i18n";
 
-/** Dansk label for tidspunkt-tag ("morning"|"evening") — tom streng når tagget mangler. */
-export function timeOfDayLabel(t: TimeOfDay | null | undefined): string {
-  if (t === "morning") return "Morgen";
-  if (t === "evening") return "Aften";
+/** Oversat label for tidspunkt-tag ("morning"|"evening") — tom streng når tagget mangler. */
+export function timeOfDayLabel(t: TimeOfDay | null | undefined, locale: Locale = "da"): string {
+  if (t === "morning") return translate(locale, "tod.morning");
+  if (t === "evening") return translate(locale, "tod.evening");
   return "";
 }
 
-/** Dansk label for arm-tag ("left"|"right") — tom streng når tagget mangler. */
-export function armLabel(a: Arm | null | undefined): string {
-  if (a === "left") return "Venstre";
-  if (a === "right") return "Højre";
+/** Oversat label for arm-tag ("left"|"right") — tom streng når tagget mangler. */
+export function armLabel(a: Arm | null | undefined, locale: Locale = "da"): string {
+  if (a === "left") return translate(locale, "arm.leftName");
+  if (a === "right") return translate(locale, "arm.rightName");
   return "";
 }
 
-/** Kort dansk label for arm-tag (PDF-pladshensyn): V = Venstre, H = Højre. */
-export function shortArmLabel(a: Arm | null | undefined): string {
-  if (a === "left") return "V";
-  if (a === "right") return "H";
+/** Kort oversat label for arm-tag (PDF-pladshensyn): V = Venstre, H = Højre / L = Left, R = Right. */
+export function shortArmLabel(a: Arm | null | undefined, locale: Locale = "da"): string {
+  if (a === "left") return translate(locale, "arm.leftShort");
+  if (a === "right") return translate(locale, "arm.rightShort");
   return "";
 }
 
@@ -46,8 +47,16 @@ function escapeCsvField(field: string): string {
  * Byg CSV-indholdet som ren streng (uden download-logik, så den kan testes
  * standalone i Node). Semikolon-separeret, CRLF-linjeskift, UTF-8 BOM først.
  */
-export function buildCsvString(readings: Reading[]): string {
-  const header = ["Dato", "Systolisk", "Diastolisk", "Puls", "Tidspunkt", "Arm", "Note"];
+export function buildCsvString(readings: Reading[], locale: Locale = "da"): string {
+  const header = [
+    translate(locale, "csv.date"),
+    translate(locale, "csv.systolic"),
+    translate(locale, "csv.diastolic"),
+    translate(locale, "csv.pulse"),
+    translate(locale, "csv.timeOfDay"),
+    translate(locale, "csv.arm"),
+    translate(locale, "csv.note"),
+  ];
 
   const sorted = [...readings].sort(
     (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
@@ -60,8 +69,8 @@ export function buildCsvString(readings: Reading[]): string {
       String(r.systolic),
       String(r.diastolic),
       String(r.pulse),
-      timeOfDayLabel(r.timeOfDay),
-      armLabel(r.arm),
+      timeOfDayLabel(r.timeOfDay, locale),
+      armLabel(r.arm, locale),
       r.note?.trim() ?? "",
     ];
     lines.push(row.map(escapeCsvField).join(";"));
@@ -102,8 +111,12 @@ function triggerBrowserDownload(content: Blob, filename: string): void {
 }
 
 /** Download målinger som CSV (semikolon + BOM, klar til dansk Excel). */
-export function downloadReadingsCsv(readings: Reading[], personName?: string): void {
-  const csv = buildCsvString(readings);
+export function downloadReadingsCsv(
+  readings: Reading[],
+  personName?: string,
+  locale: Locale = "da"
+): void {
+  const csv = buildCsvString(readings, locale);
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
   triggerBrowserDownload(blob, exportFilename(personName, "csv"));
 }

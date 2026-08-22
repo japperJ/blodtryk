@@ -19,7 +19,7 @@ interface StatsResponse {
   max: StatsEntry;
   daily: { date: string; sysAvg: number; diaAvg: number; pulseAvg: number; count: number }[];
   weekly: { weekStart: string; sysAvg: number; diaAvg: number; count: number }[];
-  classification: { severity: string; label: string; count: number }[];
+  classification: { severity: string; labelKey: string; count: number }[];
   byTimeOfDay?: { morning?: { sysAvg: number }; evening?: { sysAvg: number } };
   streakDays: number;
 }
@@ -48,18 +48,18 @@ export async function GET(request: NextRequest) {
   // personId er påkrævet og skal være et gyldigt tal
   const personIdParam = searchParams.get("personId");
   if (!personIdParam) {
-    return NextResponse.json({ error: "personId er påkrævet" }, { status: 400 });
+    return NextResponse.json({ error: "personIdRequired" }, { status: 400 });
   }
   const personId = parseInt(personIdParam);
   if (isNaN(personId)) {
-    return NextResponse.json({ error: "Ugyldigt personId" }, { status: 400 });
+    return NextResponse.json({ error: "invalidPersonId" }, { status: 400 });
   }
 
   // days-vindue: 7|30|90|all (standard 30)
   const daysParam = searchParams.get("days") ?? "30";
   if (!ALLOWED_DAYS.includes(daysParam as (typeof ALLOWED_DAYS)[number])) {
     return NextResponse.json(
-      { error: "days skal være 7, 30, 90 eller 'all'" },
+      { error: "daysMustBeValid" },
       { status: 400 }
     );
   }
@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
   // Personen skal eksistere
   const person = await prisma.person.findUnique({ where: { id: personId } });
   if (!person) {
-    return NextResponse.json({ error: "Personen findes ikke" }, { status: 400 });
+    return NextResponse.json({ error: "personNotFound" }, { status: 400 });
   }
 
   // Tidsafgrænsning: start af dag N-1 dage siden (i dag tælles med)
@@ -121,7 +121,7 @@ export async function GET(request: NextRequest) {
   const weeklyMap = new Map<string, { sys: number; dia: number; count: number }>();
 
   // Klassificerings-fordeling via den delte, aldersbevidste klassifikator
-  const classMap = new Map<string, { severity: string; label: string; count: number }>();
+  const classMap = new Map<string, { severity: string; labelKey: string; count: number }>();
 
   // Kontekst-tags: morgen/aften
   let morningSys = 0;
@@ -163,7 +163,7 @@ export async function GET(request: NextRequest) {
     const status = getBPStatus(r.systolic, r.diastolic, r.age);
     const c = classMap.get(status.severity) ?? {
       severity: status.severity,
-      label: status.label,
+      labelKey: status.labelKey,
       count: 0,
     };
     c.count += 1;

@@ -2,6 +2,7 @@
 
 import { AlertTriangle, CheckCircle2, Loader2, OctagonAlert, X, XCircle } from "lucide-react";
 import type { UploadImage } from "./BatchUpload";
+import { useI18n } from "@/lib/I18nProvider";
 
 export interface ScanResult {
   imageId: string;
@@ -19,6 +20,7 @@ interface Props {
 }
 
 export default function BatchProgress({ images, results, currentIndex, isComplete, onCancel }: Props) {
+  const { t, tError } = useI18n();
   const completedCount = results.length;
   const totalCount = images.length;
   const progressPercent = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
@@ -29,7 +31,7 @@ export default function BatchProgress({ images, results, currentIndex, isComplet
       <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-700">
         <div className="flex justify-between items-center mb-2">
           <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
-            {isComplete ? <span className="inline-flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-green-600" /> Scanning færdig</span> : <span className="inline-flex items-center gap-1.5"><Loader2 className="w-4 h-4 animate-spin" /> Scanner billede {currentIndex + 1} af {totalCount}...</span>}
+            {isComplete ? <span className="inline-flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-green-600" /> {t("batch.done")}</span> : <span className="inline-flex items-center gap-1.5"><Loader2 className="w-4 h-4 animate-spin" /> {t("batch.scanningN", { current: currentIndex + 1, total: totalCount })}</span>}
           </p>
           <p className="text-sm text-gray-500 dark:text-gray-400">
             {completedCount}/{totalCount}
@@ -50,8 +52,8 @@ export default function BatchProgress({ images, results, currentIndex, isComplet
         {!isComplete && (
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
             {completedCount > 0
-              ? `Ca. ${Math.round(((totalCount - completedCount) * 80))} sekunder tilbage`
-              : 'Starter scanning...'}
+              ? t("batch.secondsLeft", { seconds: Math.round((totalCount - completedCount) * 80) })
+              : t("batch.starting")}
           </p>
         )}
       </div>
@@ -74,7 +76,7 @@ export default function BatchProgress({ images, results, currentIndex, isComplet
               {/* Thumbnail */}
               <img
                 src={img.thumbnail}
-                alt="Billede"
+                alt={t("card.imageAlt")}
                 className="w-12 h-12 rounded-lg object-cover shrink-0"
               />
 
@@ -96,17 +98,17 @@ export default function BatchProgress({ images, results, currentIndex, isComplet
 
                 {hasError && (
                   <p className="text-sm text-red-600 dark:text-red-400">
-                    <AlertTriangle className="w-4 h-4 inline mr-1 text-red-500" /> {result?.error}
+                    <AlertTriangle className="w-4 h-4 inline mr-1 text-red-500" /> {result?.error ? tError(result.error) : ""}
                   </p>
                 )}
 
                 {!isDone && !isActive && (
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Venter...</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{t("batch.waiting")}</p>
                 )}
 
                 {isActive && (
                   <p className="text-xs text-primary-600 dark:text-primary-400 animate-pulse">
-                    Scanner...
+                    {t("batch.scanningShort")}
                   </p>
                 )}
               </div>
@@ -134,7 +136,7 @@ export default function BatchProgress({ images, results, currentIndex, isComplet
           className="w-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 py-3 rounded-xl font-medium
                      hover:bg-gray-300 dark:hover:bg-gray-600 active:scale-95 transition-all"
         >
-          <X className="w-4 h-4 mr-1 inline" /> Annuller scanning
+          <X className="w-4 h-4 mr-1 inline" /> {t("batch.cancelScan")}
         </button>
       )}
     </div>

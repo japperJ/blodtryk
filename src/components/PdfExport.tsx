@@ -2,8 +2,10 @@
 import { useState } from "react";
 import jsPDF from "jspdf";
 import type { Reading } from "@/types";
-import { getBPStatus, getAgeGroupLabel, type Severity } from "@/lib/bpClassification";
+import { getBPStatus, getAgeGroupKey, type Severity } from "@/lib/bpClassification";
 import { timeOfDayLabel, shortArmLabel } from "@/lib/exporters";
+import { INTL_LOCALE } from "@/lib/i18n";
+import { useI18n } from "@/lib/I18nProvider";
 import { LINE_COLORS } from "@/components/charts/BPLineChart";
 
 interface Props {
@@ -66,7 +68,11 @@ const CHART_H_MM = (CHART_W_MM * CHART_H_PX) / CHART_W_PX;
  * Ren streng-bygning (ingen React/DOM) så den kan rasteriseres via Image/canvas.
  * Farver deles med trends-sidens linjediagram (LINE_COLORS).
  */
-export function buildTrendChartSvg(data: DailyPoint[]): string {
+export function buildTrendChartSvg(
+  data: DailyPoint[],
+  sysLabel: string,
+  diaLabel: string
+): string {
   const W = CHART_W_PX;
   const H = CHART_H_PX;
   const PAD = { top: 28, right: 12, bottom: 20, left: 34 };
@@ -131,8 +137,8 @@ export function buildTrendChartSvg(data: DailyPoint[]): string {
 
   // Legende øverst til højre (tegnes fra højre mod venstre)
   const legend = [
-    { color: LINE_COLORS.diastolic, label: "Diastolisk" },
-    { color: LINE_COLORS.systolic, label: "Systolisk" },
+    { color: LINE_COLORS.diastolic, label: diaLabel },
+    { color: LINE_COLORS.systolic, label: sysLabel },
   ];
   let lx = W - PAD.right;
   for (const item of legend) {
@@ -198,6 +204,8 @@ async function rasterizeSvgToPng(
 
 export default function PdfExport({ readings, personName, medications }: Props) {
   const [generating, setGenerating] = useState(false);
+  const { t, locale } = useI18n();
+  const intlLocale = INTL_LOCALE[locale];
 
   const exportPdf = async () => {
     setGenerating(true);
@@ -211,9 +219,9 @@ export default function PdfExport({ readings, personName, medications }: Props) 
       const addPageHeader = () => {
         doc.setFontSize(8);
         doc.setTextColor(150);
-        doc.text("Blodtryksrapport", margin, 8);
+        doc.text(t("pdf.report"), margin, 8);
         doc.text(
-          `Genereret: ${new Date().toLocaleString("da-DK")}`,
+          t("pdf.generated", { date: new Date().toLocaleString(intlLocale) }),
           pageWidth - margin,
           8,
           { align: "right" }
@@ -259,7 +267,7 @@ export default function PdfExport({ readings, personName, medications }: Props) 
       // === Forside ===
       doc.setFontSize(20);
       doc.setTextColor(0);
-      doc.text("Blodtryksrapport", margin, y + 5);
+      doc.text(t("pdf.report"), margin, y + 5);
       y += 15;
 
       doc.setFontSize(10);
@@ -276,7 +284,7 @@ export default function PdfExport({ readings, personName, medications }: Props) 
         doc.setTextColor(100);
       }
 
-      doc.text(`Genereret: ${new Date().toLocaleString("da-DK")}`, margin, y);
+      doc.text(t("pdf.generated", { date: new Date().toLocaleString(intlLocale) }), margin, y);
       y += 5;
 
       // Alder info
@@ -284,11 +292,14 @@ export default function PdfExport({ readings, personName, medications }: Props) 
       if (ages.length > 0) {
         const uniqueAges = Array.from(new Set(ages));
         if (uniqueAges.length === 1) {
-          doc.text(
-            `Alder: ${uniqueAges[0]} aar (${getAgeGroupLabel(uniqueAges[0])})`,
-            margin,
-            y
-          );
+            doc.text(
+              t("pdf.ageLine", {
+                age: uniqueAges[0],
+                group: t(getAgeGroupKey(uniqueAges[0])),
+              }),
+              margin,
+              y
+            );
           y += 5;
         }
       }
@@ -297,7 +308,9 @@ export default function PdfExport({ readings, personName, medications }: Props) 
       const activeMeds = (medications ?? []).filter((m) => m.active);
       if (activeMeds.length > 0) {
         doc.text(
-          `Medicin: ${activeMeds.map((m) => `${m.name} ${m.dose}`).join(", ")}`,
+          t("pdf.medsLine", {
+            meds: activeMeds.map((m) => `${m.name} ${m.dose}`).join(", "),
+          }),
           margin,
           y
         );
@@ -311,7 +324,7 @@ export default function PdfExport({ readings, personName, medications }: Props) 
         doc.setFontSize(11);
         doc.setFont("helvetica", "bold");
         doc.setTextColor(0);
-        doc.text("Resumé", margin, y);
+        doc.text(t("pdf.summary"), margin, y);
         y += 7;
 
         doc.setFontSize(9);
@@ -320,13 +333,13 @@ export default function PdfExport({ readings, personName, medications }: Props) 
         // Periode: første–sidste måling
         const first = new Date(sorted[0].createdAt);
         const last = new Date(sorted[sorted.length - 1].createdAt);
-        const firstStr = first.toLocaleDateString("da-DK");
-        const lastStr = last.toLocaleDateString("da-DK");
+        const firstStr = first.toLocaleDateString(intlLocale);
+        const lastStr = last.toLocaleDateString(intlLocale);
         doc.setTextColor(0);
         doc.text(
           firstStr === lastStr
-            ? `Periode: ${firstStr}`
-            : `Periode: ${firstStr} – ${lastStr}`,
+            ? t("pdf.period", { range: firstStr })
+            : t("pdf.period", { range: `${firstStr} – ${lastStr}` }),
           margin,
           y
         );
@@ -340,33 +353,36 @@ export default function PdfExport({ readings, personName, medications }: Props) 
         const minDia = Math.min(...readings.map((r) => r.diastolic));
         const maxDia = Math.max(...readings.map((r) => r.diastolic));
 
-        doc.text(`Antal maalinger: ${readings.length}`, margin, y);
+        doc.text(t("pdf.count", { count: readings.length }), margin, y);
         y += 5;
-        doc.text(`Gennemsnit: ${avgSys}/${avgDia} mmHg`, margin, y);
+        doc.text(t("pdf.avg", { sys: avgSys, dia: avgDia }), margin, y);
         y += 5;
 
         // Puls-gennemsnit kun hvis der findes pulsværdier
         const pulseValues = readings.map((r) => r.pulse).filter((p) => p > 0);
         if (pulseValues.length > 0) {
           const avgPulse = Math.round(pulseValues.reduce((s, p) => s + p, 0) / pulseValues.length);
-          doc.text(`Gennemsnitlig puls: ${avgPulse} bpm`, margin, y);
+          doc.text(t("pdf.avgPulse", { pulse: avgPulse }), margin, y);
           y += 5;
         }
 
-        doc.text(`Systolisk (min-maks): ${minSys}-${maxSys} mmHg`, margin, y);
+        doc.text(t("pdf.sysMinMax", { min: minSys, max: maxSys }), margin, y);
         y += 5;
-        doc.text(`Diastolisk (min-maks): ${minDia}-${maxDia} mmHg`, margin, y);
+        doc.text(t("pdf.diaMinMax", { min: minDia, max: maxDia }), margin, y);
         y += 6;
 
         // Klassifikationsfordeling: getBPStatus pr. måling (med alder),
         // optalt pr. sværhedsgrad — samme fremgangsmåde som stats-API'en (#9)
         const severityOrder: Severity[] = ["normal", "elevated", "stage1", "stage2", "crisis"];
-        const classMap = new Map<Severity, { severity: Severity; label: string; count: number }>();
+        const classMap = new Map<
+          Severity,
+          { severity: Severity; labelKey: string; count: number }
+        >();
         for (const r of readings) {
           const status = getBPStatus(r.systolic, r.diastolic, r.age);
           const cur = classMap.get(status.severity) ?? {
             severity: status.severity,
-            label: status.label,
+            labelKey: status.labelKey,
             count: 0,
           };
           cur.count += 1;
@@ -376,11 +392,12 @@ export default function PdfExport({ readings, personName, medications }: Props) 
           .filter((s) => classMap.has(s))
           .map((s) => classMap.get(s)!);
 
+        const distLabel = t("pdf.distribution");
         doc.setTextColor(100);
-        doc.text("Fordeling:", margin, y);
-        let dx = margin + doc.getTextWidth("Fordeling:") + 3;
+        doc.text(distLabel, margin, y);
+        let dx = margin + doc.getTextWidth(distLabel) + 3;
         for (const seg of distribution) {
-          const txt = `${seg.label}: ${seg.count}`;
+          const txt = `${t(seg.labelKey)}: ${seg.count}`;
           const w = doc.getTextWidth(txt);
           if (dx + w > pageWidth - margin) {
             dx = margin;
@@ -396,12 +413,12 @@ export default function PdfExport({ readings, personName, medications }: Props) 
         const avgStatus = getBPStatus(avgSys, avgDia, ages[0] || null);
         doc.setFont("helvetica", "bold");
         setStatusColor(avgStatus.severity);
-        doc.text(`Samlet vurdering: ${avgStatus.label}`, margin, y);
+        doc.text(t("pdf.overall", { label: t(avgStatus.labelKey) }), margin, y);
         y += 5;
         doc.setFont("helvetica", "normal");
         doc.setFontSize(8);
         doc.setTextColor(100);
-        doc.text(avgStatus.description, margin, y);
+        doc.text(t(avgStatus.descriptionKey), margin, y);
         y += 8;
       }
 
@@ -409,14 +426,18 @@ export default function PdfExport({ readings, personName, medications }: Props) 
       try {
         const daily = computeDailyAverages(readings);
         if (daily.length >= 2) {
-          const svg = buildTrendChartSvg(daily);
+          const svg = buildTrendChartSvg(
+            daily,
+            t("field.systolic"),
+            t("field.diastolic")
+          );
           const png = await rasterizeSvgToPng(svg, CHART_W_PX, CHART_H_PX);
           if (png) {
             checkPage(CHART_H_MM + 14);
             doc.setFontSize(9);
             doc.setFont("helvetica", "bold");
             doc.setTextColor(0);
-            doc.text("Daglige gennemsnit", margin, y);
+            doc.text(t("pdf.dailyAverages"), margin, y);
             y += 4;
             doc.addImage(png, "PNG", margin, y, CHART_W_MM, CHART_H_MM);
             y += CHART_H_MM + 6;
@@ -454,8 +475,8 @@ export default function PdfExport({ readings, personName, medications }: Props) 
       const NOTE_LINE_H = 4.5;
 
       const tagText = (r: Reading): string => {
-        const tod = timeOfDayLabel(r.timeOfDay);
-        const arm = shortArmLabel(r.arm);
+        const tod = timeOfDayLabel(r.timeOfDay, locale);
+        const arm = shortArmLabel(r.arm, locale);
         return [tod, arm].filter(Boolean).join(" ");
       };
 
@@ -463,18 +484,18 @@ export default function PdfExport({ readings, personName, medications }: Props) 
         doc.setFontSize(8);
         doc.setFont("helvetica", "bold");
         doc.setTextColor(0);
-        doc.text("Dato", colDate, y);
-        doc.text("Tid", colTime, y);
-        doc.text("Alder", colAge, y);
-        doc.text("Sys", colSys, y);
-        doc.text("Dia", colDia, y);
-        doc.text("Puls", colPulse, y);
-        doc.text("Vurdering", colStatus, y);
+        doc.text(t("pdf.colDate"), colDate, y);
+        doc.text(t("pdf.colTime"), colTime, y);
+        doc.text(t("pdf.colAge"), colAge, y);
+        doc.text(t("pdf.colSys"), colSys, y);
+        doc.text(t("pdf.colDia"), colDia, y);
+        doc.text(t("pdf.colPulse"), colPulse, y);
+        doc.text(t("pdf.colAssessment"), colStatus, y);
         if (hasTags) {
-          doc.text("Tag", colTag, y);
+          doc.text(t("pdf.colTag"), colTag, y);
         }
         if (hasNotes) {
-          doc.text("Note", colNote, y);
+          doc.text(t("pdf.colNote"), colNote, y);
         }
         y += 2;
         doc.setDrawColor(180);
@@ -523,7 +544,7 @@ export default function PdfExport({ readings, personName, medications }: Props) 
         doc.text(String(reading.pulse), colPulse, y);
 
         setStatusColor(status.severity);
-        doc.text(status.label, colStatus, y);
+        doc.text(t(status.labelKey), colStatus, y);
 
         if (hasTags) {
           doc.setTextColor(100);
@@ -546,7 +567,7 @@ export default function PdfExport({ readings, personName, medications }: Props) 
       }
 
       // Sidefod på alle sider: Blodtryk-branding + genereringsdato + sidenumre
-      const generatedDate = new Date().toLocaleDateString("da-DK");
+      const generatedDate = new Date().toLocaleDateString(intlLocale);
       const totalPages = doc.getNumberOfPages();
       for (let i = 1; i <= totalPages; i++) {
         doc.setPage(i);
@@ -555,11 +576,11 @@ export default function PdfExport({ readings, personName, medications }: Props) 
         doc.setFontSize(7);
         doc.setFont("helvetica", "normal");
         doc.setTextColor(150);
-        doc.text("Blodtryk", margin, pageHeight - 8);
-        doc.text(`Genereret: ${generatedDate}`, pageWidth - margin, pageHeight - 8, {
+        doc.text(t("pdf.brand"), margin, pageHeight - 8);
+        doc.text(t("pdf.generated", { date: generatedDate }), pageWidth - margin, pageHeight - 8, {
           align: "right",
         });
-        doc.text(`Side ${i} af ${totalPages}`, pageWidth / 2, pageHeight - 8, {
+        doc.text(t("pdf.pageOf", { page: i, total: totalPages }), pageWidth / 2, pageHeight - 8, {
           align: "center",
         });
       }

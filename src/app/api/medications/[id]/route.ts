@@ -17,19 +17,19 @@ export async function PATCH(
   try {
     const id = Number((await params).id);
     if (isNaN(id)) {
-      return NextResponse.json({ error: "Ugyldigt ID" }, { status: 400 });
+      return NextResponse.json({ error: "invalidId" }, { status: 400 });
     }
 
     const existing = await prisma.medication.findUnique({ where: { id } });
     if (!existing) {
-      return NextResponse.json({ error: "Medicin blev ikke fundet" }, { status: 404 });
+      return NextResponse.json({ error: "medicationNotFound" }, { status: 404 });
     }
 
     let body: unknown;
     try {
       body = await request.json();
     } catch {
-      return NextResponse.json({ error: "Ugyldigt JSON-format" }, { status: 400 });
+      return NextResponse.json({ error: "invalidJson" }, { status: 400 });
     }
 
     const raw =
@@ -39,7 +39,7 @@ export async function PATCH(
 
     if (Object.keys(raw).length === 0) {
       return NextResponse.json(
-        { error: "Angiv mindst ét felt at opdatere" },
+        { error: "noFieldsToUpdateGeneric" },
         { status: 400 }
       );
     }
@@ -54,20 +54,14 @@ export async function PATCH(
 
     if (raw.name !== undefined) {
       if (typeof raw.name !== "string" || raw.name.trim() === "" || raw.name.length > NAME_MAX) {
-        return NextResponse.json(
-          { error: `Navn er påkrævet (højst ${NAME_MAX} tegn)` },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: "nameTooLong" }, { status: 400 });
       }
       data.name = raw.name.trim();
     }
 
     if (raw.dose !== undefined) {
       if (typeof raw.dose !== "string" || raw.dose.trim() === "" || raw.dose.length > DOSE_MAX) {
-        return NextResponse.json(
-          { error: `Dosis er påkrævet (højst ${DOSE_MAX} tegn)` },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: "doseTooLong" }, { status: 400 });
       }
       data.dose = raw.dose.trim();
     }
@@ -76,7 +70,7 @@ export async function PATCH(
       if (raw.startDate === null) {
         data.startDate = null;
       } else if (!isValidDate(raw.startDate)) {
-        return NextResponse.json({ error: "Ugyldig startdato" }, { status: 400 });
+        return NextResponse.json({ error: "invalidStartDate" }, { status: 400 });
       } else {
         data.startDate = new Date(raw.startDate as string);
       }
@@ -86,7 +80,7 @@ export async function PATCH(
       if (raw.endDate === null) {
         data.endDate = null;
       } else if (!isValidDate(raw.endDate)) {
-        return NextResponse.json({ error: "Ugyldig slutdato" }, { status: 400 });
+        return NextResponse.json({ error: "invalidEndDate" }, { status: 400 });
       } else {
         data.endDate = new Date(raw.endDate as string);
       }
@@ -94,7 +88,7 @@ export async function PATCH(
 
     if (raw.active !== undefined) {
       if (typeof raw.active !== "boolean") {
-        return NextResponse.json({ error: "active skal være true eller false" }, { status: 400 });
+        return NextResponse.json({ error: "activeMustBeBoolean" }, { status: 400 });
       }
       data.active = raw.active;
     }
@@ -107,7 +101,7 @@ export async function PATCH(
     return NextResponse.json(medication);
   } catch (error) {
     console.error("Update medication error:", error);
-    return NextResponse.json({ error: "Kunne ikke opdatere medicin" }, { status: 500 });
+    return NextResponse.json({ error: "medicationUpdateFailed" }, { status: 500 });
   }
 }
 
@@ -119,12 +113,12 @@ export async function DELETE(
   try {
     const id = Number((await params).id);
     if (isNaN(id)) {
-      return NextResponse.json({ error: "Ugyldigt ID" }, { status: 400 });
+      return NextResponse.json({ error: "invalidId" }, { status: 400 });
     }
 
     const existing = await prisma.medication.findUnique({ where: { id } });
     if (!existing) {
-      return NextResponse.json({ error: "Medicin blev ikke fundet" }, { status: 404 });
+      return NextResponse.json({ error: "medicationNotFound" }, { status: 404 });
     }
 
     await prisma.medication.delete({ where: { id } });
@@ -132,6 +126,6 @@ export async function DELETE(
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error("Delete medication error:", error);
-    return NextResponse.json({ error: "Kunne ikke slette medicin" }, { status: 500 });
+    return NextResponse.json({ error: "medicationDeleteFailed" }, { status: 500 });
   }
 }

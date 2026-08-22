@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import ReminderScheduler from "@/components/ReminderScheduler";
+import { I18nProvider } from "@/lib/I18nProvider";
 
 export const metadata: Metadata = {
   title: "Blodtryk",
@@ -34,6 +35,35 @@ const themeInitScript = `
 })();
 `;
 
+// Kører FØR første paint: sætter <html lang> ud fra gemt sprog
+// ("lang" i localStorage: "da" | "en", ellers browser-sprog, default dansk).
+// Spejler detectLocale() i lib/i18n.ts og kører før I18nProvider-mounts,
+// så skærmlæsere og hyphenation får rigtigt sprog uden flash af forkert lang.
+const langInitScript = `
+(function () {
+  try {
+    var lang = "da";
+    var saved = localStorage.getItem("lang");
+    if (saved === "da" || saved === "en") {
+      lang = saved;
+    } else {
+      var candidates =
+        navigator.languages && navigator.languages.length
+          ? navigator.languages
+          : navigator.language
+            ? [navigator.language]
+            : [];
+      for (var i = 0; i < candidates.length; i++) {
+        var lower = (candidates[i] || "").toLowerCase();
+        if (lower.lastIndexOf("da", 0) === 0) { lang = "da"; break; }
+        if (lower.lastIndexOf("en", 0) === 0) { lang = "en"; break; }
+      }
+    }
+    document.documentElement.lang = lang;
+  } catch (e) {}
+})();
+`;
+
 // Registrerer /sw.js (#16, kun til påmindelsesnotifikationer — ingen caching).
 // ALDRIG i dev på localhost (undgår cache-hovedpine), men altid i production-builds.
 // Hele registreringen er best-effort: guard + try/catch, så den aldrig kan bryde appen.
@@ -57,11 +87,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* Opdateres af tema-scriptet og Navbar-toggle (lys: #2563eb, mørk: #111827) */}
         <meta id="theme-color-meta" name="theme-color" content="#2563eb" />
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        {/* Sprog-init: samme mønster som tema-scriptet — før første paint */}
+        <script dangerouslySetInnerHTML={{ __html: langInitScript }} />
       </head>
       <body className="bg-gray-50 text-gray-900 antialiased dark:bg-gray-900 dark:text-gray-100">
-        {children}
-        <Navbar />
-        <ReminderScheduler />
+        <I18nProvider>
+          {children}
+          <Navbar />
+          <ReminderScheduler />
+        </I18nProvider>
         {/* SW-registrering efter alt indhold (#16) */}
         <script dangerouslySetInnerHTML={{ __html: swRegisterScript }} />
       </body>
