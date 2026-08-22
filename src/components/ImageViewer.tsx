@@ -28,7 +28,7 @@ export default function ImageViewer({ imageUrl, reading, timestamp, onClose }: P
   const date = new Date(timestamp);
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/90 flex flex-col">
+    <div className="fixed inset-0 z-[60] bg-black/90 flex flex-col">
       {/* Header */}
       <div className="bg-white/10 backdrop-blur-sm p-4 flex justify-between items-center">
         <button
