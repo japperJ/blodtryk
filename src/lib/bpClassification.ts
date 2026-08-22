@@ -42,43 +42,43 @@ export function getBPStatus(
   if (ageGroup === "young") {
     // Under 65 år: AHA/ACC + ESH
     if (systolic < 120 && diastolic < 80) {
-      return { severity: "normal", label: "Normal", color: "bg-green-100 text-green-800", description: "Blodtrykket er normalt" };
+      return { severity: "normal", label: "Normal", color: "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300", description: "Blodtrykket er normalt" };
     }
     if (systolic < 130 && diastolic < 80) {
-      return { severity: "elevated", label: "Forhøjet", color: "bg-yellow-100 text-yellow-800", description: "Let forhøjet — overvej livsstilsændringer" };
+      return { severity: "elevated", label: "Forhøjet", color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300", description: "Let forhøjet — overvej livsstilsændringer" };
     }
     // Både systolisk OG diastolisk skal være under grænsen for stadium 1
     if (systolic < 140 && diastolic < 90) {
-      return { severity: "stage1", label: "Let forhøjet", color: "bg-orange-100 text-orange-800", description: "Hypertension stadium 1 — tal med læge" };
+      return { severity: "stage1", label: "Let forhøjet", color: "bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300", description: "Hypertension stadium 1 — tal med læge" };
     }
-    return { severity: "stage2", label: "Forhøjet stadium 2", color: "bg-red-100 text-red-800", description: "Hypertension stadium 2 — kontakt læge" };
+    return { severity: "stage2", label: "Forhøjet stadium 2", color: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300", description: "Hypertension stadium 2 — kontakt læge" };
   }
 
   if (ageGroup === "middle") {
     // 65-79 år: ESH/ESC (mere generøs)
     if (systolic < 130 && diastolic < 80) {
-      return { severity: "normal", label: "Normal", color: "bg-green-100 text-green-800", description: "Blodtrykket er normalt for din alder" };
+      return { severity: "normal", label: "Normal", color: "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300", description: "Blodtrykket er normalt for din alder" };
     }
     if (systolic < 140 && diastolic < 85) {
-      return { severity: "elevated", label: "Let forhøjet", color: "bg-yellow-100 text-yellow-800", description: "Acceptabelt for din alder — følg med" };
+      return { severity: "elevated", label: "Let forhøjet", color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300", description: "Acceptabelt for din alder — følg med" };
     }
     if (systolic < 160 && diastolic < 90) {
-      return { severity: "stage1", label: "Forhøjet", color: "bg-orange-100 text-orange-800", description: "Overvej behandling — tal med læge" };
+      return { severity: "stage1", label: "Forhøjet", color: "bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300", description: "Overvej behandling — tal med læge" };
     }
-    return { severity: "stage2", label: "Højt", color: "bg-red-100 text-red-800", description: "Kontakt læge for behandling" };
+    return { severity: "stage2", label: "Højt", color: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300", description: "Kontakt læge for behandling" };
   }
 
   // ≥80 år: ESH/ESC ( mest generøs — undgå for lavt blodtryk)
   if (systolic < 140 && diastolic < 80) {
-    return { severity: "normal", label: "Normal", color: "bg-green-100 text-green-800", description: "Blodtrykket er normalt for din alder" };
+    return { severity: "normal", label: "Normal", color: "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300", description: "Blodtrykket er normalt for din alder" };
   }
   if (systolic < 150 && diastolic < 85) {
-    return { severity: "elevated", label: "Acceptabelt", color: "bg-yellow-100 text-yellow-800", description: "Acceptabelt for din alder — følg med" };
+    return { severity: "elevated", label: "Acceptabelt", color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300", description: "Acceptabelt for din alder — følg med" };
   }
   if (systolic < 160 && diastolic < 90) {
-    return { severity: "stage1", label: "Forhøjet", color: "bg-orange-100 text-orange-800", description: "Overvej behandling — tal med læge" };
+    return { severity: "stage1", label: "Forhøjet", color: "bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300", description: "Overvej behandling — tal med læge" };
   }
-  return { severity: "stage2", label: "Højt", color: "bg-red-100 text-red-800", description: "Kontakt læge for behandling" };
+  return { severity: "stage2", label: "Højt", color: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300", description: "Kontakt læge for behandling" };
 }
 
 /**

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { validateReadingInput } from "@/lib/validation";
+import { unlink } from "fs/promises";
+import { join } from "path";
 
 // GET single reading
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -12,7 +14,26 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 // DELETE reading
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    await prisma.reading.delete({ where: { id: Number((await params).id) } });
+    const id = Number((await params).id);
+
+    // Hent målingen først så vi kender billedfilnavnet til oprydning
+    const reading = await prisma.reading.findUnique({ where: { id } });
+    if (!reading) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+    await prisma.reading.delete({ where: { id } });
+
+    // Ryd billedfilen op på disken — kun hvis det er et rent filnavn
+    // (data-URLs/http-URLs findes ikke som filer). Manglende fil ignoreres,
+    // da målingen allerede er slettet.
+    const image = reading.image;
+    if (image && !image.startsWith("data:") && !image.startsWith("http") && /^[\w\-\.]+$/.test(image)) {
+      try {
+        await unlink(join(process.cwd(), "scan-captures", image));
+      } catch {
+        // Filen findes ikke eller kan ikke slettes — målingen er stadig slettet
+      }
+    }
+
     return NextResponse.json({ ok: true });
   } catch {
     return NextResponse.json({ error: "Not found" }, { status: 404 });

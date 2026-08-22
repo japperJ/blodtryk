@@ -70,14 +70,15 @@ export default function PersonDialog({
       />
 
       {/* Dialog */}
-      <div className="relative bg-white rounded-t-2xl sm:rounded-2xl w-full max-w-md p-4 pb-6
+      <div className="relative bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-2xl w-full max-w-md p-4 pb-6
                       shadow-xl animate-in slide-in-from-bottom duration-200">
         {/* Header */}
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-bold text-gray-900">Vælg person</h2>
+          <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">Vælg person</h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 text-xl"
+            aria-label="Luk"
+            className="flex h-11 w-11 items-center justify-center text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
           >
             <X className="w-5 h-5" />
           </button>
@@ -92,17 +93,17 @@ export default function PersonDialog({
               className={`w-full flex items-center justify-between p-3 rounded-xl border-2
                          transition-all ${
                            selectedId === person.id
-                             ? "border-primary-500 bg-primary-50"
-                             : "border-gray-100 hover:border-gray-200 bg-white"
+                             ? "border-primary-500 bg-primary-50 dark:bg-primary-900/40"
+                             : "border-gray-100 dark:border-gray-700 hover:border-gray-200 dark:hover:border-gray-600 bg-white dark:bg-gray-800"
                          }`}
             >
               <div className="flex items-center gap-3">
                 <span className="text-2xl">
-                <span className="text-primary-600">{selectedId === person.id ? <CheckCircle2 className="w-6 h-6" /> : <Circle className="w-6 h-6 text-gray-300" />}</span>
+                <span className="text-primary-600">{selectedId === person.id ? <CheckCircle2 className="w-6 h-6" /> : <Circle className="w-6 h-6 text-gray-300 dark:text-gray-500" />}</span>
                 </span>
                 <div className="text-left">
-                  <p className="font-medium text-gray-900">{person.name}</p>
-                  <p className="text-xs text-gray-500">
+                  <p className="font-medium text-gray-900 dark:text-gray-100">{person.name}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
                     {person.readingCount} måling{person.readingCount !== 1 ? "er" : ""}
                   </p>
                 </div>
@@ -115,7 +116,7 @@ export default function PersonDialog({
         </div>
 
         {/* Tilføj person */}
-        <div className="mt-4 pt-4 border-t">
+        <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
           {isAdding ? (
             <div>
               <div className="flex gap-2">
@@ -126,21 +127,21 @@ export default function PersonDialog({
                   onKeyDown={(e) => e.key === "Enter" && handleAddPerson()}
                   placeholder="Navn på ny person"
                   autoFocus
-                  className="flex-1 px-3 py-2 border-2 border-gray-200 rounded-xl
+                  className="flex-1 px-3 py-2 border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-900 rounded-xl
                              focus:ring-2 focus:ring-primary-500 focus:border-primary-500
-                             text-gray-900"
+                             text-gray-900 dark:text-gray-100"
                 />
                 <button
                   onClick={handleAddPerson}
                   disabled={!newName.trim() || isSaving}
-                  className="px-4 py-2 bg-primary-600 text-white rounded-xl font-medium
+                  className="px-4 py-2 min-h-[44px] bg-primary-600 text-white rounded-xl font-medium inline-flex items-center justify-center
                              hover:bg-primary-700 disabled:opacity-50 transition-colors"
                 >
                   {isSaving ? "..." : "Tilføj"}
                 </button>
                 <button
                   onClick={() => { setIsAdding(false); setNewName(""); setNewBirthYear(""); setFormError(""); }}
-                  className="px-3 py-2 text-gray-500 hover:text-gray-700"
+                  className="px-3 py-2 min-h-[44px] text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                 >
                   Annuller
                 </button>
@@ -153,20 +154,20 @@ export default function PersonDialog({
                 onChange={(e) => setNewBirthYear(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleAddPerson()}
                 placeholder={`Fødselsår (f.eks. 1950)`}
-                className="w-40 px-3 py-2 border-2 border-gray-200 rounded-xl mt-2
+                className="w-40 px-3 py-2 border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-900 rounded-xl mt-2
                            focus:ring-2 focus:ring-primary-500 focus:border-primary-500
-                           text-gray-900 placeholder-gray-300"
+                           text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
               />
               {formError && (
-                <p className="text-sm text-red-600 mt-2">{formError}</p>
+                <p className="text-sm text-red-600 dark:text-red-400 mt-2">{formError}</p>
               )}
             </div>
           ) : (
             <button
               onClick={() => setIsAdding(true)}
-              className="w-full py-2.5 border-2 border-dashed border-gray-300 rounded-xl
-                         text-gray-500 font-medium hover:border-primary-300
-                         hover:text-primary-600 transition-colors"
+              className="w-full py-2.5 min-h-[44px] border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl
+                         text-gray-500 dark:text-gray-400 font-medium hover:border-primary-300 dark:hover:border-primary-500
+                         hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
             >
               + Tilføj ny person
             </button>

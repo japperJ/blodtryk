@@ -12,20 +12,65 @@ import {
   CalendarDays,
   Pill,
   User,
+  BellRing,
+  X,
 } from "lucide-react";
 import type { Reading, PersonSummary, ReadingStats } from "@/types";
 import { getBPStatus } from "@/lib/bpClassification";
 import { formatRelativeTime } from "@/lib/relativeTime";
+import {
+  BANNER_DISMISSED_KEY,
+  REMINDER_ENABLED_KEY,
+  REMINDER_TIME_KEY,
+  DEFAULT_REMINDER_TIME,
+  dateKey,
+  isValidTime,
+  shouldShowReminderBanner,
+} from "@/lib/reminder";
 import Sparkline from "@/components/dashboard/Sparkline";
 import StatusPill from "@/components/StatusPill";
 import EmptyState from "@/components/EmptyState";
 import { DashboardSkeleton } from "@/components/Skeleton";
+import type { Medication } from "@/components/MedicationPanel";
 
 export default function DashboardPage() {
   const [person, setPerson] = useState<PersonSummary | null>(null);
+  const [medications, setMedications] = useState<Medication[]>([]);
   const [readings, setReadings] = useState<Reading[]>([]);
   const [stats, setStats] = useState<ReadingStats | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Påmindelses-banner (#16) — fallback når notifikationer er blokeret/ikke understøttet
+  const [now, setNow] = useState(() => new Date());
+  const [remindersEnabled, setRemindersEnabled] = useState(false);
+  const [reminderTime, setReminderTime] = useState(DEFAULT_REMINDER_TIME);
+  const [bannerDismissedDate, setBannerDismissedDate] = useState<string | null>(null);
+
+  // Læs påmindelses-indstillinger + sync "nu" hvert minut (og ved fokus-vending),
+  // så banneret dukker op selv hvis siden har ligget åben siden før tidspunktet.
+  useEffect(() => {
+    const sync = () => {
+      setRemindersEnabled(localStorage.getItem(REMINDER_ENABLED_KEY) === "1");
+      const savedTime = localStorage.getItem(REMINDER_TIME_KEY);
+      if (savedTime && isValidTime(savedTime)) setReminderTime(savedTime);
+      setBannerDismissedDate(localStorage.getItem(BANNER_DISMISSED_KEY));
+      setNow(new Date());
+    };
+    sync();
+    const interval = setInterval(sync, 60_000);
+    document.addEventListener("visibilitychange", sync);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", sync);
+    };
+  }, []);
+
+  // Afvis i dag → gemmes som dato og nulstilles automatisk ved midnat
+  const dismissReminderBanner = () => {
+    const key = dateKey(new Date());
+    localStorage.setItem(BANNER_DISMISSED_KEY, key);
+    setBannerDismissedDate(key);
+  };
 
   useEffect(() => {
     const init = async () => {
@@ -61,6 +106,15 @@ export default function DashboardPage() {
       } finally {
         setLoading(false);
       }
+
+      // Tredje kald: aktive medicin (#14) — uafhængig af de andre
+      try {
+        const medsRes = await fetch(`/api/persons/${savedId}/medications`);
+        if (medsRes.ok) {
+          const all: Medication[] = await medsRes.json();
+          setMedications(all.filter((m) => m.active));
+        }
+      } catch {}
     };
     init();
   }, []);
@@ -68,7 +122,7 @@ export default function DashboardPage() {
   // Ingen person valgt — samme tom-state-mønster som /readings
   if (!person && !loading) {
     return (
-      <main className="min-h-screen bg-gray-50 pb-24">
+      <main className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-24">
         <div className="max-w-lg mx-auto p-4 pt-12">
           <EmptyState
             icon={User}
@@ -91,43 +145,94 @@ export default function DashboardPage() {
 
   const latest = readings[0];
   const latestStatus = latest ? getBPStatus(latest.systolic, latest.diastolic, latest.age) : null;
+
+  // Banner-betingelser (#16): se shouldShowReminderBanner i lib/reminder.ts.
+  // KUN fallback: vises når notifikationer er afvist eller ikke understøttes,
+  // og aldrig når der allerede er målt i dag eller banneret er afvist i dag.
+  const showReminderBanner =
+    !loading &&
+    person !== null &&
+    shouldShowReminderBanner(
+      {
+        enabled: remindersEnabled,
+        reminderTime,
+        latestReadingAt: latest?.createdAt ?? null,
+        dismissedDate: bannerDismissedDate,
+        permissionSupported: typeof Notification !== "undefined",
+        permission: typeof Notification !== "undefined" ? Notification.permission : "default",
+      },
+      now
+    );
   const sparkValues = stats?.daily.slice(-14).map((d) => d.sysAvg) ?? [];
   const weekCount = stats?.weekly.length ? stats.weekly[stats.weekly.length - 1].count : 0;
   const streakDays = stats?.streakDays ?? 0;
 
   return (
-    <main className="min-h-screen bg-gray-50 pb-24">
+    <main className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-24">
       <div className="max-w-lg mx-auto p-4 pt-6">
         {/* Overskrift */}
-        <h1 className="flex items-center gap-2 text-2xl font-bold text-gray-900 mb-1">
-          <House className="w-6 h-6 text-primary-600" aria-hidden />
+        <h1 className="flex items-center gap-2 text-2xl font-bold text-gray-900 dark:text-gray-100 mb-1">
+          <House className="w-6 h-6 text-primary-600 dark:text-primary-400" aria-hidden />
           Dashboard
         </h1>
-        <p className="text-sm text-gray-500 mb-4">{person?.name}</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{person?.name}</p>
 
         {loading ? (
           <DashboardSkeleton />
         ) : (
           <>
+            {/* Påmindelses-banner (#16) — fallback når notifikationer ikke kan vises */}
+            {showReminderBanner && (
+              <section
+                aria-label="Påmindelse om måling"
+                className="mb-4 flex items-center gap-3 rounded-2xl border border-amber-300 dark:border-amber-500/40 bg-amber-50 dark:bg-amber-500/10 p-4 shadow-sm"
+              >
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-500/20">
+                  <BellRing className="w-5 h-5 text-amber-600 dark:text-amber-400" aria-hidden />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                    Tid til at måle blodtryk
+                  </p>
+                  <Link
+                    href="/scan"
+                    className="mt-1 inline-flex items-center gap-1.5 text-sm font-medium text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300"
+                  >
+                    <Pill className="w-4 h-4" aria-hidden />
+                    Mål nu
+                  </Link>
+                </div>
+                <button
+                  type="button"
+                  onClick={dismissReminderBanner}
+                  aria-label="Afvis påmindelse for i dag"
+                  title="Afvis for i dag"
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-gray-400 dark:text-gray-500 hover:bg-amber-100 dark:hover:bg-amber-500/20 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                >
+                  <X className="w-5 h-5" aria-hidden />
+                </button>
+              </section>
+            )}
+
             {/* Hero-kort: seneste måling */}
-            <section className="bg-white rounded-2xl p-4 shadow-sm border mb-4" aria-label="Seneste måling">
+            <section className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-700 mb-4" aria-label="Seneste måling">
               {latest && latestStatus ? (
                 <>
                   <div className="flex justify-between items-start mb-2">
-                    <p className="text-sm font-medium text-gray-500">Seneste måling</p>
+                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Seneste måling</p>
                     <StatusPill status={latestStatus} />
                   </div>
                   <div className="flex items-baseline gap-3">
-                    <span className="text-5xl font-bold tracking-tight text-gray-900">{latest.systolic}</span>
-                    <span className="text-2xl font-semibold text-gray-400">/</span>
-                    <span className="text-3xl font-bold text-gray-700">{latest.diastolic}</span>
-                    <span className="text-sm text-gray-400 ml-1">mmHg</span>
+                    <span className="text-5xl font-bold tracking-tight text-gray-900 dark:text-gray-100">{latest.systolic}</span>
+                    <span className="text-2xl font-semibold text-gray-400 dark:text-gray-500">/</span>
+                    <span className="text-3xl font-bold text-gray-700 dark:text-gray-200">{latest.diastolic}</span>
+                    <span className="text-sm text-gray-500 dark:text-gray-400 ml-1">mmHg</span>
                   </div>
-                  <p className="flex items-center gap-1.5 text-base text-gray-600 mt-1">
+                  <p className="flex items-center gap-1.5 text-base text-gray-600 dark:text-gray-300 mt-1">
                     <HeartPulse className="w-4 h-4 text-red-500" aria-hidden />
                     {latest.pulse} slag/min
                   </p>
-                  <p className="text-xs text-gray-400 mt-2">{formatRelativeTime(latest.createdAt)}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">{formatRelativeTime(latest.createdAt)}</p>
                 </>
               ) : (
                 /* Nul-målinger: venlig CTA i stedet for tomme tal */
@@ -139,7 +244,7 @@ export default function DashboardPage() {
                   action={
                     <Link
                       href="/scan"
-                      className="inline-flex items-center gap-2 bg-primary-600 text-white px-5 py-2.5 rounded-xl font-semibold
+                      className="inline-flex items-center gap-2 bg-primary-600 text-white px-5 py-3 rounded-xl font-semibold
                                  hover:bg-primary-700 active:scale-95 transition-all"
                     >
                       <Camera className="w-5 h-5" aria-hidden />
@@ -152,10 +257,10 @@ export default function DashboardPage() {
 
             {/* Mini-sparkline: seneste 14 daglige systolisk-gennemsnit */}
             {sparkValues.length > 0 && (
-              <section className="bg-white rounded-2xl p-4 shadow-sm border mb-4 flex items-center justify-between gap-3">
+              <section className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-700 mb-4 flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-sm font-medium text-gray-500 mb-1">Systolisk</p>
-                  <p className="text-xs text-gray-400">Seneste {sparkValues.length} dage</p>
+                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Systolisk</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Seneste {sparkValues.length} dage</p>
                 </div>
                 <Sparkline values={sparkValues} />
               </section>
@@ -163,27 +268,31 @@ export default function DashboardPage() {
 
             {/* Tæller-række: streak + målinger denne uge */}
             <div className="grid grid-cols-2 gap-3 mb-4">
-              <div className="bg-white rounded-2xl p-4 shadow-sm border">
-                <p className="flex items-center gap-1.5 text-xl font-bold text-gray-900">
+              <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-700">
+                <p className="flex items-center gap-1.5 text-xl font-bold text-gray-900 dark:text-gray-100">
                   <Flame className="w-5 h-5 text-orange-500" aria-hidden />
                   {streakDays}
                 </p>
-                <p className="text-xs text-gray-500 mt-0.5">dag{streakDays === 1 ? "" : "e"} i træk</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">dag{streakDays === 1 ? "" : "e"} i træk</p>
               </div>
-              <div className="bg-white rounded-2xl p-4 shadow-sm border">
-                <p className="flex items-center gap-1.5 text-xl font-bold text-gray-900">
-                  <CalendarDays className="w-5 h-5 text-primary-600" aria-hidden />
+              <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-700">
+                <p className="flex items-center gap-1.5 text-xl font-bold text-gray-900 dark:text-gray-100">
+                  <CalendarDays className="w-5 h-5 text-primary-600 dark:text-primary-400" aria-hidden />
                   {weekCount}
                 </p>
-                <p className="text-xs text-gray-500 mt-0.5">målinger denne uge</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">målinger denne uge</p>
               </div>
             </div>
 
-            {/* Medicin-placeholder (#14 lever rigtige data senere) */}
-            <p className="flex items-center gap-1.5 text-sm text-gray-400 mb-4">
-              <Pill className="w-4 h-4" aria-hidden />
-              Medicin kommer snart
-            </p>
+            {/* Aktive medicin (#14) — skjules helt når ingen aktive */}
+            {medications.length > 0 && (
+              <p className="flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-300 mb-4">
+                <Pill className="w-4 h-4 shrink-0" aria-hidden />
+                <span className="truncate">
+                  {medications.map((m) => `${m.name} ${m.dose}`).join(", ")}
+                </span>
+              </p>
+            )}
 
             {/* Genveje */}
             <div className="grid grid-cols-2 gap-3 mb-6">
@@ -197,8 +306,8 @@ export default function DashboardPage() {
               </Link>
               <Link
                 href="/scan?tab=manual"
-                className="flex items-center justify-center gap-2 bg-white text-primary-700 text-center px-4 py-3 rounded-2xl font-semibold
-                           border hover:bg-gray-50 active:scale-95 transition-all"
+                className="flex items-center justify-center gap-2 bg-white dark:bg-gray-800 text-primary-700 dark:text-primary-300 text-center px-4 py-3 rounded-2xl font-semibold
+                           border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 active:scale-95 transition-all"
               >
                 <Keyboard className="w-5 h-5" aria-hidden />
                 Manuelt
@@ -209,8 +318,8 @@ export default function DashboardPage() {
             {latest && (
               <section aria-label="Seneste målinger">
                 <div className="flex justify-between items-center mb-2">
-                  <h2 className="text-sm font-medium text-gray-500">Seneste målinger</h2>
-                  <Link href="/readings" className="text-sm text-primary-600 font-medium hover:text-primary-700">
+                  <h2 className="text-sm font-medium text-gray-500 dark:text-gray-400">Seneste målinger</h2>
+                  <Link href="/readings" className="text-sm text-primary-600 dark:text-primary-400 font-medium hover:text-primary-700 dark:hover:text-primary-300">
                     Se alle målinger →
                   </Link>
                 </div>
@@ -219,13 +328,13 @@ export default function DashboardPage() {
                     const status = getBPStatus(r.systolic, r.diastolic, r.age);
                     const date = new Date(r.createdAt);
                     return (
-                      <div key={r.id} className="bg-white rounded-2xl px-4 py-3 shadow-sm border flex items-center justify-between">
-                        <span className="text-sm text-gray-600 truncate">
+                      <div key={r.id} className="bg-white dark:bg-gray-800 rounded-2xl px-4 py-3 shadow-sm border border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                        <span className="text-sm text-gray-600 dark:text-gray-300 truncate">
                           {date.toLocaleDateString("da-DK", { day: "numeric", month: "short" })},{" "}
                           {date.toLocaleTimeString("da-DK", { hour: "2-digit", minute: "2-digit" })}
                         </span>
                         <div className="flex items-center gap-2 shrink-0">
-                          <span className="text-sm font-semibold text-gray-900 tabular-nums">
+                          <span className="text-sm font-semibold text-gray-900 dark:text-gray-100 tabular-nums">
                             {r.systolic}/{r.diastolic}
                           </span>
                           <StatusPill status={status} size="sm" />

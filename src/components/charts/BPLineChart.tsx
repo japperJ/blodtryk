@@ -84,7 +84,7 @@ export default function BPLineChart({ data, band, showPulse }: BPLineChartProps)
   return (
     <svg
       viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
-      className="w-full h-auto"
+      className="w-full h-auto text-gray-200 dark:text-gray-700"
       role="img"
       aria-label="Linjediagram over daglige gennemsnit af systolisk og diastolisk blodtryk"
     >
@@ -96,7 +96,7 @@ export default function BPLineChart({ data, band, showPulse }: BPLineChartProps)
             x2={WIDTH - PAD.right}
             y1={yAt(t)}
             y2={yAt(t)}
-            stroke="#e5e7eb"
+            stroke="currentColor"
             strokeWidth="1"
           />
           <text x={PAD.left - 4} y={yAt(t) + 3} textAnchor="end" fontSize="9" fill="#9ca3af">

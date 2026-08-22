@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import { User, UserPlus, Pencil, Trash2, X, Check } from "lucide-react";
 import EmptyState from "@/components/EmptyState";
 import { PersonRowSkeleton } from "@/components/Skeleton";
+import MedicationPanel from "@/components/MedicationPanel";
 import type { PersonSummary } from "@/types";
 
 export default function PersonsPage() {
@@ -117,16 +118,16 @@ export default function PersonsPage() {
   };
 
   return (
-    <main className="min-h-screen bg-gray-50 pb-24">
+    <main className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-24">
       <div className="max-w-lg mx-auto p-4 pt-6">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="flex items-center gap-2 text-2xl font-bold text-gray-900">
-            <User className="w-6 h-6 text-primary-600" aria-hidden />
+          <h1 className="flex items-center gap-2 text-2xl font-bold text-gray-900 dark:text-gray-100">
+            <User className="w-6 h-6 text-primary-600 dark:text-primary-400" aria-hidden />
             Personer
           </h1>
           <button
             onClick={() => setIsAdding(true)}
-            className="flex items-center gap-1.5 bg-primary-600 text-white px-4 py-2 rounded-xl text-sm font-medium
+            className="flex items-center gap-1.5 bg-primary-600 text-white px-4 py-2 min-h-[44px] rounded-xl text-sm font-medium
                        hover:bg-primary-700 active:scale-95 transition-all"
           >
             <UserPlus className="w-4 h-4" aria-hidden />
@@ -136,8 +137,8 @@ export default function PersonsPage() {
 
         {/* Opret ny */}
         {isAdding && (
-          <div className="bg-white rounded-xl p-4 shadow-sm border mb-4">
-            <p className="text-sm font-medium text-gray-600 mb-2">Ny person</p>
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-700 mb-4">
+            <p className="text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">Ny person</p>
             <div className="flex gap-2">
               <input
                 type="text"
@@ -146,21 +147,21 @@ export default function PersonsPage() {
                 onKeyDown={(e) => e.key === "Enter" && handleAdd()}
                 placeholder="Navn"
                 autoFocus
-                className="flex-1 px-3 py-2 border-2 border-gray-200 rounded-xl
+                className="flex-1 px-3 py-2 border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-900 rounded-xl
                            focus:ring-2 focus:ring-primary-500 focus:border-primary-500
-                           text-gray-900"
+                           text-gray-900 dark:text-gray-100"
               />
               <button
                 onClick={handleAdd}
                 disabled={!newName.trim()}
-                className="px-4 py-2 bg-primary-600 text-white rounded-xl font-medium
+                className="px-4 py-2 min-h-[44px] bg-primary-600 text-white rounded-xl font-medium inline-flex items-center justify-center
                            hover:bg-primary-700 disabled:opacity-50"
               >
                 Gem
               </button>
               <button
                 onClick={() => { setIsAdding(false); setNewName(""); setNewBirthYear(""); setFormError(""); }}
-                className="p-2 text-gray-400 hover:text-gray-700 transition-colors"
+                className="flex h-11 w-11 items-center justify-center text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
                 title="Annuller"
               >
                 <X className="w-5 h-5" aria-hidden />
@@ -175,16 +176,16 @@ export default function PersonsPage() {
                 onChange={(e) => setNewBirthYear(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleAdd()}
                 placeholder={`Fødselsår (f.eks. 1950)`}
-                className="w-40 px-3 py-2 border-2 border-gray-200 rounded-xl
+                className="w-40 px-3 py-2 border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-900 rounded-xl
                            focus:ring-2 focus:ring-primary-500 focus:border-primary-500
-                           text-gray-900 placeholder-gray-300"
+                           text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
               />
-              <p className="text-xs text-gray-400">
+              <p className="text-xs text-gray-500 dark:text-gray-400">
                 Valgfri — bruges til automatisk aldersvurdering
               </p>
             </div>
             {formError && (
-              <p className="text-sm text-red-600 mt-2">{formError}</p>
+              <p className="text-sm text-red-600 dark:text-red-400 mt-2">{formError}</p>
             )}
           </div>
         )}
@@ -218,9 +219,9 @@ export default function PersonsPage() {
             {persons.map((person) => (
               <div
                 key={person.id}
-                className={`bg-white rounded-xl p-4 shadow-sm border transition-all ${
+                className={`bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-700 transition-all ${
                   selectedPersonId === person.id
-                    ? "ring-2 ring-primary-500 border-primary-300"
+                    ? "ring-2 ring-primary-500 border-primary-300 dark:border-primary-500"
                     : ""
                 }`}
               >
@@ -234,20 +235,20 @@ export default function PersonsPage() {
                         onChange={(e) => setEditName(e.target.value)}
                         onKeyDown={(e) => e.key === "Enter" && handleUpdate(person.id)}
                         autoFocus
-                        className="flex-1 px-3 py-2 border-2 border-gray-200 rounded-xl
+                        className="flex-1 px-3 py-2 border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-900 rounded-xl
                                    focus:ring-2 focus:ring-primary-500 focus:border-primary-500
-                                   text-gray-900"
+                                   text-gray-900 dark:text-gray-100"
                       />
                       <button
                         onClick={() => handleUpdate(person.id)}
-                        className="p-2 text-primary-600 hover:bg-primary-50 rounded-full transition-colors"
+                        className="flex h-11 w-11 items-center justify-center text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/40 rounded-full transition-colors"
                         title="Gem"
                       >
                         <Check className="w-5 h-5" aria-hidden />
                       </button>
                       <button
                         onClick={() => { setEditingId(null); setEditName(""); setEditBirthYear(""); setFormError(""); }}
-                        className="p-2 text-gray-400 hover:text-gray-700 transition-colors"
+                        className="flex h-11 w-11 items-center justify-center text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
                         title="Annuller"
                       >
                         <X className="w-5 h-5" aria-hidden />
@@ -261,12 +262,12 @@ export default function PersonsPage() {
                       onChange={(e) => setEditBirthYear(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && handleUpdate(person.id)}
                       placeholder={`Fødselsår (f.eks. 1950)`}
-                      className="w-40 px-3 py-2 border-2 border-gray-200 rounded-xl mt-2
+                      className="w-40 px-3 py-2 border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-900 rounded-xl mt-2
                                  focus:ring-2 focus:ring-primary-500 focus:border-primary-500
-                                 text-gray-900 placeholder-gray-300"
+                                 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
                     />
                     {formError && (
-                      <p className="text-sm text-red-600 mt-2">{formError}</p>
+                      <p className="text-sm text-red-600 dark:text-red-400 mt-2">{formError}</p>
                     )}
                   </div>
                 ) : (
@@ -282,14 +283,14 @@ export default function PersonsPage() {
                           className={`flex items-center justify-center w-9 h-9 rounded-full shrink-0 transition-colors ${
                             selectedPersonId === person.id
                               ? "bg-primary-600 text-white"
-                              : "bg-gray-100 text-gray-400"
+                              : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-300"
                           }`}
                         >
                           <User className="w-5 h-5" aria-hidden />
                         </span>
                         <div>
-                          <p className="font-medium text-gray-900">{person.name}</p>
-                          <p className="text-xs text-gray-500">
+                          <p className="font-medium text-gray-900 dark:text-gray-100">{person.name}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
                             {person.birthYear != null && (
                               <>Født {person.birthYear} · </>
                             )}
@@ -310,7 +311,7 @@ export default function PersonsPage() {
                           setEditBirthYear(person.birthYear != null ? String(person.birthYear) : "");
                           setFormError("");
                         }}
-                        className="p-2 text-gray-400 hover:text-primary-600 transition-colors"
+                        className="flex h-11 w-11 items-center justify-center text-gray-500 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
                         title="Rediger"
                       >
                         <Pencil className="w-4 h-4" aria-hidden />
@@ -318,7 +319,7 @@ export default function PersonsPage() {
                       {person.id !== 1 && (
                         <button
                           onClick={() => handleDelete(person.id, person.name)}
-                          className="p-2 text-gray-400 hover:text-danger-600 transition-colors"
+                          className="flex h-11 w-11 items-center justify-center text-gray-500 dark:text-gray-400 hover:text-danger-600 dark:hover:text-red-400 transition-colors"
                           title="Slet"
                         >
                           <Trash2 className="w-4 h-4" aria-hidden />
@@ -327,13 +328,14 @@ export default function PersonsPage() {
                     </div>
                   </div>
                 )}
+                <MedicationPanel personId={person.id} />
               </div>
             ))}
           </div>
         )}
 
         {/* Info */}
-        <p className="text-xs text-gray-400 text-center mt-6">
+        <p className="text-xs text-gray-500 dark:text-gray-400 text-center mt-6">
           Tryk på en person for at vælge den · Valgte person er fremhævet
         </p>
       </div>

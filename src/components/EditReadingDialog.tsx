@@ -77,16 +77,16 @@ export default function EditReadingDialog({ reading, onClose, onSaved }: Props) 
 
       {/* Dialog */}
       <div
-        className="relative bg-white rounded-t-2xl sm:rounded-2xl w-full max-w-md p-4 pb-6
+        className="relative bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-2xl w-full max-w-md p-4 pb-6
                         shadow-xl animate-in slide-in-from-bottom duration-200
                         max-h-[90vh] overflow-y-auto"
       >
         {/* Header */}
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-bold text-gray-900">Rediger måling</h2>
+          <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">Rediger måling</h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 text-xl"
+            className="flex h-11 w-11 items-center justify-center text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 text-xl"
             title="Luk"
           >
             <X className="w-5 h-5" />
@@ -94,7 +94,7 @@ export default function EditReadingDialog({ reading, onClose, onSaved }: Props) 
         </div>
 
         {/* Værdier — samme stepper som kamera-flow og manuel indtastning */}
-        <div className="bg-gray-50 rounded-xl p-3 mb-3">
+        <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-3 mb-3">
           <ReadingStepper
             values={values}
             onChange={(key, value) => setValues((prev) => ({ ...prev, [key]: value }))}
@@ -102,13 +102,13 @@ export default function EditReadingDialog({ reading, onClose, onSaved }: Props) 
         </div>
 
         {/* Kontekst-tags — morgen/aften og arm (valgfri) */}
-        <div className="bg-gray-50 rounded-xl p-3 mb-3">
+        <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-3 mb-3">
           <ContextTagChips timeOfDay={timeOfDay} arm={arm} onChange={handleTagChange} />
         </div>
 
         {/* Note */}
         <div>
-          <label htmlFor="reading-note" className="text-sm font-medium text-gray-600">
+          <label htmlFor="reading-note" className="text-sm font-medium text-gray-600 dark:text-gray-300">
             Note
           </label>
           <textarea
@@ -118,17 +118,17 @@ export default function EditReadingDialog({ reading, onClose, onSaved }: Props) 
             placeholder="Note til målingen..."
             rows={3}
             maxLength={NOTE_MAX_LENGTH}
-            className="w-full mt-1 px-3 py-2 border-2 border-gray-200 rounded-xl resize-none
+            className="w-full mt-1 px-3 py-2 border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-900 rounded-xl resize-none
                        focus:ring-2 focus:ring-primary-500 focus:border-primary-500
-                       text-sm text-gray-900 placeholder-gray-300"
+                       text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
           />
-          <p className="text-[10px] text-gray-400 text-right">
+          <p className="text-[10px] text-gray-500 dark:text-gray-400 text-right">
             {note.length}/{NOTE_MAX_LENGTH}
           </p>
         </div>
 
         {formError && (
-          <p className="text-sm text-red-600 mt-1">{formError}</p>
+          <p className="text-sm text-red-600 dark:text-red-400 mt-1">{formError}</p>
         )}
 
         {/* Handlinger */}
@@ -136,8 +136,8 @@ export default function EditReadingDialog({ reading, onClose, onSaved }: Props) 
           <button
             onClick={onClose}
             disabled={isSaving}
-            className="px-6 py-3 bg-gray-200 rounded-xl font-semibold
-                       hover:bg-gray-300 active:scale-95 transition-all disabled:opacity-50"
+            className="px-6 py-3 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-xl font-semibold
+                       hover:bg-gray-300 dark:hover:bg-gray-600 active:scale-95 transition-all disabled:opacity-50"
           >
             Annuller
           </button>

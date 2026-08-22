@@ -9,6 +9,7 @@ import { LINE_COLORS } from "@/components/charts/BPLineChart";
 interface Props {
   readings: Reading[];
   personName?: string;
+  medications?: { name: string; dose: string; active: boolean }[];
 }
 
 // Dagligt gennemsnit beregnet lokalt af den filtrerede målliste (chart-grundlag)
@@ -195,7 +196,7 @@ async function rasterizeSvgToPng(
   });
 }
 
-export default function PdfExport({ readings, personName }: Props) {
+export default function PdfExport({ readings, personName, medications }: Props) {
   const [generating, setGenerating] = useState(false);
 
   const exportPdf = async () => {
@@ -290,6 +291,17 @@ export default function PdfExport({ readings, personName }: Props) {
           );
           y += 5;
         }
+      }
+
+      // Aktive medicin (#14) — listes under personens navn når de findes
+      const activeMeds = (medications ?? []).filter((m) => m.active);
+      if (activeMeds.length > 0) {
+        doc.text(
+          `Medicin: ${activeMeds.map((m) => `${m.name} ${m.dose}`).join(", ")}`,
+          margin,
+          y
+        );
+        y += 5;
       }
 
       // === Resumé (side 1, før tabellen) ===
@@ -436,6 +448,11 @@ export default function PdfExport({ readings, personName }: Props) {
       const colNote = margin + 141;
       const noteWidth = pageWidth - margin - colNote;
 
+      // Lodret rytme (#36): linjeafstand mellem målinger var for tæt —
+      // rækkeafstand øges fra 6 mm til 9 mm og notelinjer fra 4 til 4,5 mm.
+      const ROW_H = 9;
+      const NOTE_LINE_H = 4.5;
+
       const tagText = (r: Reading): string => {
         const tod = timeOfDayLabel(r.timeOfDay);
         const arm = shortArmLabel(r.arm);
@@ -462,7 +479,7 @@ export default function PdfExport({ readings, personName }: Props) {
         y += 2;
         doc.setDrawColor(180);
         doc.line(margin, y, pageWidth - margin, y);
-        y += 5;
+        y += 6;
       };
 
       drawTableHeader();
@@ -488,7 +505,7 @@ export default function PdfExport({ readings, personName }: Props) {
           }
         }
 
-        checkPage(10 + (noteLines.length - 1) * 4);
+        checkPage(ROW_H + 4 + (noteLines.length - 1) * NOTE_LINE_H);
 
         const dateStr = `${String(date.getDate()).padStart(2, "0")}/${String(date.getMonth() + 1).padStart(2, "0")}/${String(date.getFullYear()).slice(2)}`;
         const timeStr = `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
@@ -515,12 +532,17 @@ export default function PdfExport({ readings, personName }: Props) {
 
         if (noteLines.length > 0) {
           doc.setTextColor(100);
-          noteLines.forEach((line, i) => doc.text(line, colNote, y + i * 4));
+          noteLines.forEach((line, i) => doc.text(line, colNote, y + i * NOTE_LINE_H));
         }
 
-        y += 6 + (noteLines.length - 1) * 4;
+        // Separatoren tegnes præcis halvvejs mellem denne rækkes sidste
+        // tekstbasislinje og næste rækkes basislinje (#36) — så den altid
+        // ligger MELLEM rækkerne og aldrig rammer tal eller tekst.
+        const nextY = y + ROW_H + (noteLines.length - 1) * NOTE_LINE_H;
         doc.setDrawColor(230);
-        doc.line(margin, y - 2, pageWidth - margin, y - 2);
+        const sepY = nextY - ROW_H / 2;
+        doc.line(margin, sepY, pageWidth - margin, sepY);
+        y = nextY;
       }
 
       // Sidefod på alle sider: Blodtryk-branding + genereringsdato + sidenumre
@@ -556,8 +578,8 @@ export default function PdfExport({ readings, personName }: Props) {
     <button
       onClick={exportPdf}
       disabled={generating}
-      className="bg-white border text-sm px-4 py-2 rounded-lg font-medium
-                 hover:bg-gray-50 active:scale-95 transition-all shadow-sm
+      className="inline-flex items-center justify-center min-h-[44px] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-sm px-4 py-2 rounded-lg font-medium
+                 hover:bg-gray-50 dark:hover:bg-gray-700 active:scale-95 transition-all shadow-sm
                  disabled:opacity-50 disabled:cursor-wait"
     >
       📄 PDF
