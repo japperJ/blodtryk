@@ -70,7 +70,7 @@ export default function PersonDialog({
       />
 
       {/* Dialog */}
-      <div className="relative bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-2xl w-full max-w-md p-4 pb-6
+      <div className="relative dialog-sheet overflow-y-auto bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-2xl w-full max-w-md p-4 pb-6
                       shadow-xl animate-in slide-in-from-bottom duration-200">
         {/* Header */}
         <div className="flex justify-between items-center mb-4">
