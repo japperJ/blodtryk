@@ -16,6 +16,7 @@ dist/
 
 # Database
 prisma/dev.db
+prisma/dev.db-backup
 prisma/dev.db-journal
 prisma/dev.db-wal
 prisma/dev.db-shm
