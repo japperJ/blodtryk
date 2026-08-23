@@ -15,6 +15,7 @@ model Person {
   updatedAt   DateTime     @updatedAt
   readings    Reading[]
   medications Medication[]
+  batchJobs   BatchJob[]
 }
 
 model Reading {
@@ -33,6 +34,9 @@ model Reading {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Batch-job items der blev auto-gemt fra dette målepunkt
+  batchJobItems BatchJobItem[]
+
   @@index([createdAt])
   @@index([personId])
 }
@@ -50,4 +54,36 @@ model Medication {
   updatedAt DateTime  @updatedAt
 
   @@index([personId])
+}
+
+// Server-side batch-scan queue (issue: multi-upload robustness).
+// Job status: pending | processing | done | cancelled.
+model BatchJob {
+  id        String         @id @default(cuid())
+  personId  Int
+  person    Person         @relation(fields: [personId], references: [id])
+  status    String         @default("pending")
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  items     BatchJobItem[]
+
+  @@index([status])
+}
+
+// Item status: pending | scanning | saved | error.
+model BatchJobItem {
+  id         Int      @id @default(autoincrement())
+  jobId      String
+  job        BatchJob @relation(fields: [jobId], references: [id])
+  imagePath  String // filnavn i scan-captures/
+  capturedAt DateTime? // EXIF-optagelsestid sendt fra klienten
+  status     String   @default("pending")
+  readingId  Int?
+  reading    Reading? @relation(fields: [readingId], references: [id])
+  error      String?
+  clientRef  String? // klientens billed-id — bruges til at matche UI-thumbnails
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([jobId, status])
 }

@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   Stethoscope,
   User,
@@ -16,19 +16,34 @@ import {
 import Camera from "@/components/Camera";
 import ReadingStepper from "@/components/ReadingStepper";
 import BatchUpload, { type UploadImage } from "@/components/BatchUpload";
-import BatchProgress, { type ScanResult } from "@/components/BatchProgress";
+import BatchProgress, { type BatchItemView, type ScanResult } from "@/components/BatchProgress";
 import BatchTimeline from "@/components/BatchTimeline";
 import ContextTagChips from "@/components/ContextTagChips";
 import EmptyState from "@/components/EmptyState";
 import type { BloodPressureReading, PersonSummary, TimeOfDay, Arm } from "@/types";
 import Link from "next/link";
 import { useI18n } from "@/lib/I18nProvider";
+import { INTL_LOCALE } from "@/lib/i18n";
+
+// sessionStorage-nøgle så et igangværende batch-job kan genoptages efter navigation
+const ACTIVE_BATCH_JOB_KEY = "activeBatchJobId";
+
+// Ét items tilstand fra GET /api/batch-jobs/[id]
+interface BatchJobItemStatus {
+  id: number;
+  clientRef: string | null;
+  imagePath: string;
+  capturedAt: string | null;
+  status: string;
+  error: string | null;
+  reading?: { systolic: number; diastolic: number; pulse: number } | null;
+}
 
 // Kamera-flow steps
 type CameraStep = "camera" | "preview" | "scanning" | "confirm" | "saved" | "error";
 
-// Batch-flow steps
-type BatchStep = "upload" | "scanning" | "results" | "saved" | "error";
+// Batch-flow steps ("saved" findes ikke længere — serveren gemer automatisk)
+type BatchStep = "upload" | "scanning" | "results" | "error";
 
 // Manuel-flow steps
 type ManualStep = "form" | "saved";
@@ -46,7 +61,7 @@ function toLocalInputValue(d: Date): string {
 }
 
 export default function ScanPage() {
-  const { t, tError } = useI18n();
+  const { t, tError, locale } = useI18n();
   // Valgt person
   const [selectedPerson, setSelectedPerson] = useState<PersonSummary | null>(null);
 
@@ -168,123 +183,227 @@ export default function ScanPage() {
   // ========== BATCH-FLOW ==========
   const [batchStep, setBatchStep] = useState<BatchStep>("upload");
   const [batchImages, setBatchImages] = useState<UploadImage[]>([]);
+  const [batchItems, setBatchItems] = useState<BatchItemView[]>([]);
   const [batchResults, setBatchResults] = useState<ScanResult[]>([]);
-  const [batchCurrentIndex, setBatchCurrentIndex] = useState(0);
+  const [batchJobId, setBatchJobId] = useState<string | null>(null);
   const [batchErrorMsg, setBatchErrorMsg] = useState("");
-  const abortControllerRef = useRef<AbortController | null>(null);
 
-  const handleImagesReady = useCallback((images: UploadImage[]) => {
-    setBatchImages(images);
-    setBatchResults([]);
-    setBatchCurrentIndex(0);
-    setBatchStep("scanning");
-    startBatchScan(images);
+  // Bygger letvægts-visninger ud fra de valgte billeder (thumbnail + EXIF-tid
+  // er allerede beregnet i BatchUpload)
+  const buildItemViews = useCallback((images: UploadImage[]): BatchItemView[] => {
+    return images.map((img) => ({
+      id: img.id,
+      thumbnail: img.thumbnail || null,
+      displayTime: img.displayTime,
+      exifModel: img.exif.model || undefined,
+    }));
   }, []);
 
-  const startBatchScan = async (images: UploadImage[]) => {
-    abortControllerRef.current = new AbortController();
-    const results: ScanResult[] = [];
+  // Sender alle billeder til serveren i ÉN request. Serveren lægger dem i en
+  // kø i databasen og scanner sekventielt, så navigation væk fra siden ikke
+  // afbryder jobbet. Klienten holder kun styr på jobId'et.
+  const startBatchScan = useCallback(async (images: UploadImage[]) => {
+    setBatchStep("scanning");
+    try {
+      const res = await fetch("/api/batch-jobs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          personId: selectedPerson?.id,
+          items: images.map((img) => ({
+            clientRef: img.id,
+            base64: img.compressedBase64,
+            ...(img.exif.dateOriginal
+              ? { capturedAt: img.exif.dateOriginal.toISOString() }
+              : {}),
+          })),
+        }),
+      });
+      const data = await res.json();
 
-    for (let i = 0; i < images.length; i++) {
-      if (abortControllerRef.current.signal.aborted) break;
-
-      const img = images[i];
-      setBatchCurrentIndex(i);
-
-      try {
-        const scanRes = await fetch("/api/scan", {
-          method: "POST",
-          headers: { "Content-Type": "text/plain" },
-          body: img.compressedBase64,
-          signal: abortControllerRef.current.signal,
-        });
-        const data = await scanRes.json();
-
-        if (scanRes.ok && data.reading) {
-          results.push({
-            imageId: img.id,
-            reading: data.reading,
-            error: null,
-            timestamp: img.exif.dateOriginal,
-          });
-        } else {
-          results.push({
-            imageId: img.id,
-            reading: null,
-            error: data.error || "scanFailed",
-            timestamp: img.exif.dateOriginal,
-          });
-        }
-      } catch (err) {
-        if (err instanceof Error && err.name === 'AbortError') break;
-        results.push({
-          imageId: img.id,
-          reading: null,
-          error: err instanceof Error ? err.message : "unknown",
-          timestamp: img.exif.dateOriginal,
-        });
+      if (!res.ok || !data.jobId) {
+        throw new Error(typeof data?.error === "string" ? data.error : "scanFailed");
       }
 
-      setBatchResults([...results]);
+      // Gem jobId så brugeren kan vende tilbage til et kørende job efter
+      // navigation eller genindlæsning af siden
+      sessionStorage.setItem(ACTIVE_BATCH_JOB_KEY, data.jobId);
+      setBatchJobId(data.jobId);
+    } catch (err) {
+      setBatchErrorMsg(err instanceof Error && err.message ? err.message : "scanFailed");
+      setBatchStep("error");
     }
+  }, [selectedPerson?.id]);
 
-    setBatchStep("results");
-  };
+  const handleImagesReady = useCallback(
+    (images: UploadImage[]) => {
+      setBatchImages(images);
+      setBatchItems(buildItemViews(images));
+      setBatchResults([]);
+      void startBatchScan(images);
+    },
+    [buildItemViews, startBatchScan]
+  );
 
-  const handleCancelBatch = () => {
-    abortControllerRef.current?.abort();
-    setBatchStep("results");
-  };
+  // Poller jobstatus hvert 2. sekund mens serveren scanner. Kun færdige items
+  // (saved/error) mappes ind i resultaterne, så fremskridtstælleren ikke
+  // tæller billeder der stadig venter i køen med.
+  useEffect(() => {
+    if (!batchJobId || batchStep !== "scanning") return;
 
-  const handleSaveBatch = async () => {
-    setIsSaving(true);
+    let cancelled = false;
+
+    const poll = async () => {
+      try {
+        const res = await fetch(`/api/batch-jobs/${batchJobId}`);
+        if (!res.ok) throw new Error("batchJobNotFound");
+        const data: { status: string; items?: BatchJobItemStatus[] } = await res.json();
+
+        if (cancelled || !Array.isArray(data.items)) return;
+
+        const finished = data.items.filter(
+          (item) => item.status === "saved" || item.status === "error"
+        );
+        setBatchResults(
+          finished.map((item) => ({
+            imageId: item.clientRef ?? `srv-${item.id}`,
+            reading: item.reading ?? null,
+            error: item.status === "error" ? item.error || "scanFailed" : null,
+            timestamp: item.capturedAt ? new Date(item.capturedAt) : null,
+          }))
+        );
+
+        if (data.status === "done" || data.status === "cancelled") {
+          sessionStorage.removeItem(ACTIVE_BATCH_JOB_KEY);
+          setBatchJobId(null);
+          setBatchItems((prev) =>
+            prev.length > 0
+              ? prev
+              : data.items!.map((item) => ({
+                  id: item.clientRef ?? `srv-${item.id}`,
+                  thumbnail: `/api/image/${encodeURIComponent(item.imagePath)}`,
+                  displayTime: item.capturedAt
+                    ? new Date(item.capturedAt).toLocaleString(INTL_LOCALE[locale])
+                    : "",
+                }))
+          );
+          setBatchStep("results");
+        }
+      } catch {
+        // Midlertidige netværksfejl ignoreres — næste poll prøver igen
+      }
+    };
+
+    void poll();
+    const interval = setInterval(() => void poll(), 2000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+    // locale bruges kun hvis thumbnails skal genopbygges efter navigation
+  }, [batchJobId, batchStep]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Genoptager et kørende job ved genbesøg af siden. Jobbet selv lever på
+  // serveren og er upåvirket af navigation — her hentes blot status igen.
+  useEffect(() => {
+    const savedJobId = sessionStorage.getItem(ACTIVE_BATCH_JOB_KEY);
+    if (!savedJobId) return;
+
+    let cancelled = false;
+
+    const resume = async () => {
+      try {
+        const res = await fetch(`/api/batch-jobs/${savedJobId}`);
+        if (!res.ok) throw new Error("batchJobNotFound");
+        const data: { status: string; items?: BatchJobItemStatus[] } = await res.json();
+
+        if (cancelled || !Array.isArray(data.items)) return;
+
+        // Genopbyg visninger fra serverens items — thumbnails hentes via det
+        // eksisterende sikre /api/image-endpoint
+        const views: BatchItemView[] = data.items.map((item) => ({
+          id: item.clientRef ?? `srv-${item.id}`,
+          thumbnail: `/api/image/${encodeURIComponent(item.imagePath)}`,
+          displayTime: item.capturedAt
+            ? new Date(item.capturedAt).toLocaleString(INTL_LOCALE[locale])
+            : "",
+        }));
+
+        const finished = data.items.filter(
+          (item) => item.status === "saved" || item.status === "error"
+        );
+        setBatchResults(
+          finished.map((item) => ({
+            imageId: item.clientRef ?? `srv-${item.id}`,
+            reading: item.reading ?? null,
+            error: item.status === "error" ? item.error || "scanFailed" : null,
+            timestamp: item.capturedAt ? new Date(item.capturedAt) : null,
+          }))
+        );
+
+        setBatchItems(views);
+
+        if (data.status === "pending" || data.status === "processing") {
+          setBatchJobId(savedJobId);
+          setBatchStep("scanning");
+        } else {
+          sessionStorage.removeItem(ACTIVE_BATCH_JOB_KEY);
+          setBatchStep("results");
+        }
+      } catch {
+        sessionStorage.removeItem(ACTIVE_BATCH_JOB_KEY);
+      }
+    };
+
+    void resume();
+    return () => {
+      cancelled = true;
+    };
+    // Bevidst kun ved mount — locale er stabil under et sidebesøg
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleCancelBatch = async () => {
+    if (!batchJobId) {
+      setBatchStep("results");
+      return;
+    }
 
     try {
-      for (const result of batchResults) {
-        if (!result.reading) continue;
-
-        const image = batchImages.find(img => img.id === result.imageId);
-        if (!image) continue;
-
-        try {
-          await fetch("/api/readings", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              ...result.reading,
-              age: derivedAge,
-              image: `data:image/jpeg;base64,${image.compressedBase64}`,
-              personId: selectedPerson?.id,
-              // Brug EXIF-objektivets optagelsestidspunkt hvis tilgængeligt,
-              // ellers falder API'et tilbage til "nu" (upload-tidspunkt).
-              // Tidspunkter i fremtiden (fx forkert kameraur) springes over,
-              // da API'et ellers afviser målingen.
-              ...(result.timestamp &&
-              new Date(result.timestamp).getTime() <= Date.now() + 5 * 60 * 1000
-                ? { createdAt: new Date(result.timestamp).toISOString() }
-                : {}),
-            }),
-          });
-        } catch {
-          // Fortsæt med næste ved fejl
-        }
-      }
-
-      setBatchStep("saved");
+      await fetch(`/api/batch-jobs/${batchJobId}`, { method: "DELETE" });
+      // Polling opdager status "cancelled" og skifter selv til resultaterne
     } catch {
-      setBatchErrorMsg("saveBatchFailed");
-      setBatchStep("error");
-    } finally {
-      setIsSaving(false);
+      setBatchStep("results");
     }
+  };
+
+  // Prøv mislykkede billeder igen — kun muligt så længe de komprimerede
+  // billeder stadig ligger i browserhukommelsen (samme sidebesøg)
+  const canRetryFailed =
+    batchResults.some((r) => r.error !== null) &&
+    batchResults
+      .filter((r) => r.error !== null)
+      .every((r) => batchImages.some((img) => img.id === r.imageId));
+
+  const handleRetryFailed = async () => {
+    const failedImages = batchImages.filter((img) =>
+      batchResults.some((r) => r.imageId === img.id && r.error !== null)
+    );
+    if (failedImages.length === 0 || !batchJobId) return;
+
+    setBatchResults([]);
+    await startBatchScan(failedImages);
   };
 
   const handleBatchReset = () => {
     setBatchStep("upload");
     setBatchImages([]);
+    setBatchItems([]);
     setBatchResults([]);
-    setBatchCurrentIndex(0);
+    setBatchJobId(null);
     setBatchErrorMsg("");
+    sessionStorage.removeItem(ACTIVE_BATCH_JOB_KEY);
   };
 
   // ========== MANUEL-FLOW ==========
@@ -353,9 +472,6 @@ export default function ScanPage() {
     setManualArm(null);
     setManualError("");
   };
-
-  // Antal gemte målinger i batch (til flertals-tekst)
-  const savedCount = batchResults.filter((r) => r.reading).length;
 
   // Ingen person valgt — vis besked
   if (!selectedPerson) {
@@ -620,9 +736,8 @@ export default function ScanPage() {
 
             {batchStep === "scanning" && (
               <BatchProgress
-                images={batchImages}
+                items={batchItems}
                 results={batchResults}
-                currentIndex={batchCurrentIndex}
                 isComplete={false}
                 onCancel={handleCancelBatch}
               />
@@ -630,29 +745,12 @@ export default function ScanPage() {
 
             {batchStep === "results" && (
               <BatchTimeline
-                images={batchImages}
+                items={batchItems}
                 results={batchResults}
-                onSaveAll={handleSaveBatch}
-                isSaving={isSaving}
                 onReset={handleBatchReset}
                 age={derivedAge}
+                onRetryFailed={canRetryFailed ? handleRetryFailed : undefined}
               />
-            )}
-
-            {batchStep === "saved" && (
-              <div className="text-center py-12">
-                <CircleCheckBig className="w-16 h-16 text-green-600 mx-auto mb-4" />
-                <p className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                  {savedCount === 1 ? t("scan.saved") : t("scan.savedMany", { count: savedCount })}
-                </p>
-                <button
-                  onClick={handleBatchReset}
-                  className="mt-6 bg-primary-600 text-white px-8 py-3 rounded-xl font-semibold
-                             hover:bg-primary-700 active:scale-95 transition-all"
-                >
-                  {t("scan.uploadMore")}
-                </button>
-              </div>
             )}
 
             {batchStep === "error" && (

@@ -1,7 +1,6 @@
 "use client";
 
 import { AlertTriangle, CheckCircle2, Loader2, OctagonAlert, X, XCircle } from "lucide-react";
-import type { UploadImage } from "./BatchUpload";
 import { useI18n } from "@/lib/I18nProvider";
 
 export interface ScanResult {
@@ -11,19 +10,32 @@ export interface ScanResult {
   timestamp: Date | null;
 }
 
+// Letvægts-view af et batch-billede. Fungerer både for billeder der lige er
+// valgt lokalt og for jobs der genoptages fra serveren efter navigation
+// (thumbnail hentes så via /api/image/<filnavn>).
+export interface BatchItemView {
+  id: string; // matcher ScanResult.imageId / serverens clientRef
+  thumbnail: string | null;
+  displayTime: string;
+  exifModel?: string; // valgfri kameramodel til tidslinjen
+}
+
 interface Props {
-  images: UploadImage[];
+  items: BatchItemView[];
   results: ScanResult[];
-  currentIndex: number;
   isComplete: boolean;
   onCancel: () => void;
 }
 
-export default function BatchProgress({ images, results, currentIndex, isComplete, onCancel }: Props) {
+export default function BatchProgress({ items, results, isComplete, onCancel }: Props) {
   const { t, tError } = useI18n();
   const completedCount = results.length;
-  const totalCount = images.length;
+  const totalCount = items.length;
   const progressPercent = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
+  // Første item uden resultat er det der scannes lige nu
+  const currentIndex = items.findIndex(
+    (item) => !results.some((r) => r.imageId === item.id)
+  );
 
   return (
     <div className="space-y-4">
@@ -60,30 +72,34 @@ export default function BatchProgress({ images, results, currentIndex, isComplet
 
       {/* Resultatliste */}
       <div className="space-y-2">
-        {images.map((img, index) => {
-          const result = results.find(r => r.imageId === img.id);
+        {items.map((item, index) => {
+          const result = results.find(r => r.imageId === item.id);
           const isActive = index === currentIndex && !isComplete;
           const isDone = result !== undefined;
           const hasError = result?.error !== null;
 
           return (
             <div
-              key={img.id}
+              key={item.id}
               className={`bg-white dark:bg-gray-800 rounded-xl p-3 shadow-sm border border-gray-200 dark:border-gray-700 flex items-center gap-3
                          ${isActive ? 'ring-2 ring-primary-500' : ''}
                          ${hasError ? 'border-red-200 dark:border-red-900/60 bg-red-50 dark:bg-red-900/20' : ''}`}
             >
               {/* Thumbnail */}
-              <img
-                src={img.thumbnail}
-                alt={t("card.imageAlt")}
-                className="w-12 h-12 rounded-lg object-cover shrink-0"
-              />
+              {item.thumbnail ? (
+                <img
+                  src={item.thumbnail}
+                  alt={t("card.imageAlt")}
+                  className="w-12 h-12 rounded-lg object-cover shrink-0"
+                />
+              ) : (
+                <div className="w-12 h-12 rounded-lg shrink-0 bg-gray-200 dark:bg-gray-700" />
+              )}
 
               {/* Info */}
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-gray-700 dark:text-gray-200 truncate">
-                  {img.displayTime}
+                  {item.displayTime}
                 </p>
 
                 {isDone && !hasError && result?.reading && (
