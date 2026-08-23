@@ -202,6 +202,50 @@ async function rasterizeSvgToPng(
   });
 }
 
+/**
+ * Hent målingsbillede som dataURL + dimensioner (#49).
+ * imageRef er enten et filnavn i scan-captures/ (serveres via /api/image),
+ * en data-URL eller en http-URL (ældre målinger). Kaster ved fejl —
+ * caller behandler billeder som best-effort.
+ */
+async function fetchImageForPdf(
+  imageRef: string
+): Promise<{
+  dataUrl: string;
+  width: number;
+  height: number;
+  format: "JPEG" | "PNG";
+}> {
+  const src =
+    imageRef.startsWith("data:") || imageRef.startsWith("http")
+      ? imageRef
+      : `/api/image/${encodeURIComponent(imageRef)}`;
+  const res = await fetch(src);
+  if (!res.ok) throw new Error(`imageFetchFailed:${res.status}`);
+  const blob = await res.blob();
+  const dataUrl = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(new Error("readFailed"));
+    reader.readAsDataURL(blob);
+  });
+  const dims = await new Promise<{ width: number; height: number }>(
+    (resolve, reject) => {
+      const img = new window.Image();
+      img.onload = () =>
+        resolve({ width: img.naturalWidth, height: img.naturalHeight });
+      img.onerror = () => reject(new Error("decodeFailed"));
+      img.src = dataUrl;
+    }
+  );
+  return {
+    dataUrl,
+    width: dims.width,
+    height: dims.height,
+    format: dataUrl.startsWith("data:image/png") ? "PNG" : "JPEG",
+  };
+}
+
 export default function PdfExport({ readings, personName, medications }: Props) {
   const [generating, setGenerating] = useState(false);
   const { t, locale } = useI18n();
@@ -564,6 +608,88 @@ export default function PdfExport({ readings, personName, medications }: Props) 
         const sepY = nextY - ROW_H / 2;
         doc.line(margin, sepY, pageWidth - margin, sepY);
         y = nextY;
+      }
+
+      // === Billedside (#49): målingsbilleder på egne sider i samme PDF ===
+      const withImages = sorted.filter((r) => r.image && r.image.trim() !== "");
+      if (withImages.length > 0) {
+        const loaded = (
+          await Promise.all(
+            withImages.map(async (reading) => {
+              try {
+                return { reading, ...(await fetchImageForPdf(reading.image!)) };
+              } catch {
+                return null; // Billeder er best-effort — måling uden billede springes over
+              }
+            })
+          )
+        ).filter((x): x is NonNullable<typeof x> => x !== null);
+
+        if (loaded.length > 0) {
+          doc.addPage();
+          addPageHeader();
+          doc.setFontSize(11);
+          doc.setFont("helvetica", "bold");
+          doc.setTextColor(0);
+          doc.text(t("pdf.images"), margin, margin + 5);
+
+          // 2-kolonne grid: hvert billede passer i en celle på colW × MAX_IMG_H
+          // (aspektforhold bevaret, centreret) med billedtekst (dato/tid + værdi) øverst.
+          const COL_GAP = 6;
+          const colW = (pageWidth - margin * 2 - COL_GAP) / 2;
+          const MAX_IMG_H = 62;
+          const CAPTION_H = 5;
+          const CELL_H = CAPTION_H + MAX_IMG_H;
+          const ROW_GAP = 7;
+          const p2 = (n: number) => String(n).padStart(2, "0");
+
+          let imgY = margin + 13;
+          let col = 0;
+
+          const startImagePage = () => {
+            doc.addPage();
+            addPageHeader();
+            imgY = margin + 5;
+            col = 0;
+          };
+
+          for (const item of loaded) {
+            if (col === 0 && imgY + CELL_H > pageHeight - margin - 14) {
+              startImagePage();
+            }
+
+            const ratio = item.height / item.width;
+            const imgH = Math.min(MAX_IMG_H, colW * ratio);
+            const imgW = Math.min(colW, MAX_IMG_H / ratio);
+            const x =
+              margin + col * (colW + COL_GAP) + (colW - imgW) / 2;
+
+            const d = new Date(item.reading.createdAt);
+            doc.setFontSize(7);
+            doc.setFont("helvetica", "normal");
+            doc.setTextColor(100);
+            doc.text(
+              `${p2(d.getDate())}/${p2(d.getMonth() + 1)}/${String(d.getFullYear()).slice(2)} ${p2(d.getHours())}:${p2(d.getMinutes())} — ${item.reading.systolic}/${item.reading.diastolic} mmHg`,
+              margin + col * (colW + COL_GAP),
+              imgY + 3
+            );
+            doc.addImage(
+              item.dataUrl,
+              item.format,
+              x,
+              imgY + CAPTION_H + (MAX_IMG_H - imgH) / 2,
+              imgW,
+              imgH
+            );
+
+            if (col === 0) {
+              col = 1;
+            } else {
+              col = 0;
+              imgY += CELL_H + ROW_GAP;
+            }
+          }
+        }
       }
 
       // Sidefod på alle sider: Blodtryk-branding + genereringsdato + sidenumre
