@@ -669,7 +669,7 @@ export default function PdfExport({ readings, personName, medications }: Props) 
             doc.setFont("helvetica", "normal");
             doc.setTextColor(100);
             doc.text(
-              `${p2(d.getDate())}/${p2(d.getMonth() + 1)}/${String(d.getFullYear()).slice(2)} ${p2(d.getHours())}:${p2(d.getMinutes())} — ${item.reading.systolic}/${item.reading.diastolic} mmHg`,
+              `${p2(d.getDate())}/${p2(d.getMonth() + 1)}/${String(d.getFullYear()).slice(2)} ${p2(d.getHours())}:${p2(d.getMinutes())} — ${item.reading.systolic}/${item.reading.diastolic} mmHg, ${item.reading.pulse} bpm`,
               margin + col * (colW + COL_GAP),
               imgY + 3
             );
