@@ -19,21 +19,26 @@ interface DailyPoint {
   date: string; // YYYY-MM-DD (lokal tid)
   sysAvg: number;
   diaAvg: number;
+  pulseAvg: number;
 }
 
-/** Gruppér målinger pr. lokal kalenderdag og beregn afrundede sys/dia-gennemsnit. */
+/** Gruppér målinger pr. lokal kalenderdag og beregn afrundede sys/dia/puls-gennemsnit. */
 export function computeDailyAverages(readings: Reading[]): DailyPoint[] {
   const p2 = (n: number) => String(n).padStart(2, "0");
-  const map = new Map<string, { sys: number; dia: number; n: number }>();
+  const map = new Map<
+    string,
+    { sys: number; dia: number; pul: number; n: number }
+  >();
   const sorted = [...readings].sort(
     (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
   );
   for (const r of sorted) {
     const d = new Date(r.createdAt);
     const key = `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}`;
-    const cur = map.get(key) ?? { sys: 0, dia: 0, n: 0 };
+    const cur = map.get(key) ?? { sys: 0, dia: 0, pul: 0, n: 0 };
     cur.sys += r.systolic;
     cur.dia += r.diastolic;
+    cur.pul += r.pulse;
     cur.n += 1;
     map.set(key, cur);
   }
@@ -43,6 +48,7 @@ export function computeDailyAverages(readings: Reading[]): DailyPoint[] {
       date,
       sysAvg: Math.round(v.sys / v.n),
       diaAvg: Math.round(v.dia / v.n),
+      pulseAvg: Math.round(v.pul / v.n),
     }));
 }
 
@@ -71,14 +77,15 @@ const CHART_H_MM = (CHART_W_MM * CHART_H_PX) / CHART_W_PX;
 export function buildTrendChartSvg(
   data: DailyPoint[],
   sysLabel: string,
-  diaLabel: string
+  diaLabel: string,
+  pulLabel: string
 ): string {
   const W = CHART_W_PX;
   const H = CHART_H_PX;
   const PAD = { top: 28, right: 12, bottom: 20, left: 34 };
 
   const values: number[] = [];
-  for (const p of data) values.push(p.sysAvg, p.diaAvg);
+  for (const p of data) values.push(p.sysAvg, p.diaAvg, p.pulseAvg);
   const { lo, hi, ticks } = niceScale(Math.min(...values), Math.max(...values));
 
   const innerW = W - PAD.left - PAD.right;
@@ -101,10 +108,11 @@ export function buildTrendChartSvg(
     );
   }
 
-  // Kurver (dia først så sys tegnes øverst)
+  // Kurver (dia først så sys tegnes øverst; puls som stiplet linje ligesom trends)
   parts.push(
     `<polyline points="${toPoints((p) => p.diaAvg)}" fill="none" stroke="${LINE_COLORS.diastolic}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`,
-    `<polyline points="${toPoints((p) => p.sysAvg)}" fill="none" stroke="${LINE_COLORS.systolic}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`
+    `<polyline points="${toPoints((p) => p.sysAvg)}" fill="none" stroke="${LINE_COLORS.systolic}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`,
+    `<polyline points="${toPoints((p) => p.pulseAvg)}" fill="none" stroke="${LINE_COLORS.pulse}" stroke-width="1.5" stroke-dasharray="4 3" stroke-linejoin="round" stroke-linecap="round"/>`
   );
 
   // Prikker ved overkommeligt antal punkter
@@ -112,7 +120,8 @@ export function buildTrendChartSvg(
     data.forEach((p, i) => {
       parts.push(
         `<circle cx="${xAt(i)}" cy="${yAt(p.diaAvg)}" r="2.5" fill="${LINE_COLORS.diastolic}"/>`,
-        `<circle cx="${xAt(i)}" cy="${yAt(p.sysAvg)}" r="2.5" fill="${LINE_COLORS.systolic}"/>`
+        `<circle cx="${xAt(i)}" cy="${yAt(p.sysAvg)}" r="2.5" fill="${LINE_COLORS.systolic}"/>`,
+        `<circle cx="${xAt(i)}" cy="${yAt(p.pulseAvg)}" r="2" fill="${LINE_COLORS.pulse}"/>`
       );
     });
   }
@@ -137,8 +146,9 @@ export function buildTrendChartSvg(
 
   // Legende øverst til højre (tegnes fra højre mod venstre)
   const legend = [
-    { color: LINE_COLORS.diastolic, label: diaLabel },
-    { color: LINE_COLORS.systolic, label: sysLabel },
+    { color: LINE_COLORS.pulse, label: pulLabel, dashed: true },
+    { color: LINE_COLORS.diastolic, label: diaLabel, dashed: false },
+    { color: LINE_COLORS.systolic, label: sysLabel, dashed: false },
   ];
   let lx = W - PAD.right;
   for (const item of legend) {
@@ -147,7 +157,13 @@ export function buildTrendChartSvg(
       `<text x="${lx}" y="16" text-anchor="start" font-size="11" fill="#6b7280">${item.label}</text>`
     );
     lx -= 14;
-    parts.push(`<rect x="${lx}" y="7" width="9" height="9" fill="${item.color}"/>`);
+    if (item.dashed) {
+      parts.push(
+        `<line x1="${lx}" x2="${lx + 9}" y1="11.5" y2="11.5" stroke="${item.color}" stroke-width="1.5" stroke-dasharray="3 2"/>`
+      );
+    } else {
+      parts.push(`<rect x="${lx}" y="7" width="9" height="9" fill="${item.color}"/>`);
+    }
     lx -= 10;
   }
 
@@ -473,7 +489,8 @@ export default function PdfExport({ readings, personName, medications }: Props) 
           const svg = buildTrendChartSvg(
             daily,
             t("field.systolic"),
-            t("field.diastolic")
+            t("field.diastolic"),
+            t("field.pulse")
           );
           const png = await rasterizeSvgToPng(svg, CHART_W_PX, CHART_H_PX);
           if (png) {
