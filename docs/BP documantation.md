@@ -348,6 +348,7 @@ Den er lavet til **direkte brug i din app**, så du kan slå op, vise forklaring
 ├───────────────────────────────┼───────────────┼──────────────────────────────────────────────┤
 │ Skrøbelighed                 │ Forsigtighed   │ Undgå aggressiv sænkning hos skrøbelige.     │
 │                               │ (Advarsel)     │                                               │
+
 └───────────────────────────────┴───────────────┴──────────────────────────────────────────────┘
 
 ---
