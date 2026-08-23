@@ -27,7 +27,7 @@ export const INTL_LOCALE: Record<Locale, string> = { da: "da-DK", en: "en-GB" };
 const da: Record<string, string> = {
   // Nav + indstillinger
   "nav.dashboard": "Dashboard",
-  "nav.scan": "Scan",
+  "nav.scan": "Ny måling",
   "nav.readings": "Målinger",
   "nav.trends": "Tendenser",
   "nav.persons": "Personer",
@@ -272,8 +272,6 @@ const da: Record<string, string> = {
   "dash.latest": "Seneste måling",
   "dash.recent": "Seneste målinger",
   "dash.viewAll": "Se alle målinger →",
-  "dash.scanNow": "Scan nu",
-  "dash.manually": "Manuelt",
   "dash.emptyTitle": "Ingen målinger endnu",
   "dash.emptyDesc": "Tag din første måling for at se dit blodtryk her",
   "dash.emptyCta": "Tag en måling",
@@ -421,7 +419,7 @@ const da: Record<string, string> = {
 const en: Record<string, string> = {
   // Nav + settings
   "nav.dashboard": "Dashboard",
-  "nav.scan": "Scan",
+  "nav.scan": "New measurement",
   "nav.readings": "Readings",
   "nav.trends": "Trends",
   "nav.persons": "People",
@@ -668,8 +666,6 @@ const en: Record<string, string> = {
   "dash.latest": "Latest measurement",
   "dash.recent": "Recent measurements",
   "dash.viewAll": "See all readings →",
-  "dash.scanNow": "Scan now",
-  "dash.manually": "Manually",
   "dash.emptyTitle": "No readings yet",
   "dash.emptyDesc": "Take your first measurement to see your blood pressure here",
   "dash.emptyCta": "Take a measurement",

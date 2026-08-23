@@ -6,7 +6,6 @@ import Link from "next/link";
 import {
   House,
   Camera,
-  Keyboard,
   HeartPulse,
   Flame,
   CalendarDays,
@@ -297,25 +296,7 @@ export default function DashboardPage() {
               </p>
             )}
 
-            {/* Genveje */}
-            <div className="grid grid-cols-2 gap-3 mb-6">
-              <Link
-                href="/scan"
-                className="flex items-center justify-center gap-2 bg-primary-600 text-white text-center px-4 py-3 rounded-2xl font-semibold
-                           hover:bg-primary-700 active:scale-95 transition-all"
-              >
-                <Camera className="w-5 h-5" aria-hidden />
-                {t("dash.scanNow")}
-              </Link>
-              <Link
-                href="/scan?tab=manual"
-                className="flex items-center justify-center gap-2 bg-white dark:bg-gray-800 text-primary-700 dark:text-primary-300 text-center px-4 py-3 rounded-2xl font-semibold
-                           border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 active:scale-95 transition-all"
-              >
-                <Keyboard className="w-5 h-5" aria-hidden />
-                {t("dash.manually")}
-              </Link>
-            </div>
+            {/* Genveje fjernet (#47) — bund-bar har allerede Ny måling-knappen */}
 
             {/* Seneste 3 målinger */}
             {latest && (
