@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { scanBloodPressure } from "@/lib/ollama";
+import { checkOllama, scanBloodPressure } from "@/lib/ollama";
 import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
 
@@ -18,6 +18,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         error: "imageTooSmall"
       }, { status: 422 });
+    }
+
+    // AI-serveren skal være klar før vi bruger tid på OCR (#60) — ellers får
+    // klienten en forståelig fejlkode i stedet for "fetch failed"
+    const health = await checkOllama();
+    if (!health.ready) {
+      return NextResponse.json({ error: health.reason }, { status: 503 });
     }
 
     // Save image to disk for debugging and potential later viewing

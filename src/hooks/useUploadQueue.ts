@@ -26,6 +26,8 @@ export interface UploadQueueStatus {
   saved: number;
   /** Scanning mislykkedes */
   failed: number;
+  /** Køen venter på AI-serveren (#60): "ollamaOffline" | "ollamaModelMissing" | null */
+  waitReason: string | null;
 }
 
 const POLL_INTERVAL_MS = 2000;
@@ -33,6 +35,7 @@ const POLL_INTERVAL_MS = 2000;
 interface QueueResponse {
   status: string;
   items?: { status: string }[];
+  waitReason?: string | null;
 }
 
 /**
@@ -53,7 +56,7 @@ export function useUploadQueue(): UploadQueueStatus | null {
     // pillens polling, indtil der startes et nyt job
     let finished = false;
 
-    const countStatuses = (items: { status: string }[]): UploadQueueStatus => ({
+    const countStatuses = (items: { status: string }[]): Omit<UploadQueueStatus, "waitReason"> => ({
       total: items.length,
       pending: items.filter((i) => i.status === "pending").length,
       scanning: items.filter((i) => i.status === "scanning").length,
@@ -85,7 +88,15 @@ export function useUploadQueue(): UploadQueueStatus | null {
               setStatus(null);
             } else if (res.ok) {
               const data: QueueResponse = await res.json();
-              if (Array.isArray(data.items)) setStatus(countStatuses(data.items));
+              if (Array.isArray(data.items)) {
+                setStatus({
+                  ...countStatuses(data.items),
+                  waitReason:
+                    data.status === "pending" || data.status === "processing"
+                      ? data.waitReason ?? null
+                      : null,
+                });
+              }
 
               if (data.status !== "pending" && data.status !== "processing") {
                 finished = true;

@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, CheckCircle2, Loader2, OctagonAlert, X, XCircle } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Hourglass, Loader2, OctagonAlert, X, XCircle } from "lucide-react";
 import { useI18n } from "@/lib/I18nProvider";
 
 export interface ScanResult {
@@ -24,10 +24,12 @@ interface Props {
   items: BatchItemView[];
   results: ScanResult[];
   isComplete: boolean;
+  /** Sæt når køen venter på AI-serveren (#60): "ollamaOffline" | "ollamaModelMissing" */
+  waitReason?: string | null;
   onCancel: () => void;
 }
 
-export default function BatchProgress({ items, results, isComplete, onCancel }: Props) {
+export default function BatchProgress({ items, results, isComplete, waitReason, onCancel }: Props) {
   const { t, tError } = useI18n();
   const completedCount = results.length;
   const totalCount = items.length;
@@ -36,9 +38,21 @@ export default function BatchProgress({ items, results, isComplete, onCancel }: 
   const currentIndex = items.findIndex(
     (item) => !results.some((r) => r.imageId === item.id)
   );
+  const isWaiting = !isComplete && !!waitReason;
 
   return (
     <div className="space-y-4">
+      {/* Venter på AI-serveren (#60): billederne bliver i køen indtil Ollama svarer */}
+      {isWaiting && (
+        <div className="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-4 border border-amber-200 dark:border-amber-900/60">
+          <p className="text-sm font-medium text-amber-800 dark:text-amber-300 flex items-center gap-2">
+            <Hourglass className="w-4 h-4 shrink-0 animate-pulse" /> {t("batch.waitingForAi")}
+          </p>
+          <p className="text-xs text-amber-700 dark:text-amber-400 mt-1">{tError(waitReason!)}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t("batch.waitingForAiHint")}</p>
+        </div>
+      )}
+
       {/* Fremdriftsindikator */}
       <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-700">
         <div className="flex justify-between items-center mb-2">
@@ -60,12 +74,14 @@ export default function BatchProgress({ items, results, isComplete, onCancel }: 
           />
         </div>
 
-        {/* Estimeret tid */}
+        {/* Estimeret tid — men når vi venter på AI-serveren er det misvisende */}
         {!isComplete && (
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-            {completedCount > 0
-              ? t("batch.secondsLeft", { seconds: Math.round((totalCount - completedCount) * 80) })
-              : t("batch.starting")}
+            {isWaiting
+              ? t("batch.waitingForAi")
+              : completedCount > 0
+                ? t("batch.secondsLeft", { seconds: Math.round((totalCount - completedCount) * 80) })
+                : t("batch.starting")}
           </p>
         )}
       </div>
@@ -124,7 +140,7 @@ export default function BatchProgress({ items, results, isComplete, onCancel }: 
 
                 {isActive && (
                   <p className="text-xs text-primary-600 dark:text-primary-400 animate-pulse">
-                    {t("batch.scanningShort")}
+                    {isWaiting ? t("batch.waiting") : t("batch.scanningShort")}
                   </p>
                 )}
               </div>
