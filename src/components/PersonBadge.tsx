@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import type { PersonSummary } from "@/types";
 import PersonDialog from "./PersonDialog";
 import { useI18n } from "@/lib/I18nProvider";
+import { setSelectedPersonId } from "@/lib/uploadQueue";
 
 interface Props {
   onPersonChange?: (person: PersonSummary | null) => void;
@@ -58,14 +59,14 @@ export default function PersonBadge({ onPersonChange }: Props) {
     // Ingen valgt eller ugyldigt ID — vælg første person
     if (persons.length > 0) {
       const first = persons[0];
-      localStorage.setItem("selectedPersonId", String(first.id));
+      setSelectedPersonId(String(first.id));
       setSelectedPerson(first);
       onPersonChange?.(first);
     }
   }, [persons, onPersonChange]);
 
   const handleSelectPerson = (person: PersonSummary) => {
-    localStorage.setItem("selectedPersonId", String(person.id));
+    setSelectedPersonId(String(person.id));
     setSelectedPerson(person);
     setShowDialog(false);
     onPersonChange?.(person);
