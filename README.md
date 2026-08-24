@@ -9,6 +9,11 @@ Danish blood pressure tracking app with AI-powered OCR. Photograph your blood pr
 - **👤 Multi-User** — Track blood pressure for multiple family members
 - **📊 Age-Adjusted Classification** — BP status adapts based on age (ESH/ESC guidelines)
 - **📄 PDF Export** — Generate professional reports with color-coded status
+- **📈 Trends** — Charts of systolic/diastolic/pulse over time
+- **💊 Medications** — Track medications per person alongside readings
+- **🔔 Daily Reminder** — Browser notification when it is time to measure
+- **✏️ Manual Editing** — Correct or enter readings by hand
+- **🎨 Dark Mode** — Light / dark / system theme
 - **🌙 PWA** — Install on your phone's home screen
 
 ## Internationalization
@@ -24,7 +29,7 @@ The app supports **Danish** (default) and **English**.
 
 ## Tech Stack
 
-- **Frontend:** Next.js 14, React 18, TypeScript, Tailwind CSS
+- **Frontend:** Next.js 16, React 19, TypeScript, Tailwind CSS
 - **Backend:** Next.js API Routes, Prisma ORM
 - **Database:** SQLite (SQLite-compatible for easy deployment)
 - **AI:** Ollama with vision model (glm-ocr) for blood pressure reading
@@ -34,14 +39,14 @@ The app supports **Danish** (default) and **English**.
 
 ### Prerequisites
 
-- Node.js 18+
+- Node.js 20+
 - Ollama running locally with `glm-ocr` model
 
 ### Installation
 
 ```bash
 # Clone the repository
-git clone https://github.com/YOUR_USERNAME/blodtryk.git
+git clone https://github.com/japperJ/blodtryk.git
 cd blodtryk
 
 # Install dependencies
@@ -67,9 +72,11 @@ OLLAMA_MODEL="glm-ocr"
 ### Available Scripts
 
 ```bash
-npm run dev      # Start dev server with HTTPS (required for camera)
+npm run dev      # Start dev server on port 3010 with HTTPS (required for camera)
 npm run build    # Build for production
-npm start        # Start production server
+npm start        # Start production server on port 3010
+npx prisma db push   # Apply schema changes to SQLite (also `npm run db:push`)
+npm run db:studio    # Open Prisma Studio
 ```
 
 ## Usage
@@ -85,18 +92,22 @@ npm start        # Start production server
 blodtryk/
 ├── prisma/
 │   └── schema.prisma        # Database schema
+├── scripts/
+│   └── migrate-images.mjs   # One-off image migration helper
 ├── src/
 │   ├── app/
 │   │   ├── api/             # API routes
 │   │   ├── scan/            # Camera & batch upload
 │   │   ├── readings/        # History view
+│   │   ├── trends/          # Charts & statistics
 │   │   └── persons/         # Multi-user management
 │   ├── components/          # React components
-│   ├── lib/                 # Utilities (OCR, BP classification)
+│   ├── lib/                 # Utilities (OCR, BP classification, i18n)
 │   └── hooks/               # Custom React hooks
-└── public/                  # Static assets
+├── docs/                    # Design docs & plans
+└── public/                  # PWA manifest, icons & service worker
 ```
 
 ## License
 
-MIT
+MIT — see [LICENSE](LICENSE).
