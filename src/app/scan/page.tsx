@@ -24,9 +24,11 @@ import type { BloodPressureReading, PersonSummary, TimeOfDay, Arm } from "@/type
 import Link from "next/link";
 import { useI18n } from "@/lib/I18nProvider";
 import { INTL_LOCALE } from "@/lib/i18n";
-
-// sessionStorage-nøgle så et igangværende batch-job kan genoptages efter navigation
-const ACTIVE_BATCH_JOB_KEY = "activeBatchJobId";
+import {
+  clearActiveBatchJob,
+  getActiveBatchJobId,
+  setActiveBatchJob,
+} from "@/lib/uploadQueue";
 
 // Ét items tilstand fra GET /api/batch-jobs/[id]
 interface BatchJobItemStatus {
@@ -226,8 +228,9 @@ export default function ScanPage() {
       }
 
       // Gem jobId så brugeren kan vende tilbage til et kørende job efter
-      // navigation eller genindlæsning af siden
-      sessionStorage.setItem(ACTIVE_BATCH_JOB_KEY, data.jobId);
+      // navigation eller genindlæsning af siden (#50: hjælperne underretter
+      // også Navbar-indikatoren om den nye kø-status)
+      setActiveBatchJob(data.jobId);
       setBatchJobId(data.jobId);
     } catch (err) {
       setBatchErrorMsg(err instanceof Error && err.message ? err.message : "scanFailed");
@@ -274,7 +277,7 @@ export default function ScanPage() {
         );
 
         if (data.status === "done" || data.status === "cancelled") {
-          sessionStorage.removeItem(ACTIVE_BATCH_JOB_KEY);
+          clearActiveBatchJob();
           setBatchJobId(null);
           setBatchItems((prev) =>
             prev.length > 0
@@ -307,7 +310,7 @@ export default function ScanPage() {
   // Genoptager et kørende job ved genbesøg af siden. Jobbet selv lever på
   // serveren og er upåvirket af navigation — her hentes blot status igen.
   useEffect(() => {
-    const savedJobId = sessionStorage.getItem(ACTIVE_BATCH_JOB_KEY);
+    const savedJobId = getActiveBatchJobId();
     if (!savedJobId) return;
 
     let cancelled = false;
@@ -348,11 +351,11 @@ export default function ScanPage() {
           setBatchJobId(savedJobId);
           setBatchStep("scanning");
         } else {
-          sessionStorage.removeItem(ACTIVE_BATCH_JOB_KEY);
+          clearActiveBatchJob();
           setBatchStep("results");
         }
       } catch {
-        sessionStorage.removeItem(ACTIVE_BATCH_JOB_KEY);
+        clearActiveBatchJob();
       }
     };
 
@@ -403,7 +406,7 @@ export default function ScanPage() {
     setBatchResults([]);
     setBatchJobId(null);
     setBatchErrorMsg("");
-    sessionStorage.removeItem(ACTIVE_BATCH_JOB_KEY);
+    clearActiveBatchJob();
   };
 
   // ========== MANUEL-FLOW ==========

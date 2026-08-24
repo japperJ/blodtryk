@@ -249,6 +249,12 @@ const da: Record<string, string> = {
   "batch.autoSaved": "Målingerne gemmes automatisk på serveren, mens du scanner",
   "batch.retryFailed": "Prøv de mislykkede billeder igen",
 
+  // Upload-kø-status (#50)
+  "queue.scannedProgress": "{done} af {total} scannet",
+  "queue.waitingOne": "1 venter på scanning",
+  "queue.waitingMany": "{count} venter på scanning",
+  "queue.openScan": "Se upload-køen",
+
   // Målingsliste
   "readings.title": "Målinger",
   "readings.filterAll": "Alle",
@@ -645,6 +651,12 @@ const en: Record<string, string> = {
   "batch.pulseValue": "Pulse {value}",
   "batch.autoSaved": "Readings are saved automatically on the server while you scan",
   "batch.retryFailed": "Retry the failed images",
+
+  // Upload queue status (#50)
+  "queue.scannedProgress": "{done} of {total} scanned",
+  "queue.waitingOne": "1 waiting to be scanned",
+  "queue.waitingMany": "{count} waiting to be scanned",
+  "queue.openScan": "View the upload queue",
 
   // Readings list
   "readings.title": "Readings",
