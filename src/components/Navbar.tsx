@@ -24,6 +24,7 @@ import {
   isValidTime,
 } from "@/lib/reminder";
 import { useI18n } from "@/lib/I18nProvider";
+import UploadQueueIndicator from "@/components/UploadQueueIndicator";
 
 const links: { href: string; labelKey: string; icon: LucideIcon }[] = [
   { href: "/", labelKey: "nav.dashboard", icon: House },
@@ -143,6 +144,8 @@ export default function Navbar() {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg z-50">
+      {/* Upload-kø-status (#50): synlig på tværs af menus mens et batch-job scanner */}
+      <UploadQueueIndicator />
       <div className="max-w-lg mx-auto flex items-stretch">
         {links.map((link) => {
           const active = pathname === link.href || pathname.startsWith(link.href + "/");
