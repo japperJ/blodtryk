@@ -347,6 +347,10 @@ export default function ScanPage() {
 
         setBatchItems(views);
 
+        // Vis altid batch-flowet ved genoptagelse (#50) — ellers bliver
+        // brugeren stående på kamera-fanen uden faneblade eller fremskridt.
+        setActiveTab("batch");
+
         if (data.status === "pending" || data.status === "processing") {
           setBatchJobId(savedJobId);
           setBatchStep("scanning");
