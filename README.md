@@ -2,6 +2,12 @@
 
 Danish blood pressure tracking app with AI-powered OCR. Photograph your blood pressure monitor and let AI read the numbers automatically.
 
+## Screenshots
+
+| Trends | Readings |
+|--------|----------|
+| ![Trends screen with daily/weekly averages and classification of readings](docs/screenshots/trends.png) | ![Readings screen with color-coded measurement history](docs/screenshots/readings.png) |
+
 ## Features
 
 - **📷 Camera Scan** — Point your phone camera at a blood pressure monitor, AI reads the values
