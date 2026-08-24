@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import jsPDF from "jspdf";
 import type { Reading } from "@/types";
 import { getBPStatus, getAgeGroupKey, type Severity } from "@/lib/bpClassification";
@@ -264,10 +264,33 @@ async function fetchImageForPdf(
 
 export default function PdfExport({ readings, personName, medications }: Props) {
   const [generating, setGenerating] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
   const { t, locale } = useI18n();
   const intlLocale = INTL_LOCALE[locale];
 
-  const exportPdf = async () => {
+  // Luk menuen ved klik udenfor eller Escape (samme mønster som Navbar-popoveren)
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onPointerDown = (e: PointerEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMenuOpen(false);
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [menuOpen]);
+
+  // #51: includeImages styrer om målingsbillederne (#49) skal med i rapporten
+  const exportPdf = async (includeImages: boolean) => {
+    setMenuOpen(false);
     setGenerating(true);
     try {
       const doc = new jsPDF();
@@ -628,7 +651,10 @@ export default function PdfExport({ readings, personName, medications }: Props) 
       }
 
       // === Billedside (#49): målingsbilleder på egne sider i samme PDF ===
-      const withImages = sorted.filter((r) => r.image && r.image.trim() !== "");
+      // #51: udelades helt når eksporten er bedt om uden billeder
+      const withImages = includeImages
+        ? sorted.filter((r) => r.image && r.image.trim() !== "")
+        : [];
       if (withImages.length > 0) {
         const loaded = (
           await Promise.all(
@@ -739,14 +765,44 @@ export default function PdfExport({ readings, personName, medications }: Props) 
   };
 
   return (
-    <button
-      onClick={exportPdf}
-      disabled={generating}
-      className="inline-flex items-center justify-center min-h-[44px] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-sm px-4 py-2 rounded-lg font-medium
-                 hover:bg-gray-50 dark:hover:bg-gray-700 active:scale-95 transition-all shadow-sm
-                 disabled:opacity-50 disabled:cursor-wait"
-    >
-      📄 PDF
-    </button>
+    <div ref={menuRef} className="relative shrink-0">
+      <button
+        onClick={() => setMenuOpen((o) => !o)}
+        disabled={generating}
+        aria-haspopup="menu"
+        aria-expanded={menuOpen}
+        className="inline-flex items-center justify-center min-h-[44px] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-sm px-4 py-2 rounded-lg font-medium
+                   hover:bg-gray-50 dark:hover:bg-gray-700 active:scale-95 transition-all shadow-sm
+                   disabled:opacity-50 disabled:cursor-wait"
+      >
+        📄 PDF
+      </button>
+
+      {menuOpen && (
+        <div
+          role="menu"
+          className="absolute right-0 top-[calc(100%+4px)] z-20 w-48 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg p-1.5"
+        >
+          <button
+            role="menuitem"
+            disabled={generating}
+            onClick={() => exportPdf(true)}
+            className="w-full text-left px-3 py-2 rounded-lg text-sm font-medium text-gray-900 dark:text-gray-100
+                       hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
+          >
+            {t("pdf.exportWithImages")}
+          </button>
+          <button
+            role="menuitem"
+            disabled={generating}
+            onClick={() => exportPdf(false)}
+            className="w-full text-left px-3 py-2 rounded-lg text-sm font-medium text-gray-900 dark:text-gray-100
+                       hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
+          >
+            {t("pdf.exportWithoutImages")}
+          </button>
+        </div>
+      )}
+    </div>
   );
 }

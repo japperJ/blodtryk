@@ -406,6 +406,8 @@ const da: Record<string, string> = {
   "pdf.pageOf": "Side {page} af {total}",
   "pdf.dailyAverages": "Daglige gennemsnit",
   "pdf.images": "Målingsbilleder",
+  "pdf.exportWithImages": "Med billeder",
+  "pdf.exportWithoutImages": "Uden billeder",
 
   // Eksport (CSV-headere)
   "csv.date": "Dato",
@@ -800,6 +802,8 @@ const en: Record<string, string> = {
   "pdf.pageOf": "Page {page} of {total}",
   "pdf.dailyAverages": "Daily averages",
   "pdf.images": "Measurement images",
+  "pdf.exportWithImages": "With images",
+  "pdf.exportWithoutImages": "Without images",
 
   // Export (CSV headers)
   "csv.date": "Date",
