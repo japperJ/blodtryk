@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import jsPDF from "jspdf";
 import type { Reading } from "@/types";
 import { getBPStatus, getAgeGroupKey, type Severity } from "@/lib/bpClassification";
-import { timeOfDayLabel, shortArmLabel } from "@/lib/exporters";
+import { timeOfDayLabel, shortArmLabel, exportFilename } from "@/lib/exporters";
 import { INTL_LOCALE } from "@/lib/i18n";
 import { useI18n } from "@/lib/I18nProvider";
 import { LINE_COLORS } from "@/components/charts/BPLineChart";
@@ -754,9 +754,7 @@ export default function PdfExport({ readings, personName, medications }: Props) 
         });
       }
 
-      const filename = personName
-        ? `blodtryk-${personName.toLowerCase().replace(/\s+/g, "-")}-${new Date().toISOString().split("T")[0]}.pdf`
-        : `blodtryk-${new Date().toISOString().split("T")[0]}.pdf`;
+      const filename = exportFilename(personName ?? undefined, "pdf");
 
       doc.save(filename);
     } finally {
