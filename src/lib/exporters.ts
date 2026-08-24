@@ -85,16 +85,22 @@ export function buildJsonString(readings: Reading[]): string {
   return JSON.stringify(readings, null, 2);
 }
 
-/** Filnavn på formen blodtryk-<person>-<YYYY-MM-DD>.<ext> (person udelades hvis ukendt). */
+/**
+ * Filnavn på formen blodtryk-<person>-<YYYY-MM-DD_HH-mm>.<ext> (person udelades hvis ukendt).
+ * Tidsstempel i lokaltid gør navnet unikt pr. eksport, så mobile browsere ikke
+ * genbruger en cachet fil med samme navn (#53).
+ */
 export function exportFilename(personName: string | undefined, ext: string): string {
-  const date = new Date().toISOString().split("T")[0];
-  if (!personName) return `blodtryk-${date}.${ext}`;
+  const d = new Date();
+  const p = (n: number) => String(n).padStart(2, "0");
+  const stamp = `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}_${p(d.getHours())}-${p(d.getMinutes())}`;
+  if (!personName) return `blodtryk-${stamp}.${ext}`;
   const slug = personName
     .toLowerCase()
     .trim()
     .replace(/\s+/g, "-")
     .replace(/[^a-z0-9æøå-]/g, "");
-  return slug ? `blodtryk-${slug}-${date}.${ext}` : `blodtryk-${date}.${ext}`;
+  return slug ? `blodtryk-${slug}-${stamp}.${ext}` : `blodtryk-${stamp}.${ext}`;
 }
 
 /** Fælles download-mekanisme: midlertidigt <a download> + object URL. */
