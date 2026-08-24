@@ -176,6 +176,8 @@ const da: Record<string, string> = {
   "err.scanParseFailed": "Kunne ikke tolke svaret fra AI'en",
   "err.scanFailed": "Scan fejlede",
   "err.batchJobFailed": "Kunne ikke starte scanning på serveren",
+  "err.ollamaOffline": "Ollama svarer ikke — AI-serveren kører ikke",
+  "err.ollamaModelMissing": "AI-modellen glm-ocr findes ikke på Ollama-serveren. Kør: ollama pull glm-ocr",
   "err.tooManyImages": "For mange billeder i én upload (maks. 50)",
   "err.unknown": "Ukendt fejl",
   "err.fetchMedicationsFailed": "Kunne ikke hente medicin",
@@ -247,6 +249,8 @@ const da: Record<string, string> = {
   "batch.unknownDate": "Ukendt dato",
   "batch.pulseValue": "Puls {value}",
   "batch.autoSaved": "Målingerne gemmes automatisk på serveren, mens du scanner",
+  "batch.waitingForAi": "Venter på AI-serveren...",
+  "batch.waitingForAiHint": "Ollama kører ikke eller mangler modellen. Start Ollama (kør evt. \"ollama pull glm-ocr\") — scanningen fortsætter automatisk.",
   "batch.retryFailed": "Prøv de mislykkede billeder igen",
 
   // Upload-kø-status (#50)
@@ -578,6 +582,8 @@ const en: Record<string, string> = {
   "err.scanParseFailed": "Could not interpret the AI response",
   "err.scanFailed": "Scan failed",
   "err.batchJobFailed": "Could not start scanning on the server",
+  "err.ollamaOffline": "Ollama is not responding — the AI server is not running",
+  "err.ollamaModelMissing": "The AI model glm-ocr is not installed on the Ollama server. Run: ollama pull glm-ocr",
   "err.tooManyImages": "Too many images in one upload (max. 50)",
   "err.unknown": "Unknown error",
   "err.fetchMedicationsFailed": "Could not load medications",
@@ -650,6 +656,8 @@ const en: Record<string, string> = {
   "batch.unknownDate": "Unknown date",
   "batch.pulseValue": "Pulse {value}",
   "batch.autoSaved": "Readings are saved automatically on the server while you scan",
+  "batch.waitingForAi": "Waiting for the AI server...",
+  "batch.waitingForAiHint": "Ollama is not running or the model is missing. Start Ollama (or run \"ollama pull glm-ocr\") — scanning continues automatically.",
   "batch.retryFailed": "Retry the failed images",
 
   // Upload queue status (#50)

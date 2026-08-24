@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { ensureBatchWorker } from "@/lib/batchQueue";
+import { ensureBatchWorker, getBatchWaitState } from "@/lib/batchQueue";
 
 /**
  * GET /api/batch-jobs/[id]
@@ -32,10 +32,17 @@ export async function GET(
     return NextResponse.json({ error: "batchJobNotFound" }, { status: 404 });
   }
 
+  // Ventetilstand (#60): jobstatus "processing" kan betyde at arbejderen venter
+  // på Ollama — så klienten kan vise en forståelig besked i stedet for at tro
+  // at der scannes.
+  const wait = getBatchWaitState();
+
   return NextResponse.json({
     id: job.id,
     status: job.status,
     createdAt: job.createdAt,
+    waitReason: wait?.reason ?? null,
+    waitingSince: wait ? new Date(wait.since).toISOString() : null,
     items: job.items.map((item) => ({
       id: item.id,
       imagePath: item.imagePath,

@@ -190,6 +190,8 @@ export default function ScanPage() {
   const [batchResults, setBatchResults] = useState<ScanResult[]>([]);
   const [batchJobId, setBatchJobId] = useState<string | null>(null);
   const [batchErrorMsg, setBatchErrorMsg] = useState("");
+  // Sæt når serverens kø venter på AI-serveren (#60)
+  const [batchWaitReason, setBatchWaitReason] = useState<string | null>(null);
 
   // Bygger letvægts-visninger ud fra de valgte billeder (thumbnail + EXIF-tid
   // er allerede beregnet i BatchUpload)
@@ -207,6 +209,7 @@ export default function ScanPage() {
   // afbryder jobbet. Klienten holder kun styr på jobId'et.
   const startBatchScan = useCallback(async (images: UploadImage[]) => {
     setBatchStep("scanning");
+    setBatchWaitReason(null);
     try {
       const res = await fetch("/api/batch-jobs", {
         method: "POST",
@@ -261,9 +264,12 @@ export default function ScanPage() {
       try {
         const res = await fetch(`/api/batch-jobs/${batchJobId}`);
         if (!res.ok) throw new Error("batchJobNotFound");
-        const data: { status: string; items?: BatchJobItemStatus[] } = await res.json();
+          const data: { status: string; items?: BatchJobItemStatus[]; waitReason?: string | null } =
+            await res.json();
 
-        if (cancelled || !Array.isArray(data.items)) return;
+          if (cancelled || !Array.isArray(data.items)) return;
+
+          setBatchWaitReason(data.waitReason ?? null);
 
         const finished = data.items.filter(
           (item) => item.status === "saved" || item.status === "error"
@@ -280,6 +286,7 @@ export default function ScanPage() {
         if (data.status === "done" || data.status === "cancelled") {
           clearActiveBatchJob(getSelectedPersonId());
           setBatchJobId(null);
+          setBatchWaitReason(null);
           setBatchItems((prev) =>
             prev.length > 0
               ? prev
@@ -320,9 +327,12 @@ export default function ScanPage() {
       try {
         const res = await fetch(`/api/batch-jobs/${savedJobId}`);
         if (!res.ok) throw new Error("batchJobNotFound");
-        const data: { status: string; items?: BatchJobItemStatus[] } = await res.json();
+        const data: { status: string; items?: BatchJobItemStatus[]; waitReason?: string | null } =
+          await res.json();
 
         if (cancelled || !Array.isArray(data.items)) return;
+
+        setBatchWaitReason(data.waitReason ?? null);
 
         // Genopbyg visninger fra serverens items — thumbnails hentes via det
         // eksisterende sikre /api/image-endpoint
@@ -411,6 +421,7 @@ export default function ScanPage() {
     setBatchResults([]);
     setBatchJobId(null);
     setBatchErrorMsg("");
+    setBatchWaitReason(null);
     clearActiveBatchJob(getSelectedPersonId());
   };
 
@@ -747,6 +758,7 @@ export default function ScanPage() {
                 items={batchItems}
                 results={batchResults}
                 isComplete={false}
+                waitReason={batchWaitReason}
                 onCancel={handleCancelBatch}
               />
             )}
