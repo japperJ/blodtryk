@@ -6,6 +6,7 @@ import { PersonRowSkeleton } from "@/components/Skeleton";
 import MedicationPanel from "@/components/MedicationPanel";
 import { countKey, INTL_LOCALE } from "@/lib/i18n";
 import { useI18n } from "@/lib/I18nProvider";
+import { setSelectedPersonId as persistSelectedPersonId } from "@/lib/uploadQueue";
 import type { PersonSummary } from "@/types";
 
 export default function PersonsPage() {
@@ -44,7 +45,7 @@ export default function PersonsPage() {
 
   // Vælg person
   const handleSelect = (id: number) => {
-    localStorage.setItem("selectedPersonId", String(id));
+    persistSelectedPersonId(String(id));
     setSelectedPersonId(id);
   };
 
@@ -110,7 +111,7 @@ export default function PersonsPage() {
       if (res.ok) {
         // Hvis den slettede var valgt, vælg Standard
         if (selectedPersonId === id) {
-          localStorage.setItem("selectedPersonId", "1");
+          persistSelectedPersonId("1");
           setSelectedPersonId(1);
         }
         await fetchPersons();
