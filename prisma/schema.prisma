@@ -82,6 +82,13 @@ model BatchJobItem {
   reading    Reading? @relation(fields: [readingId], references: [id])
   error      String?
   clientRef  String? // klientens billed-id — bruges til at matche UI-thumbnails
+  // Manual entry fields (for failed OCR images)
+  manualSystolic   Int?
+  manualDiastolic  Int?
+  manualPulse      Int?
+  manualTimeOfDay  String?
+  manualArm        String?
+  manualNote       String?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 

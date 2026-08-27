@@ -62,10 +62,13 @@ function sleep(ms: number): Promise<void> {
 async function processNextItem(): Promise<boolean> {
   // Crash-recovery: items der sad i "scanning" da serveren døde, prøves igen.
   // Sikkert fordi kun én worker kører ad gangen (guard på globalThis-flagget).
-  await prisma.batchJobItem.updateMany({
+  const stuckCount = await prisma.batchJobItem.updateMany({
     where: { status: "scanning" },
     data: { status: "pending" },
   });
+  if (stuckCount.count > 0) {
+    console.log(`Batch queue: recovered ${stuckCount.count} stuck item(s)`);
+  }
 
   const item = await prisma.batchJobItem.findFirst({
     where: {

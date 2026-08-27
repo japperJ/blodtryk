@@ -8,7 +8,11 @@ import { join } from "path";
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const reading = await prisma.reading.findUnique({ where: { id: Number((await params).id) } });
   if (!reading) return NextResponse.json({ error: "readingNotFound" }, { status: 404 });
-  return NextResponse.json(reading);
+  return NextResponse.json({
+    ...reading,
+    createdAt: reading.createdAt.toISOString(),
+    updatedAt: reading.updatedAt.toISOString(),
+  });
 }
 
 // DELETE reading
@@ -96,7 +100,11 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       },
     });
 
-    return NextResponse.json(reading);
+    return NextResponse.json({
+      ...reading,
+      createdAt: reading.createdAt.toISOString(),
+      updatedAt: reading.updatedAt.toISOString(),
+    });
   } catch (error) {
     console.error("Update reading error:", error);
     return NextResponse.json({ error: "readingUpdateFailed" }, { status: 500 });

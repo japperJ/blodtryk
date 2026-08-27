@@ -1,6 +1,12 @@
 "use client";
 import { useRef, useState, useCallback, useEffect } from "react";
 
+/** Max width for images sent to OCR — balances accuracy vs speed (CLIP scales with pixel count) */
+const MAX_SCAN_WIDTH = 1024;
+
+/** JPEG quality for OCR images — Q0.82 keeps text sharp while shrinking from ~3-5 MB to ~80-150 KB */
+const OCR_JPEG_QUALITY = 0.82;
+
 /** Convert canvas to grayscale with boosted contrast for better OCR */
 function enhanceForOCR(ctx: CanvasRenderingContext2D, w: number, h: number) {
   const imageData = ctx.getImageData(0, 0, w, h);
@@ -162,8 +168,23 @@ export function useCamera() {
 
         enhanceForOCR(ctx, canvas.width, canvas.height);
 
-        const dataUrl = canvas.toDataURL("image/jpeg", 0.95);
-        console.log("Capture OK (ImageCapture):", canvas.width + "x" + canvas.height, "base64:", dataUrl.length);
+        // Resize to MAX_SCAN_WIDTH for faster Ollama CLIP processing (~4× fewer pixels)
+        let outW = canvas.width;
+        let outH = canvas.height;
+        let outCanvas = canvas;
+        if (canvas.width > MAX_SCAN_WIDTH) {
+          outW = MAX_SCAN_WIDTH;
+          outH = Math.round(canvas.height * (MAX_SCAN_WIDTH / canvas.width));
+          const tmp = document.createElement("canvas");
+          tmp.width = outW;
+          tmp.height = outH;
+          const tmpCtx = tmp.getContext("2d")!;
+          tmpCtx.drawImage(canvas, 0, 0, outW, outH);
+          outCanvas = tmp;
+        }
+
+        const dataUrl = outCanvas.toDataURL("image/jpeg", OCR_JPEG_QUALITY);
+        console.log("Capture OK (ImageCapture):", outW + "x" + outH, "base64:", dataUrl.length);
         return dataUrl;
       } catch (e) {
         console.warn("ImageCapture failed, falling back:", e);
@@ -190,8 +211,23 @@ export function useCamera() {
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
     enhanceForOCR(ctx, canvas.width, canvas.height);
 
-    const dataUrl = canvas.toDataURL("image/jpeg", 0.95);
-    console.log("Capture OK (canvas):", canvas.width + "x" + canvas.height, "base64:", dataUrl.length);
+    // Resize to MAX_SCAN_WIDTH for faster Ollama CLIP processing (~4× fewer pixels)
+    let outW = canvas.width;
+    let outH = canvas.height;
+    let outCanvas = canvas;
+    if (canvas.width > MAX_SCAN_WIDTH) {
+      outW = MAX_SCAN_WIDTH;
+      outH = Math.round(canvas.height * (MAX_SCAN_WIDTH / canvas.width));
+      const tmp = document.createElement("canvas");
+      tmp.width = outW;
+      tmp.height = outH;
+      const tmpCtx = tmp.getContext("2d")!;
+      tmpCtx.drawImage(canvas, 0, 0, outW, outH);
+      outCanvas = tmp;
+    }
+
+    const dataUrl = outCanvas.toDataURL("image/jpeg", OCR_JPEG_QUALITY);
+    console.log("Capture OK (canvas):", outW + "x" + outH, "base64:", dataUrl.length);
     return dataUrl;
   }, []);
 

@@ -30,7 +30,7 @@ export interface UploadQueueStatus {
   waitReason: string | null;
 }
 
-const POLL_INTERVAL_MS = 2000;
+const POLL_INTERVAL_MS = 4000;
 
 interface QueueResponse {
   status: string;

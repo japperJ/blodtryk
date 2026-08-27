@@ -98,7 +98,13 @@ export async function PATCH(
       data,
     });
 
-    return NextResponse.json(medication);
+    return NextResponse.json({
+      ...medication,
+      createdAt: medication.createdAt.toISOString(),
+      updatedAt: medication.updatedAt.toISOString(),
+      startDate: medication.startDate?.toISOString() ?? null,
+      endDate: medication.endDate?.toISOString() ?? null,
+    });
   } catch (error) {
     console.error("Update medication error:", error);
     return NextResponse.json({ error: "medicationUpdateFailed" }, { status: 500 });
