@@ -28,7 +28,13 @@ export async function GET(
     orderBy: [{ active: "desc" }, { createdAt: "desc" }],
   });
 
-  return NextResponse.json(medications);
+  return NextResponse.json(medications.map((m) => ({
+    ...m,
+    createdAt: m.createdAt.toISOString(),
+    updatedAt: m.updatedAt.toISOString(),
+    startDate: m.startDate?.toISOString() ?? null,
+    endDate: m.endDate?.toISOString() ?? null,
+  })));
 }
 
 // POST nyt medicin-indslag — name og dose er påkrævet
@@ -104,7 +110,13 @@ export async function POST(
       },
     });
 
-    return NextResponse.json(medication, { status: 201 });
+    return NextResponse.json({
+      ...medication,
+      createdAt: medication.createdAt.toISOString(),
+      updatedAt: medication.updatedAt.toISOString(),
+      startDate: medication.startDate?.toISOString() ?? null,
+      endDate: medication.endDate?.toISOString() ?? null,
+    }, { status: 201 });
   } catch (error) {
     console.error("Create medication error:", error);
     return NextResponse.json({ error: "medicationCreateFailed" }, { status: 500 });

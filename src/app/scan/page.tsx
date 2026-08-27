@@ -285,7 +285,7 @@ export default function ScanPage() {
 
         if (data.status === "done" || data.status === "cancelled") {
           clearActiveBatchJob(getSelectedPersonId());
-          setBatchJobId(null);
+          // Keep batchJobId so BatchTimeline can use it for manual entry API calls
           setBatchWaitReason(null);
           setBatchItems((prev) =>
             prev.length > 0
@@ -306,7 +306,7 @@ export default function ScanPage() {
     };
 
     void poll();
-    const interval = setInterval(() => void poll(), 2000);
+    const interval = setInterval(() => void poll(), 4000);
 
     return () => {
       cancelled = true;
@@ -367,6 +367,8 @@ export default function ScanPage() {
           setBatchStep("scanning");
         } else {
           clearActiveBatchJob(getSelectedPersonId());
+          // Keep savedJobId so BatchTimeline can use it for manual entry API calls
+          setBatchJobId(savedJobId);
           setBatchStep("results");
         }
       } catch {
@@ -770,6 +772,7 @@ export default function ScanPage() {
                 onReset={handleBatchReset}
                 age={derivedAge}
                 onRetryFailed={canRetryFailed ? handleRetryFailed : undefined}
+                jobId={batchJobId}
               />
             )}
 

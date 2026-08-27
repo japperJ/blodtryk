@@ -40,17 +40,22 @@ export async function GET(
   return NextResponse.json({
     id: job.id,
     status: job.status,
-    createdAt: job.createdAt,
+    createdAt: job.createdAt.toISOString(),
     waitReason: wait?.reason ?? null,
     waitingSince: wait ? new Date(wait.since).toISOString() : null,
     items: job.items.map((item) => ({
       id: item.id,
       imagePath: item.imagePath,
-      capturedAt: item.capturedAt,
+      capturedAt: item.capturedAt ? item.capturedAt.toISOString() : null,
       status: item.status,
       error: item.error,
       clientRef: item.clientRef,
-      reading: item.reading,
+      reading: item.reading ? {
+        id: item.reading.id,
+        systolic: item.reading.systolic,
+        diastolic: item.reading.diastolic,
+        pulse: item.reading.pulse,
+      } : null,
     })),
   });
 }

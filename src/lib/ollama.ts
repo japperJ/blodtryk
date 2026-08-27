@@ -104,18 +104,27 @@ async function runScan(
     const parsed = JSON.parse(jsonMatch[0]);
     if (parsed.error) return { error: parsed.error };
 
+    // Ollama models may return numbers as strings (e.g. "145" instead of 145).
+    // Coerce before validating so both forms are accepted.
+    const systolic = Number(parsed.systolic);
+    const diastolic = Number(parsed.diastolic);
+    const pulse = Number(parsed.pulse);
+
     if (
-      typeof parsed.systolic !== "number" ||
-      typeof parsed.diastolic !== "number" ||
-      typeof parsed.pulse !== "number"
+      typeof parsed.systolic === "undefined" ||
+      typeof parsed.diastolic === "undefined" ||
+      typeof parsed.pulse === "undefined" ||
+      Number.isNaN(systolic) ||
+      Number.isNaN(diastolic) ||
+      Number.isNaN(pulse)
     ) {
       return { error: "scanInvalidFormat" };
     }
 
     return {
-      systolic: Math.round(parsed.systolic),
-      diastolic: Math.round(parsed.diastolic),
-      pulse: Math.round(parsed.pulse),
+      systolic: Math.round(systolic),
+      diastolic: Math.round(diastolic),
+      pulse: Math.round(pulse),
     };
   } catch {
     return { error: "scanParseFailed" };

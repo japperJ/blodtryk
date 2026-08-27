@@ -21,8 +21,8 @@ export async function GET() {
     name: p.name,
     birthYear: p.birthYear,
     readingCount: p._count.readings,
-    lastReadingAt: p.readings[0]?.createdAt ?? null,
-    createdAt: p.createdAt,
+    lastReadingAt: p.readings[0]?.createdAt?.toISOString() ?? null,
+    createdAt: p.createdAt.toISOString(),
   }));
 
   return NextResponse.json(result);
@@ -48,7 +48,11 @@ export async function POST(request: NextRequest) {
       data: { name: name.trim(), birthYear: yearCheck.value },
     });
 
-    return NextResponse.json(person, { status: 201 });
+    return NextResponse.json({
+      ...person,
+      createdAt: person.createdAt.toISOString(),
+      updatedAt: person.updatedAt.toISOString(),
+    }, { status: 201 });
   } catch (error) {
     console.error("Create person error:", error);
     return NextResponse.json({ error: "personCreateFailed" }, { status: 500 });

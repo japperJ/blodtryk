@@ -49,7 +49,11 @@ export async function PATCH(
       data,
     });
 
-    return NextResponse.json(person);
+    return NextResponse.json({
+      ...person,
+      createdAt: person.createdAt.toISOString(),
+      updatedAt: person.updatedAt.toISOString(),
+    });
   } catch (error) {
     console.error("Update person error:", error);
     return NextResponse.json({ error: "personUpdateFailed" }, { status: 500 });

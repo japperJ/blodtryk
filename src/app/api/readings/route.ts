@@ -30,7 +30,14 @@ export async function GET(request: NextRequest) {
     orderBy: { createdAt: "desc" },
   });
 
-  return NextResponse.json(readings);
+  // Serialize Date objects to ISO strings for NextResponse.json
+  const serialized = readings.map((r) => ({
+    ...r,
+    createdAt: r.createdAt.toISOString(),
+    updatedAt: r.updatedAt.toISOString(),
+  }));
+
+  return NextResponse.json(serialized);
 }
 
 // POST new reading — requires personId
