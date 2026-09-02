@@ -34,6 +34,15 @@ function shortDate(iso: string): string {
   return `${d.getDate()}/${d.getMonth() + 1}`;
 }
 
+function bandIndicatorStyle(min: number, max: number, maxValue: number) {
+  const left = (min / maxValue) * 100;
+  const width = Math.max(((max - min) / maxValue) * 100, 3);
+  return {
+    left: `${Math.min(Math.max(left, 0), 100)}%`,
+    width: `${Math.min(Math.max(width, 3), 100)}%`,
+  };
+}
+
 export default function TrendsPage() {
   const { t } = useI18n();
   const [person, setPerson] = useState<PersonSummary | null>(null);
@@ -307,44 +316,79 @@ export default function TrendsPage() {
               </p>
             </div>
 
-            {/* Ugentlige gennemsnit — kompakte bar-rækker */}
+            {/* Ugentlige gennemsnit — kompakte bar-rækker med lille målband-indikator */}
             {stats.weekly.length > 0 && (
               <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-700">
                 <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">{t("trends.weeklyAvg")}</h2>
                 <div className="space-y-3">
-                  {stats.weekly.map((w) => (
-                    <div key={w.weekStart} className="flex items-center gap-2">
-                      <span className="w-12 shrink-0 text-xs text-gray-500 dark:text-gray-400">
-                        {shortDate(w.weekStart)}
-                      </span>
-                      <div className="flex-1 space-y-1">
-                        <div className="h-2 rounded-full bg-gray-100 dark:bg-gray-700 overflow-hidden">
-                          <div
-                            className="h-full rounded-full"
-                            style={{
-                              width: `${Math.min(100, (w.sysAvg / 200) * 100)}%`,
-                              backgroundColor: LINE_COLORS.systolic,
-                            }}
-                          />
+                  {stats.weekly.map((w) => {
+                    const sysBand = bandIndicatorStyle(band.sysMin, band.sysMax, 200);
+                    const diaBand = bandIndicatorStyle(band.diaMin, band.diaMax, 200);
+                    const mapValue = w.mapAvg ?? Math.round((w.sysAvg + 2 * w.diaAvg) / 3);
+                    const mapBand = bandIndicatorStyle(band.mapMin ?? 60, band.mapMax ?? 85, 200);
+
+                    return (
+                      <div key={w.weekStart} className="flex items-center gap-2">
+                        <span className="w-12 shrink-0 text-xs text-gray-500 dark:text-gray-400">
+                          {shortDate(w.weekStart)}
+                        </span>
+                        <div className="flex-1 space-y-1.5">
+                          <div className="relative h-2 rounded-full bg-gray-100 dark:bg-gray-700 overflow-hidden">
+                            <span
+                              className="absolute inset-y-0 rounded-full border border-green-500/60 bg-green-500/20"
+                              style={{ left: sysBand.left, width: sysBand.width }}
+                              aria-hidden
+                            />
+                            <span
+                              className="absolute inset-y-0 rounded-full"
+                              style={{
+                                width: `${Math.min(100, (w.sysAvg / 200) * 100)}%`,
+                                backgroundColor: LINE_COLORS.systolic,
+                              }}
+                              aria-hidden
+                            />
+                          </div>
+                          <div className="relative h-2 rounded-full bg-gray-100 dark:bg-gray-700 overflow-hidden">
+                            <span
+                              className="absolute inset-y-0 rounded-full border border-green-500/60 bg-green-500/20"
+                              style={{ left: diaBand.left, width: diaBand.width }}
+                              aria-hidden
+                            />
+                            <span
+                              className="absolute inset-y-0 rounded-full"
+                              style={{
+                                width: `${Math.min(100, (w.diaAvg / 200) * 100)}%`,
+                                backgroundColor: LINE_COLORS.diastolic,
+                              }}
+                              aria-hidden
+                            />
+                          </div>
+                          <div className="relative h-2 rounded-full bg-gray-100 dark:bg-gray-700 overflow-hidden">
+                            <span
+                              className="absolute inset-y-0 rounded-full border border-green-500/60 bg-green-500/20"
+                              style={{ left: mapBand.left, width: mapBand.width }}
+                              aria-hidden
+                            />
+                            <span
+                              className="absolute inset-y-0 rounded-full"
+                              style={{
+                                width: `${Math.min(100, (mapValue / 200) * 100)}%`,
+                                backgroundColor: LINE_COLORS.map,
+                              }}
+                              aria-hidden
+                            />
+                          </div>
                         </div>
-                        <div className="h-2 rounded-full bg-gray-100 dark:bg-gray-700 overflow-hidden">
-                          <div
-                            className="h-full rounded-full"
-                            style={{
-                              width: `${Math.min(100, (w.diaAvg / 200) * 100)}%`,
-                              backgroundColor: LINE_COLORS.diastolic,
-                            }}
-                          />
+                        <div className="w-20 shrink-0 text-right text-[11px] font-medium text-gray-700 dark:text-gray-200 tabular-nums">
+                          <div>{w.sysAvg}/{w.diaAvg}</div>
+                          <div className="text-gray-500 dark:text-gray-400">{mapValue}</div>
                         </div>
+                        <span className="shrink-0 text-[11px] text-gray-500 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-full px-2 py-0.5">
+                          {w.count}
+                        </span>
                       </div>
-                      <span className="w-14 shrink-0 text-right text-xs font-medium text-gray-700 dark:text-gray-200 tabular-nums">
-                        {w.sysAvg}/{w.diaAvg}
-                      </span>
-                      <span className="shrink-0 text-xs text-gray-500 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-full px-2 py-0.5">
-                        {w.count}
-                      </span>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
