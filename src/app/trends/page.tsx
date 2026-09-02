@@ -23,9 +23,9 @@ const RANGES: { value: RangeValue; labelKey: string }[] = [
 
 // Målbånd pr. aldersgruppe — matcher grænserne i lib/bpClassification.ts (#10-spec)
 function getTargetBand(age: number | null): TargetBand {
-  if (age == null || age < 65) return { sysMin: 90, sysMax: 130, diaMin: 60, diaMax: 85 };
-  if (age < 80) return { sysMin: 90, sysMax: 140, diaMin: 60, diaMax: 85 };
-  return { sysMin: 90, sysMax: 140, diaMin: 60, diaMax: 80 };
+  if (age == null || age < 65) return { sysMin: 90, sysMax: 130, diaMin: 60, diaMax: 85, mapMin: 60, mapMax: 85 };
+  if (age < 80) return { sysMin: 90, sysMax: 140, diaMin: 60, diaMax: 85, mapMin: 60, mapMax: 85 };
+  return { sysMin: 90, sysMax: 140, diaMin: 60, diaMax: 80, mapMin: 60, mapMax: 85 };
 }
 
 // Dansk kort dato: "20/8"
@@ -181,7 +181,9 @@ export default function TrendsPage() {
               </div>
               <div>
                 <p className="text-xs text-gray-500 dark:text-gray-400">{t("field.map")}</p>
-                <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{stats.avg.map}</p>
+                <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                  {stats.avg.map ?? Math.round((stats.avg.systolic + 2 * stats.avg.diastolic) / 3)}
+                </p>
               </div>
               <div>
                 <p className="text-xs text-gray-500 dark:text-gray-400">{t("field.pulse")}</p>
@@ -228,6 +230,17 @@ export default function TrendsPage() {
                 showMap={showMap}
                 showPulse={showPulse}
               />
+              {showMap && (
+                <p className="mt-2 text-xs text-gray-600 dark:text-gray-300">
+                  {t("trends.mapSummary", {
+                    map: stats.avg.map ?? Math.round((stats.avg.systolic + 2 * stats.avg.diastolic) / 3),
+                    sys: stats.avg.systolic,
+                    dia: stats.avg.diastolic,
+                    min: band.mapMin ?? 60,
+                    max: band.mapMax ?? 85,
+                  })}
+                </p>
+              )}
               <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
                 {showSystolic && (
                   <span className="flex items-center gap-1.5">
