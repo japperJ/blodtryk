@@ -17,6 +17,9 @@ export interface TargetBand {
 interface BPLineChartProps {
   data: DailyAverage[]; // daglige gennemsnit (allerede aggregeret fra stats-API'en)
   band: TargetBand;
+  showSystolic: boolean;
+  showDiastolic: boolean;
+  showMap: boolean;
   showPulse: boolean;
 }
 
@@ -24,9 +27,14 @@ interface BPLineChartProps {
 export const LINE_COLORS = {
   systolic: "#2563eb", // primary-600
   diastolic: "#0d9488", // teal-600
+  map: "#f59e0b", // amber-500
   pulse: "#9333ea", // purple-600
   band: "#22c55e", // green-500
 } as const;
+
+function getMapValue(sys: number, dia: number): number {
+  return (sys + 2 * dia) / 3;
+}
 
 // Fast viewBox — skalerer responsivt via CSS (w-full h-auto)
 const WIDTH = 360;
@@ -35,8 +43,8 @@ const PAD = { top: 12, right: 10, bottom: 24, left: 34 };
 
 // Y-akse: "pæne" trin (multipla af 5) med luft i kanterne
 function niceScale(min: number, max: number): { lo: number; hi: number; ticks: number[] } {
-  const span = Math.max(20, max - min); // minimumsspand så få punkter ikke fladtrykker akserne
-  const step = Math.max(5, Math.ceil(span / 4 / 5) * 5); // ~4 gridlines
+  const span = Math.max(20, max - min);
+  const step = Math.max(5, Math.ceil(span / 4 / 5) * 5);
   const lo = Math.floor((min - span * 0.05) / step) * step;
   const hi = Math.ceil((max + span * 0.05) / step) * step;
   const ticks: number[] = [];
@@ -50,22 +58,32 @@ function shortDate(iso: string): string {
   return `${d.getDate()}/${d.getMonth() + 1}`;
 }
 
-export default function BPLineChart({ data, band, showPulse }: BPLineChartProps) {
+export default function BPLineChart({
+  data,
+  band,
+  showSystolic,
+  showDiastolic,
+  showMap,
+  showPulse,
+}: BPLineChartProps) {
   const { t } = useI18n();
   if (data.length === 0) return null;
 
-  // Y-domæne: alle dataværdier + hele målbåndet, så båndet altid er synligt
-  const values: number[] = [band.sysMin, band.sysMax, band.diaMin, band.diaMax];
+  const values: number[] = [];
+  if (showSystolic) values.push(band.sysMin, band.sysMax);
+  if (showDiastolic) values.push(band.diaMin, band.diaMax);
   for (const p of data) {
-    values.push(p.sysAvg, p.diaAvg);
+    if (showSystolic) values.push(p.sysAvg);
+    if (showDiastolic) values.push(p.diaAvg);
+    if (showMap) values.push(getMapValue(p.sysAvg, p.diaAvg));
     if (showPulse) values.push(p.pulseAvg);
   }
-  const { lo, hi, ticks } = niceScale(Math.min(...values), Math.max(...values));
+  if (values.length === 0) values.push(0, 100);
 
+  const { lo, hi, ticks } = niceScale(Math.min(...values), Math.max(...values));
   const innerW = WIDTH - PAD.left - PAD.right;
   const innerH = HEIGHT - PAD.top - PAD.bottom;
 
-  // Kategorisk x-akse: jævn fordeling efter punkt-indeks (undgår huller ved fraværende dage)
   const xAt = (i: number): number =>
     PAD.left + (data.length === 1 ? innerW / 2 : (i / (data.length - 1)) * innerW);
   const yAt = (v: number): number => PAD.top + innerH - ((v - lo) / (hi - lo)) * innerH;
@@ -73,7 +91,6 @@ export default function BPLineChart({ data, band, showPulse }: BPLineChartProps)
   const toPoints = (get: (p: DailyAverage) => number): string =>
     data.map((p, i) => `${xAt(i)},${yAt(get(p))}`).join(" ");
 
-  // Sparsomme x-labels: første/sidste altid, plus op til 3 mellem-punkter
   const labelIndexes = new Set<number>([0, data.length - 1]);
   if (data.length > 2) labelIndexes.add(Math.floor((data.length - 1) / 2));
   if (data.length > 8) {
@@ -81,7 +98,6 @@ export default function BPLineChart({ data, band, showPulse }: BPLineChartProps)
     labelIndexes.add(Math.floor((3 * (data.length - 1)) / 4));
   }
 
-  // Prikker (med <title>-hover) kun ved overkommeligt antal punkter — ellers ren polyline
   const showDots = data.length <= 62;
 
   return (
@@ -91,7 +107,6 @@ export default function BPLineChart({ data, band, showPulse }: BPLineChartProps)
       role="img"
       aria-label={t("chart.lineAria")}
     >
-      {/* Gridlines + y-labels */}
       {ticks.map((t) => (
         <g key={t}>
           <line
@@ -108,7 +123,6 @@ export default function BPLineChart({ data, band, showPulse }: BPLineChartProps)
         </g>
       ))}
 
-      {/* Målbånd: grøn zone mellem aldersgruppens nedre og øvre grænse */}
       <rect
         x={PAD.left}
         y={yAt(band.sysMax)}
@@ -130,23 +144,37 @@ export default function BPLineChart({ data, band, showPulse }: BPLineChartProps)
         <title>{t("chart.bandDia", { min: band.diaMin, max: band.diaMax })}</title>
       </rect>
 
-          {/* Kurver */}
-      <polyline
-        points={toPoints((p) => p.diaAvg)}
-        fill="none"
-        stroke={LINE_COLORS.diastolic}
-        strokeWidth="2"
-        strokeLinejoin="round"
-        strokeLinecap="round"
-      />
-      <polyline
-        points={toPoints((p) => p.sysAvg)}
-        fill="none"
-        stroke={LINE_COLORS.systolic}
-        strokeWidth="2"
-        strokeLinejoin="round"
-        strokeLinecap="round"
-      />
+      {showDiastolic && (
+        <polyline
+          points={toPoints((p) => p.diaAvg)}
+          fill="none"
+          stroke={LINE_COLORS.diastolic}
+          strokeWidth="2"
+          strokeLinejoin="round"
+          strokeLinecap="round"
+        />
+      )}
+      {showSystolic && (
+        <polyline
+          points={toPoints((p) => p.sysAvg)}
+          fill="none"
+          stroke={LINE_COLORS.systolic}
+          strokeWidth="2.2"
+          strokeLinejoin="round"
+          strokeLinecap="round"
+        />
+      )}
+      {showMap && (
+        <polyline
+          points={toPoints((p) => getMapValue(p.sysAvg, p.diaAvg))}
+          fill="none"
+          stroke={LINE_COLORS.map}
+          strokeWidth="2"
+          strokeDasharray="6 4"
+          strokeLinejoin="round"
+          strokeLinecap="round"
+        />
+      )}
       {showPulse && (
         <polyline
           points={toPoints((p) => p.pulseAvg)}
@@ -159,25 +187,58 @@ export default function BPLineChart({ data, band, showPulse }: BPLineChartProps)
         />
       )}
 
-      {/* Værdi-prikker med <title> som hover-tooltip */}
       {showDots &&
         data.map((p, i) => (
           <g key={p.date}>
-            <circle cx={xAt(i)} cy={yAt(p.diaAvg)} r="2.5" fill={LINE_COLORS.diastolic}>
-              <title>{t("chart.dot", { date: shortDate(p.date), field: t("field.diastolic"), value: p.diaAvg, readings: t(countKey("chart.reading", p.count), { count: p.count }) })}</title>
-            </circle>
-            <circle cx={xAt(i)} cy={yAt(p.sysAvg)} r="2.5" fill={LINE_COLORS.systolic}>
-              <title>{t("chart.dot", { date: shortDate(p.date), field: t("field.systolic"), value: p.sysAvg, readings: t(countKey("chart.reading", p.count), { count: p.count }) })}</title>
-            </circle>
+            {showDiastolic && (
+              <circle cx={xAt(i)} cy={yAt(p.diaAvg)} r="2.5" fill={LINE_COLORS.diastolic}>
+                <title>
+                  {t("chart.dot", {
+                    date: shortDate(p.date),
+                    field: t("field.diastolic"),
+                    value: p.diaAvg,
+                    readings: t(countKey("chart.reading", p.count), { count: p.count }),
+                  })}
+                </title>
+              </circle>
+            )}
+            {showSystolic && (
+              <circle cx={xAt(i)} cy={yAt(p.sysAvg)} r="2.5" fill={LINE_COLORS.systolic}>
+                <title>
+                  {t("chart.dot", {
+                    date: shortDate(p.date),
+                    field: t("field.systolic"),
+                    value: p.sysAvg,
+                    readings: t(countKey("chart.reading", p.count), { count: p.count }),
+                  })}
+                </title>
+              </circle>
+            )}
+            {showMap && (
+              <circle cx={xAt(i)} cy={yAt(getMapValue(p.sysAvg, p.diaAvg))} r="2.2" fill={LINE_COLORS.map}>
+                <title>
+                  {t("chart.dotPlain", {
+                    date: shortDate(p.date),
+                    field: t("field.map"),
+                    value: Math.round(getMapValue(p.sysAvg, p.diaAvg)),
+                  })}
+                </title>
+              </circle>
+            )}
             {showPulse && (
               <circle cx={xAt(i)} cy={yAt(p.pulseAvg)} r="2" fill={LINE_COLORS.pulse}>
-                <title>{t("chart.dotPlain", { date: shortDate(p.date), field: t("field.pulse"), value: p.pulseAvg })}</title>
+                <title>
+                  {t("chart.dotPlain", {
+                    date: shortDate(p.date),
+                    field: t("field.pulse"),
+                    value: p.pulseAvg,
+                  })}
+                </title>
               </circle>
             )}
           </g>
         ))}
 
-      {/* Sparsomme x-labels */}
       {Array.from(labelIndexes).map((i) => (
         <text
           key={`x-${i}`}

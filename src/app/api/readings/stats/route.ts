@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getBPStatus } from "@/lib/bpClassification";
+import { getBPStatus, getMeanArterialPressure } from "@/lib/bpClassification";
 
 // Tilladte vinduer for days-parameteren
 const ALLOWED_DAYS = ["7", "30", "90", "all"] as const;
@@ -10,6 +10,7 @@ interface StatsEntry {
   systolic: number;
   diastolic: number;
   pulse: number;
+  map: number;
 }
 
 interface StatsResponse {
@@ -17,8 +18,8 @@ interface StatsResponse {
   avg: StatsEntry;
   min: StatsEntry;
   max: StatsEntry;
-  daily: { date: string; sysAvg: number; diaAvg: number; pulseAvg: number; count: number }[];
-  weekly: { weekStart: string; sysAvg: number; diaAvg: number; count: number }[];
+  daily: { date: string; sysAvg: number; diaAvg: number; pulseAvg: number; mapAvg: number; count: number }[];
+  weekly: { weekStart: string; sysAvg: number; diaAvg: number; mapAvg: number; count: number }[];
   classification: { severity: string; labelKey: string; count: number }[];
   byTimeOfDay?: { morning?: { sysAvg: number }; evening?: { sysAvg: number } };
   streakDays: number;
@@ -97,7 +98,7 @@ export async function GET(request: NextRequest) {
 
   // Nulstillet struktur (ikke fejl) når personen ikke har målinger i vinduet
   if (readings.length === 0) {
-    const zero: StatsEntry = { systolic: 0, diastolic: 0, pulse: 0 };
+    const zero: StatsEntry = { systolic: 0, diastolic: 0, pulse: 0, map: 0 };
     const response: StatsResponse = {
       count: 0,
       avg: { ...zero },
@@ -112,13 +113,13 @@ export async function GET(request: NextRequest) {
   }
 
   // Gennemsnit/min/max på tværs af alle målinger i vinduet
-  const sum: StatsEntry = { systolic: 0, diastolic: 0, pulse: 0 };
-  const min: StatsEntry = { systolic: Infinity, diastolic: Infinity, pulse: Infinity };
-  const max: StatsEntry = { systolic: -Infinity, diastolic: -Infinity, pulse: -Infinity };
+  const sum: StatsEntry = { systolic: 0, diastolic: 0, pulse: 0, map: 0 };
+  const min: StatsEntry = { systolic: Infinity, diastolic: Infinity, pulse: Infinity, map: Infinity };
+  const max: StatsEntry = { systolic: -Infinity, diastolic: -Infinity, pulse: -Infinity, map: -Infinity };
 
   // Daglige/ugentlige grupperinger
-  const dailyMap = new Map<string, { sys: number; dia: number; pul: number; count: number }>();
-  const weeklyMap = new Map<string, { sys: number; dia: number; count: number }>();
+  const dailyMap = new Map<string, { sys: number; dia: number; pul: number; map: number; count: number }>();
+  const weeklyMap = new Map<string, { sys: number; dia: number; map: number; count: number }>();
 
   // Klassificerings-fordeling via den delte, aldersbevidste klassifikator
   const classMap = new Map<string, { severity: string; labelKey: string; count: number }>();
@@ -133,30 +134,36 @@ export async function GET(request: NextRequest) {
   const dayKeys = new Set<string>();
 
   for (const r of readings) {
+    const mapValue = getMeanArterialPressure(r.systolic, r.diastolic);
     sum.systolic += r.systolic;
     sum.diastolic += r.diastolic;
     sum.pulse += r.pulse;
+    sum.map += mapValue;
     min.systolic = Math.min(min.systolic, r.systolic);
     min.diastolic = Math.min(min.diastolic, r.diastolic);
     min.pulse = Math.min(min.pulse, r.pulse);
+    min.map = Math.min(min.map, mapValue);
     max.systolic = Math.max(max.systolic, r.systolic);
     max.diastolic = Math.max(max.diastolic, r.diastolic);
     max.pulse = Math.max(max.pulse, r.pulse);
+    max.map = Math.max(max.map, mapValue);
 
     const key = dateKey(r.createdAt);
     dayKeys.add(key);
 
-    const d = dailyMap.get(key) ?? { sys: 0, dia: 0, pul: 0, count: 0 };
+    const d = dailyMap.get(key) ?? { sys: 0, dia: 0, pul: 0, map: 0, count: 0 };
     d.sys += r.systolic;
     d.dia += r.diastolic;
     d.pul += r.pulse;
+    d.map += mapValue;
     d.count += 1;
     dailyMap.set(key, d);
 
     const weekKey = dateKey(mondayOf(r.createdAt));
-    const w = weeklyMap.get(weekKey) ?? { sys: 0, dia: 0, count: 0 };
+    const w = weeklyMap.get(weekKey) ?? { sys: 0, dia: 0, map: 0, count: 0 };
     w.sys += r.systolic;
     w.dia += r.diastolic;
+    w.map += mapValue;
     w.count += 1;
     weeklyMap.set(weekKey, w);
 
@@ -208,6 +215,7 @@ export async function GET(request: NextRequest) {
       systolic: round(sum.systolic, readings.length),
       diastolic: round(sum.diastolic, readings.length),
       pulse: round(sum.pulse, readings.length),
+      map: round(sum.map, readings.length),
     },
     min,
     max,
@@ -218,6 +226,7 @@ export async function GET(request: NextRequest) {
         sysAvg: round(v.sys, v.count),
         diaAvg: round(v.dia, v.count),
         pulseAvg: round(v.pul, v.count),
+        mapAvg: round(v.map, v.count),
         count: v.count,
       })),
     weekly: Array.from(weeklyMap.entries())
@@ -226,6 +235,7 @@ export async function GET(request: NextRequest) {
         weekStart,
         sysAvg: round(v.sys, v.count),
         diaAvg: round(v.dia, v.count),
+        mapAvg: round(v.map, v.count),
         count: v.count,
       })),
     classification,

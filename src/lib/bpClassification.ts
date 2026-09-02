@@ -104,3 +104,7 @@ export function getAgeGroupKey(age: number | null): AgeGroupKey {
   if (age < 80) return "ageGroup.65to79";
   return "ageGroup.over80";
 }
+
+export function getMeanArterialPressure(systolic: number, diastolic: number): number {
+  return Math.round((systolic + 2 * diastolic) / 3);
+}
