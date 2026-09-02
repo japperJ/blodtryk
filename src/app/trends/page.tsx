@@ -41,6 +41,9 @@ export default function TrendsPage() {
   const [range, setRange] = useState<RangeValue>("30");
   const [stats, setStats] = useState<ReadingStats | null>(null);
   const [statsLoading, setStatsLoading] = useState(false);
+  const [showSystolic, setShowSystolic] = useState(true);
+  const [showDiastolic, setShowDiastolic] = useState(true);
+  const [showMap, setShowMap] = useState(false);
   const [showPulse, setShowPulse] = useState(false);
 
   // Samme person-valg-mønster som /readings: localStorage + /api/persons
@@ -169,12 +172,16 @@ export default function TrendsPage() {
         ) : (
           <div className="space-y-4">
             {/* Nøgletal */}
-            <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-700 grid grid-cols-3 gap-2 text-center">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-700 grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
               <div>
                 <p className="text-xs text-gray-500 dark:text-gray-400">{t("trends.average")}</p>
                 <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
                   {stats.avg.systolic}/{stats.avg.diastolic}
                 </p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{t("field.map")}</p>
+                <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{stats.avg.map}</p>
               </div>
               <div>
                 <p className="text-xs text-gray-500 dark:text-gray-400">{t("field.pulse")}</p>
@@ -191,36 +198,67 @@ export default function TrendsPage() {
 
             {/* Linjediagram: daglige gennemsnit + målbånd */}
             <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-700">
-              <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center justify-between mb-2 gap-2">
                 <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{t("trends.dailyAvg")}</h2>
-                <button
-                  onClick={() => setShowPulse((v) => !v)}
-                  className={`px-3 py-1 rounded-full text-xs font-medium transition-all
-                             ${showPulse
-                               ? "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300"
-                               : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"}`}
-                >
-                  {t("field.pulse")}
-                </button>
+                <div className="flex flex-wrap justify-end gap-2">
+                  {[
+                    { label: t("field.systolic"), active: showSystolic, onClick: () => setShowSystolic((v) => !v), color: LINE_COLORS.systolic },
+                    { label: t("field.diastolic"), active: showDiastolic, onClick: () => setShowDiastolic((v) => !v), color: LINE_COLORS.diastolic },
+                    { label: t("field.map"), active: showMap, onClick: () => setShowMap((v) => !v), color: LINE_COLORS.map },
+                    { label: t("field.pulse"), active: showPulse, onClick: () => setShowPulse((v) => !v), color: LINE_COLORS.pulse },
+                  ].map((filter) => (
+                    <button
+                      key={filter.label}
+                      onClick={filter.onClick}
+                      className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-all border ${filter.active
+                        ? "border-transparent text-white"
+                        : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-200 dark:border-gray-600"}`}
+                      style={filter.active ? { backgroundColor: filter.color } : undefined}
+                    >
+                      {filter.label}
+                    </button>
+                  ))}
+                </div>
               </div>
-              <BPLineChart data={stats.daily} band={band} showPulse={showPulse} />
+              <BPLineChart
+                data={stats.daily}
+                band={band}
+                showSystolic={showSystolic}
+                showDiastolic={showDiastolic}
+                showMap={showMap}
+                showPulse={showPulse}
+              />
               <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
-                <span className="flex items-center gap-1.5">
-                  <span
-                    className="inline-block h-2 w-2 rounded-full"
-                    style={{ backgroundColor: LINE_COLORS.systolic }}
-                    aria-hidden
-                  />
-                  {t("field.systolic")}
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <span
-                    className="inline-block h-2 w-2 rounded-full"
-                    style={{ backgroundColor: LINE_COLORS.diastolic }}
-                    aria-hidden
-                  />
-                  {t("field.diastolic")}
-                </span>
+                {showSystolic && (
+                  <span className="flex items-center gap-1.5">
+                    <span
+                      className="inline-block h-2 w-2 rounded-full"
+                      style={{ backgroundColor: LINE_COLORS.systolic }}
+                      aria-hidden
+                    />
+                    {t("field.systolic")}
+                  </span>
+                )}
+                {showDiastolic && (
+                  <span className="flex items-center gap-1.5">
+                    <span
+                      className="inline-block h-2 w-2 rounded-full"
+                      style={{ backgroundColor: LINE_COLORS.diastolic }}
+                      aria-hidden
+                    />
+                    {t("field.diastolic")}
+                  </span>
+                )}
+                {showMap && (
+                  <span className="flex items-center gap-1.5">
+                    <span
+                      className="inline-block h-2 w-2 rounded-full"
+                      style={{ backgroundColor: LINE_COLORS.map }}
+                      aria-hidden
+                    />
+                    {t("field.map")}
+                  </span>
+                )}
                 {showPulse && (
                   <span className="flex items-center gap-1.5">
                     <span

@@ -73,6 +73,7 @@ const da: Record<string, string> = {
   // Felter
   "field.systolic": "Systolisk",
   "field.diastolic": "Diastolisk",
+  "field.map": "MAP",
   "field.pulse": "Puls",
   "field.note": "Note",
   "field.date": "Dato",
@@ -479,6 +480,7 @@ const en: Record<string, string> = {
   // Fields
   "field.systolic": "Systolic",
   "field.diastolic": "Diastolic",
+  "field.map": "MAP",
   "field.pulse": "Pulse",
   "field.note": "Note",
   "field.date": "Date",

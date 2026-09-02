@@ -2,6 +2,7 @@ export interface BloodPressureReading {
   systolic: number;
   diastolic: number;
   pulse: number;
+  map?: number;
 }
 
 // Målingskontekst-tags (matcher de tilladte værdier i lib/validation.ts)
@@ -49,6 +50,7 @@ export interface DailyAverage {
   sysAvg: number;
   diaAvg: number;
   pulseAvg: number;
+  mapAvg?: number;
   count: number;
 }
 
@@ -56,6 +58,7 @@ export interface WeeklyAverage {
   weekStart: string; // YYYY-MM-DD (mandag)
   sysAvg: number;
   diaAvg: number;
+  mapAvg?: number;
   count: number;
 }
 
