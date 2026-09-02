@@ -12,6 +12,8 @@ export interface TargetBand {
   sysMax: number;
   diaMin: number;
   diaMax: number;
+  mapMin?: number;
+  mapMax?: number;
 }
 
 interface BPLineChartProps {
@@ -72,6 +74,9 @@ export default function BPLineChart({
   const values: number[] = [];
   if (showSystolic) values.push(band.sysMin, band.sysMax);
   if (showDiastolic) values.push(band.diaMin, band.diaMax);
+  if (showMap && band.mapMin != null && band.mapMax != null) {
+    values.push(band.mapMin, band.mapMax);
+  }
   for (const p of data) {
     if (showSystolic) values.push(p.sysAvg);
     if (showDiastolic) values.push(p.diaAvg);
@@ -143,6 +148,18 @@ export default function BPLineChart({
       >
         <title>{t("chart.bandDia", { min: band.diaMin, max: band.diaMax })}</title>
       </rect>
+      {showMap && band.mapMin != null && band.mapMax != null && (
+        <rect
+          x={PAD.left}
+          y={yAt(band.mapMax)}
+          width={innerW}
+          height={Math.max(1, yAt(band.mapMin) - yAt(band.mapMax))}
+          fill={LINE_COLORS.band}
+          opacity="0.12"
+        >
+          <title>{t("chart.bandMap", { min: band.mapMin, max: band.mapMax })}</title>
+        </rect>
+      )}
 
       {showDiastolic && (
         <polyline
