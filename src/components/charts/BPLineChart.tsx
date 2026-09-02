@@ -31,7 +31,8 @@ export const LINE_COLORS = {
   diastolic: "#0d9488", // teal-600
   map: "#f59e0b", // amber-500
   pulse: "#9333ea", // purple-600
-  band: "#22c55e", // green-500
+  band: "#dbeafe", // very light blue target band
+  mapBand: "#fef9c3", // very light yellow target band
 } as const;
 
 function getMapValue(sys: number, dia: number): number {
@@ -142,7 +143,7 @@ export default function BPLineChart({
         width={innerW}
         height={Math.max(1, yAt(band.sysMin) - yAt(band.sysMax))}
         fill={LINE_COLORS.band}
-        opacity="0.10"
+        opacity="0.85"
       >
         <title>{t("chart.bandSys", { min: band.sysMin, max: band.sysMax })}</title>
       </rect>
@@ -152,7 +153,7 @@ export default function BPLineChart({
         width={innerW}
         height={Math.max(1, yAt(band.diaMin) - yAt(band.diaMax))}
         fill={LINE_COLORS.band}
-        opacity="0.06"
+        opacity="0.75"
       >
         <title>{t("chart.bandDia", { min: band.diaMin, max: band.diaMax })}</title>
       </rect>
@@ -162,8 +163,8 @@ export default function BPLineChart({
           y={yAt(band.mapMax)}
           width={innerW}
           height={Math.max(1, yAt(band.mapMin) - yAt(band.mapMax))}
-          fill={LINE_COLORS.band}
-          opacity="0.12"
+          fill={LINE_COLORS.mapBand}
+          opacity="0.9"
         >
           <title>{t("chart.bandMap", { min: band.mapMin, max: band.mapMax })}</title>
         </rect>
