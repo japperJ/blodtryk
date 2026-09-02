@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
-import { User, UserPlus, Pencil, Trash2, X, Check } from "lucide-react";
+import { User, UserPlus, Pencil, Trash2, X, Check, Download, Upload } from "lucide-react";
 import EmptyState from "@/components/EmptyState";
 import { PersonRowSkeleton } from "@/components/Skeleton";
 import MedicationPanel from "@/components/MedicationPanel";
@@ -105,7 +105,20 @@ export default function PersonsPage() {
 
   // Slet person
   const handleDelete = async (id: number, name: string) => {
-    if (!confirm(t("persons.confirmDelete", { name }))) return;
+    const person = persons.find((candidate) => candidate.id === id);
+    if (!person) return;
+
+    const shouldBackup = window.confirm(t("persons.backupBeforeDelete", { name }));
+    if (shouldBackup) {
+      try {
+        await handleBackupDownload(person, { suppressAlert: true });
+      } catch {
+        // We still continue if the backup export fails, but we keep the delete flow safe by prompting for confirmation.
+      }
+    }
+
+    if (!window.confirm(t("persons.confirmDelete", { name }))) return;
+
     try {
       const res = await fetch(`/api/persons/${id}`, { method: "DELETE" });
       if (res.ok) {
@@ -119,6 +132,68 @@ export default function PersonsPage() {
     } catch (err) {
       console.error("Failed to delete person:", err);
     }
+  };
+
+  const handleBackupDownload = async (person: PersonSummary, options?: { suppressAlert?: boolean }) => {
+    try {
+      const res = await fetch(`/api/persons/${person.id}/backup`);
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || t("persons.backupError"));
+      }
+
+      const backup = await res.json();
+      const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      const safeName = person.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "person";
+      link.href = url;
+      link.download = `bloodpressure-backup-${safeName}-${Date.now()}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      if (!options?.suppressAlert) {
+        window.alert(t("persons.backupSuccess"));
+      }
+      return true;
+    } catch (err) {
+      console.error("Failed to export backup:", err);
+      if (!options?.suppressAlert) {
+        window.alert(t("persons.backupError"));
+      }
+      return false;
+    }
+  };
+
+  const handleBackupRestore = async (personId: number) => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".json,application/json";
+    input.onchange = async (event) => {
+      const file = (event.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+
+      try {
+        const text = await file.text();
+        const backup = JSON.parse(text);
+        const res = await fetch("/api/persons/backup", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ personId, backup }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(data.error || t("persons.restoreError"));
+        }
+        await fetchPersons();
+        window.alert(t("persons.restoreSuccess"));
+      } catch (err) {
+        console.error("Failed to restore backup:", err);
+        window.alert(t("persons.restoreError"));
+      }
+    };
+    input.click();
   };
 
   return (
@@ -307,7 +382,23 @@ export default function PersonsPage() {
                       </div>
                     </button>
 
-                    <div className="flex gap-1">
+                    <div className="flex flex-wrap items-center justify-end gap-2">
+                      <button
+                        onClick={() => handleBackupDownload(person)}
+                        className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:border-primary-300 hover:text-primary-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:border-primary-500 dark:hover:text-primary-400 transition-colors"
+                        title={t("persons.backup")}
+                      >
+                        <Download className="w-3.5 h-3.5" aria-hidden />
+                        {t("persons.backup")}
+                      </button>
+                      <button
+                        onClick={() => handleBackupRestore(person.id)}
+                        className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-700 hover:border-primary-300 hover:text-primary-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:border-primary-500 dark:hover:text-primary-400 transition-colors"
+                        title={t("persons.restore")}
+                      >
+                        <Upload className="w-3.5 h-3.5" aria-hidden />
+                        {t("persons.restore")}
+                      </button>
                       <button
                         onClick={() => {
                           setEditingId(person.id);

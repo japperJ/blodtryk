@@ -230,17 +230,28 @@ export default function TrendsPage() {
                 showMap={showMap}
                 showPulse={showPulse}
               />
-              {showMap && (
-                <p className="mt-2 text-xs text-gray-600 dark:text-gray-300">
-                  {t("trends.mapSummary", {
-                    map: stats.avg.map ?? Math.round((stats.avg.systolic + 2 * stats.avg.diastolic) / 3),
-                    sys: stats.avg.systolic,
-                    dia: stats.avg.diastolic,
-                    min: band.mapMin ?? 60,
-                    max: band.mapMax ?? 85,
-                  })}
-                </p>
-              )}
+              {showMap && (() => {
+                const mapValue = stats.avg.map ?? Math.round((stats.avg.systolic + 2 * stats.avg.diastolic) / 3);
+                const min = band.mapMin ?? 60;
+                const max = band.mapMax ?? 85;
+                const summaryKey = mapValue < min
+                  ? "trends.mapSummaryBelow"
+                  : mapValue > max
+                    ? "trends.mapSummaryAbove"
+                    : "trends.mapSummaryInRange";
+
+                return (
+                  <p className="mt-2 text-xs text-gray-600 dark:text-gray-300">
+                    {t(summaryKey, {
+                      map: mapValue,
+                      sys: stats.avg.systolic,
+                      dia: stats.avg.diastolic,
+                      min,
+                      max,
+                    })}
+                  </p>
+                );
+              })()}
               <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
                 {showSystolic && (
                   <span className="flex items-center gap-1.5">
