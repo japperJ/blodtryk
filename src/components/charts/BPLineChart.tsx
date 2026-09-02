@@ -96,11 +96,19 @@ export default function BPLineChart({
   const toPoints = (get: (p: DailyAverage) => number): string =>
     data.map((p, i) => `${xAt(i)},${yAt(get(p))}`).join(" ");
 
-  const labelIndexes = new Set<number>([0, data.length - 1]);
-  if (data.length > 2) labelIndexes.add(Math.floor((data.length - 1) / 2));
-  if (data.length > 8) {
-    labelIndexes.add(Math.floor((data.length - 1) / 4));
-    labelIndexes.add(Math.floor((3 * (data.length - 1)) / 4));
+  const labelIndexes = new Set<number>();
+  if (data.length <= 8) {
+    for (let i = 0; i < data.length; i++) labelIndexes.add(i);
+  } else {
+    labelIndexes.add(0);
+    labelIndexes.add(data.length - 1);
+    if (data.length > 2) labelIndexes.add(Math.floor((data.length - 1) / 2));
+    const step = Math.max(1, Math.ceil(data.length / 6));
+    for (let i = step; i < data.length - 1; i += step) labelIndexes.add(i);
+    if (data.length > 8) {
+      labelIndexes.add(Math.floor((data.length - 1) / 4));
+      labelIndexes.add(Math.floor((3 * (data.length - 1)) / 4));
+    }
   }
 
   const showDots = data.length <= 62;
