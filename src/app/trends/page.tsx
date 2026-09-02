@@ -379,11 +379,11 @@ export default function TrendsPage() {
                             />
                           </div>
                         </div>
-                        <div className="w-20 shrink-0 text-right text-[11px] font-medium text-gray-700 dark:text-gray-200 tabular-nums">
+                        <div className="min-w-[72px] shrink-0 text-right text-[11px] font-medium text-gray-700 dark:text-gray-200 tabular-nums">
                           <div>{w.sysAvg}/{w.diaAvg}</div>
-                          <div className="text-gray-500 dark:text-gray-400">{mapValue}</div>
+                          <div className="text-[10px] text-gray-500 dark:text-gray-400">MAP {mapValue}</div>
                         </div>
-                        <span className="shrink-0 text-[11px] text-gray-500 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-full px-2 py-0.5">
+                        <span className="shrink-0 text-xs text-gray-500 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-full px-2 py-0.5">
                           {w.count}
                         </span>
                       </div>
