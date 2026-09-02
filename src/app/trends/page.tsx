@@ -312,39 +312,52 @@ export default function TrendsPage() {
               <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-700">
                 <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">{t("trends.weeklyAvg")}</h2>
                 <div className="space-y-3">
-                  {stats.weekly.map((w) => (
-                    <div key={w.weekStart} className="flex items-center gap-2">
-                      <span className="w-12 shrink-0 text-xs text-gray-500 dark:text-gray-400">
-                        {shortDate(w.weekStart)}
-                      </span>
-                      <div className="flex-1 space-y-1">
-                        <div className="h-2 rounded-full bg-gray-100 dark:bg-gray-700 overflow-hidden">
-                          <div
-                            className="h-full rounded-full"
-                            style={{
-                              width: `${Math.min(100, (w.sysAvg / 200) * 100)}%`,
-                              backgroundColor: LINE_COLORS.systolic,
-                            }}
-                          />
+                  {stats.weekly.map((w) => {
+                    const mapValue = w.mapAvg ?? Math.round((w.sysAvg + 2 * w.diaAvg) / 3);
+                    return (
+                      <div key={w.weekStart} className="flex items-center gap-2">
+                        <span className="w-12 shrink-0 text-xs text-gray-500 dark:text-gray-400">
+                          {shortDate(w.weekStart)}
+                        </span>
+                        <div className="flex-1 space-y-1">
+                          <div className="h-2 rounded-full bg-gray-100 dark:bg-gray-700 overflow-hidden">
+                            <div
+                              className="h-full rounded-full"
+                              style={{
+                                width: `${Math.min(100, (w.sysAvg / 200) * 100)}%`,
+                                backgroundColor: LINE_COLORS.systolic,
+                              }}
+                            />
+                          </div>
+                          <div className="h-2 rounded-full bg-gray-100 dark:bg-gray-700 overflow-hidden">
+                            <div
+                              className="h-full rounded-full"
+                              style={{
+                                width: `${Math.min(100, (w.diaAvg / 200) * 100)}%`,
+                                backgroundColor: LINE_COLORS.diastolic,
+                              }}
+                            />
+                          </div>
+                          <div className="h-2 rounded-full bg-gray-100 dark:bg-gray-700 overflow-hidden">
+                            <div
+                              className="h-full rounded-full"
+                              style={{
+                                width: `${Math.min(100, (mapValue / 200) * 100)}%`,
+                                backgroundColor: LINE_COLORS.map,
+                              }}
+                            />
+                          </div>
                         </div>
-                        <div className="h-2 rounded-full bg-gray-100 dark:bg-gray-700 overflow-hidden">
-                          <div
-                            className="h-full rounded-full"
-                            style={{
-                              width: `${Math.min(100, (w.diaAvg / 200) * 100)}%`,
-                              backgroundColor: LINE_COLORS.diastolic,
-                            }}
-                          />
+                        <div className="min-w-[72px] shrink-0 text-right text-[11px] font-medium text-gray-700 dark:text-gray-200 tabular-nums">
+                          <div>{w.sysAvg}/{w.diaAvg}</div>
+                          <div className="text-[10px] text-gray-500 dark:text-gray-400">MAP {mapValue}</div>
                         </div>
+                        <span className="shrink-0 text-xs text-gray-500 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-full px-2 py-0.5">
+                          {w.count}
+                        </span>
                       </div>
-                      <span className="w-14 shrink-0 text-right text-xs font-medium text-gray-700 dark:text-gray-200 tabular-nums">
-                        {w.sysAvg}/{w.diaAvg}
-                      </span>
-                      <span className="shrink-0 text-xs text-gray-500 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-full px-2 py-0.5">
-                        {w.count}
-                      </span>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
