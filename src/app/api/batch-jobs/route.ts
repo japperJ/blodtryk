@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { ensureBatchWorker } from "@/lib/batchQueue";
 import { writeFile, mkdir } from "fs/promises";
@@ -79,15 +80,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "noImagesProvided" }, { status: 400 });
     }
 
-    const existingHashes = candidateHashes.length
-      ? await prisma.batchJobItem.findMany({
-          where: {
-            imageHash: { in: candidateHashes },
-            job: { personId },
-          },
-          select: { imageHash: true },
+    const personJobIds = candidateHashes.length
+      ? await prisma.batchJob.findMany({
+          where: { personId },
+          select: { id: true },
         })
       : [];
+
+    const existingHashes =
+      candidateHashes.length && personJobIds.length
+        ? await prisma.$queryRaw<Array<{ imageHash: string | null }>>`
+            SELECT "imageHash"
+            FROM "BatchJobItem"
+            WHERE "jobId" IN (${Prisma.join(personJobIds.map((job) => job.id))})
+              AND "imageHash" IS NOT NULL
+              AND "imageHash" IN (${Prisma.join(candidateHashes)})
+          `
+        : [];
+
     const existingHashSet = new Set(
       existingHashes.map((row) => row.imageHash).filter((hash): hash is string => Boolean(hash))
     );
