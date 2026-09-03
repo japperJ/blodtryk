@@ -227,6 +227,7 @@ const da: Record<string, string> = {
 
   // Batch-flow
   "batch.notImages": "Valgte filer er ikke billeder",
+  "batch.duplicateSkipped": "Billedet er allerede valgt og bliver ikke tilføjet igen.",
   "batch.processing": "Behandler billede {current} af {total}...",
   "batch.chooseFromGallery": "Vælg billeder fra galleriet",
   "batch.tapToSelect": "Tryk for at vælge — kan vælge flere på én gang",
@@ -648,6 +649,7 @@ const en: Record<string, string> = {
 
   // Batch flow
   "batch.notImages": "The selected files are not images",
+  "batch.duplicateSkipped": "This image is already selected and was skipped.",
   "batch.processing": "Processing image {current} of {total}...",
   "batch.chooseFromGallery": "Choose images from the gallery",
   "batch.tapToSelect": "Tap to choose — you can select several at once",

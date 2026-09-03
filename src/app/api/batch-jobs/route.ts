@@ -49,8 +49,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "personNotFound" }, { status: 400 });
     }
 
-    const items = raw.items;
-    if (!Array.isArray(items) || items.length === 0) {
+    const rawItems = raw.items;
+    if (!Array.isArray(rawItems) || rawItems.length === 0) {
+      return NextResponse.json({ error: "noImagesProvided" }, { status: 400 });
+    }
+
+    const seenBase64 = new Set<string>();
+    const items: IncomingItem[] = [];
+    for (const entry of rawItems as IncomingItem[]) {
+      if (typeof entry?.base64 !== "string") continue;
+
+      const base64 = entry.base64.replace(/\s/g, "");
+      if (base64.length < MIN_BASE64_LENGTH || seenBase64.has(base64)) continue;
+      seenBase64.add(base64);
+      items.push(entry);
+    }
+
+    if (items.length === 0) {
       return NextResponse.json({ error: "noImagesProvided" }, { status: 400 });
     }
     if (items.length > MAX_ITEMS_PER_JOB) {
@@ -62,7 +77,7 @@ export async function POST(request: NextRequest) {
     await mkdir(scanDir, { recursive: true });
 
     const itemRows: { imagePath: string; capturedAt: Date | null; clientRef: string | null }[] = [];
-    for (const entry of items as IncomingItem[]) {
+    for (const entry of items) {
       if (typeof entry?.base64 !== "string") continue;
 
       const base64 = entry.base64.replace(/\s/g, "");
