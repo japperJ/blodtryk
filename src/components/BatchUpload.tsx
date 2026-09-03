@@ -27,8 +27,13 @@ export default function BatchUpload({ onImagesReady }: Props) {
   const [progress, setProgress] = useState({ current: 0, total: 0 });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const makeFileSignature = (file: File) =>
-    `${file.name}:${file.type}:${file.size}:${file.lastModified}`;
+  const makeFileSignature = async (file: File) => {
+    const buffer = await file.arrayBuffer();
+    const hashBuffer = await crypto.subtle.digest("SHA-256", buffer);
+    return Array.from(new Uint8Array(hashBuffer))
+      .map((byte) => byte.toString(16).padStart(2, "0"))
+      .join("");
+  };
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -42,13 +47,17 @@ export default function BatchUpload({ onImagesReady }: Props) {
       return;
     }
 
-    const existingSignatures = new Set(selectedImages.map((img) => makeFileSignature(img.file)));
-    const uniqueFiles = imageFiles.filter((file) => {
-      const signature = makeFileSignature(file);
-      if (existingSignatures.has(signature)) return false;
+    const existingSignatures = new Set<string>(
+      await Promise.all(selectedImages.map((img) => makeFileSignature(img.file)))
+    );
+
+    const uniqueFiles: File[] = [];
+    for (const file of imageFiles) {
+      const signature = await makeFileSignature(file);
+      if (existingSignatures.has(signature)) continue;
       existingSignatures.add(signature);
-      return true;
-    });
+      uniqueFiles.push(file);
+    }
 
     if (uniqueFiles.length === 0) {
       e.target.value = "";
