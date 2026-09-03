@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { ensureBatchWorker } from "@/lib/batchQueue";
 import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
-import { randomUUID } from "crypto";
+import { randomUUID, createHash } from "crypto";
 
 // Sikkerhedsgrænse: hvor mange billeder et enkelt batch-job må indeholde
 const MAX_ITEMS_PER_JOB = 50;
@@ -54,14 +54,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "noImagesProvided" }, { status: 400 });
     }
 
-    const seenBase64 = new Set<string>();
+    const seenHashes = new Set<string>();
     const items: IncomingItem[] = [];
     for (const entry of rawItems as IncomingItem[]) {
       if (typeof entry?.base64 !== "string") continue;
 
       const base64 = entry.base64.replace(/\s/g, "");
-      if (base64.length < MIN_BASE64_LENGTH || seenBase64.has(base64)) continue;
-      seenBase64.add(base64);
+      if (base64.length < MIN_BASE64_LENGTH) continue;
+
+      const imageHash = createHash("sha256").update(Buffer.from(base64, "base64")).digest("hex");
+      if (seenHashes.has(imageHash)) continue;
+      seenHashes.add(imageHash);
       items.push(entry);
     }
 
