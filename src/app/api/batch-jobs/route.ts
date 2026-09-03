@@ -177,9 +177,31 @@ export async function POST(request: NextRequest) {
     const job = await prisma.batchJob.create({
       data: {
         personId,
-        items: { create: itemRows },
       },
     });
+
+    if (itemRows.length > 0) {
+      const values: unknown[] = [];
+      const placeholders: string[] = [];
+
+      for (const row of itemRows) {
+        placeholders.push("(?, ?, ?, ?, ?, ?, ?)");
+        values.push(
+          job.id,
+          row.imagePath,
+          row.imageHash,
+          row.capturedAt ?? null,
+          row.status ?? "pending",
+          row.error ?? null,
+          row.clientRef ?? null
+        );
+      }
+
+      await prisma.$executeRawUnsafe(
+        `INSERT INTO "BatchJobItem" ("jobId", "imagePath", "imageHash", "capturedAt", "status", "error", "clientRef") VALUES ${placeholders.join(", ")}`,
+        ...values
+      );
+    }
 
     if (uniqueItems.length === 0) {
       await prisma.batchJob.update({
