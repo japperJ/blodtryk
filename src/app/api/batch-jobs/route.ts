@@ -57,6 +57,8 @@ export async function POST(request: NextRequest) {
     const seenHashes = new Set<string>();
     const candidateHashes: string[] = [];
     const items: Array<{ entry: IncomingItem; imageHash: string }> = [];
+    const duplicateItems: Array<{ entry: IncomingItem; imageHash: string }> = [];
+
     for (const entry of rawItems as IncomingItem[]) {
       if (typeof entry?.base64 !== "string") continue;
 
@@ -64,31 +66,36 @@ export async function POST(request: NextRequest) {
       if (base64.length < MIN_BASE64_LENGTH) continue;
 
       const imageHash = createHash("sha256").update(Buffer.from(base64, "base64")).digest("hex");
-      if (seenHashes.has(imageHash)) continue;
+      if (seenHashes.has(imageHash)) {
+        duplicateItems.push({ entry, imageHash });
+        continue;
+      }
       seenHashes.add(imageHash);
       candidateHashes.push(imageHash);
       items.push({ entry, imageHash });
     }
 
-    if (items.length === 0) {
+    if (items.length === 0 && duplicateItems.length === 0) {
       return NextResponse.json({ error: "noImagesProvided" }, { status: 400 });
     }
 
-    const existingHashes = await prisma.batchJobItem.findMany({
-      where: {
-        imageHash: { in: candidateHashes },
-        job: { personId },
-      },
-      select: { imageHash: true },
-    });
+    const existingHashes = candidateHashes.length
+      ? await prisma.batchJobItem.findMany({
+          where: {
+            imageHash: { in: candidateHashes },
+            job: { personId },
+          },
+          select: { imageHash: true },
+        })
+      : [];
     const existingHashSet = new Set(
       existingHashes.map((row) => row.imageHash).filter((hash): hash is string => Boolean(hash))
     );
 
     const uniqueItems = items.filter(({ imageHash }) => !existingHashSet.has(imageHash));
-    if (uniqueItems.length === 0) {
-      return NextResponse.json({ error: "duplicateImageDetected" }, { status: 409 });
-    }
+    const personDuplicateItems = items.filter(({ imageHash }) => existingHashSet.has(imageHash));
+    const allDuplicateItems = [...duplicateItems, ...personDuplicateItems];
+
     if (uniqueItems.length > MAX_ITEMS_PER_JOB) {
       return NextResponse.json({ error: "tooManyImages" }, { status: 400 });
     }
@@ -102,6 +109,8 @@ export async function POST(request: NextRequest) {
       imageHash: string;
       capturedAt: Date | null;
       clientRef: string | null;
+      status?: string;
+      error?: string | null;
     }[] = [];
     for (const { entry, imageHash } of uniqueItems) {
       if (typeof entry?.base64 !== "string") continue;
@@ -127,6 +136,30 @@ export async function POST(request: NextRequest) {
       itemRows.push({ imagePath: filename, imageHash, capturedAt, clientRef });
     }
 
+    for (const { entry, imageHash } of allDuplicateItems) {
+      if (typeof entry?.base64 !== "string") continue;
+
+      let capturedAt: Date | null = null;
+      if (typeof entry.capturedAt === "string" && entry.capturedAt.trim() !== "") {
+        const parsed = new Date(entry.capturedAt);
+        if (!isNaN(parsed.getTime())) capturedAt = parsed;
+      }
+
+      const clientRef =
+        typeof entry.clientRef === "string" && entry.clientRef.trim() !== ""
+          ? entry.clientRef.slice(0, 100)
+          : null;
+
+      itemRows.push({
+        imagePath: `duplicate-${randomUUID()}.skip`,
+        imageHash,
+        capturedAt,
+        clientRef,
+        status: "error",
+        error: "duplicateImageDetected",
+      });
+    }
+
     if (itemRows.length === 0) {
       return NextResponse.json({ error: "noImagesProvided" }, { status: 400 });
     }
@@ -138,11 +171,18 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    if (uniqueItems.length === 0) {
+      await prisma.batchJob.update({
+        where: { id: job.id },
+        data: { status: "done" },
+      });
+    }
+
     // Kick arbejderen i gang — svarer alligevel straks til klienten
     ensureBatchWorker();
 
     return NextResponse.json(
-      { jobId: job.id, itemCount: itemRows.length },
+      { jobId: job.id, itemCount: itemRows.length, duplicateCount: allDuplicateItems.length },
       { status: 201 }
     );
   } catch (error) {
