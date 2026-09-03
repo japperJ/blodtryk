@@ -27,25 +27,43 @@ export default function BatchUpload({ onImagesReady }: Props) {
   const [progress, setProgress] = useState({ current: 0, total: 0 });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const makeFileSignature = (file: File) =>
+    `${file.name}:${file.type}:${file.size}:${file.lastModified}`;
+
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
 
-    // Filtrer kun billeder
-    const imageFiles = files.filter(f => f.type.startsWith('image/'));
+    // Filtrer kun billeder og undgå dubletter i den aktuelle udvælgelse
+    const imageFiles = files.filter((f) => f.type.startsWith("image/"));
     if (imageFiles.length === 0) {
-      alert(t('batch.notImages'));
+      e.target.value = "";
+      alert(t("batch.notImages"));
+      return;
+    }
+
+    const existingSignatures = new Set(selectedImages.map((img) => makeFileSignature(img.file)));
+    const uniqueFiles = imageFiles.filter((file) => {
+      const signature = makeFileSignature(file);
+      if (existingSignatures.has(signature)) return false;
+      existingSignatures.add(signature);
+      return true;
+    });
+
+    if (uniqueFiles.length === 0) {
+      e.target.value = "";
+      alert(t("batch.duplicateSkipped"));
       return;
     }
 
     setIsProcessing(true);
-    setProgress({ current: 0, total: imageFiles.length });
+    setProgress({ current: 0, total: uniqueFiles.length });
 
     const processedImages: UploadImage[] = [];
 
-    for (let i = 0; i < imageFiles.length; i++) {
-      const file = imageFiles[i];
-      setProgress({ current: i + 1, total: imageFiles.length });
+    for (let i = 0; i < uniqueFiles.length; i++) {
+      const file = uniqueFiles[i];
+      setProgress({ current: i + 1, total: uniqueFiles.length });
 
       try {
         // Læs EXIF-data
@@ -74,9 +92,10 @@ export default function BatchUpload({ onImagesReady }: Props) {
       }
     }
 
-    setSelectedImages(processedImages);
+    setSelectedImages((prev) => [...prev, ...processedImages]);
     setIsProcessing(false);
     setProgress({ current: 0, total: 0 });
+    e.target.value = "";
   };
 
   const handleStartScan = () => {
