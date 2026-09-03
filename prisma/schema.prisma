@@ -76,6 +76,7 @@ model BatchJobItem {
   jobId      String
   job        BatchJob @relation(fields: [jobId], references: [id])
   imagePath  String // filnavn i scan-captures/
+  imageHash  String? // SHA-256 over det komprimerede billede, brugt til deduplication
   capturedAt DateTime? // EXIF-optagelsestid sendt fra klienten
   status     String   @default("pending")
   readingId  Int?
@@ -93,4 +94,5 @@ model BatchJobItem {
   updatedAt  DateTime @updatedAt
 
   @@index([jobId, status])
+  @@index([imageHash])
 }

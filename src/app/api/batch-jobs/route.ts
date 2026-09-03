@@ -55,7 +55,8 @@ export async function POST(request: NextRequest) {
     }
 
     const seenHashes = new Set<string>();
-    const items: IncomingItem[] = [];
+    const candidateHashes: string[] = [];
+    const items: Array<{ entry: IncomingItem; imageHash: string }> = [];
     for (const entry of rawItems as IncomingItem[]) {
       if (typeof entry?.base64 !== "string") continue;
 
@@ -65,13 +66,30 @@ export async function POST(request: NextRequest) {
       const imageHash = createHash("sha256").update(Buffer.from(base64, "base64")).digest("hex");
       if (seenHashes.has(imageHash)) continue;
       seenHashes.add(imageHash);
-      items.push(entry);
+      candidateHashes.push(imageHash);
+      items.push({ entry, imageHash });
     }
 
     if (items.length === 0) {
       return NextResponse.json({ error: "noImagesProvided" }, { status: 400 });
     }
-    if (items.length > MAX_ITEMS_PER_JOB) {
+
+    const existingHashes = await prisma.batchJobItem.findMany({
+      where: {
+        imageHash: { in: candidateHashes },
+        job: { personId },
+      },
+      select: { imageHash: true },
+    });
+    const existingHashSet = new Set(
+      existingHashes.map((row) => row.imageHash).filter((hash): hash is string => Boolean(hash))
+    );
+
+    const uniqueItems = items.filter(({ imageHash }) => !existingHashSet.has(imageHash));
+    if (uniqueItems.length === 0) {
+      return NextResponse.json({ error: "duplicateImageDetected" }, { status: 409 });
+    }
+    if (uniqueItems.length > MAX_ITEMS_PER_JOB) {
       return NextResponse.json({ error: "tooManyImages" }, { status: 400 });
     }
 
@@ -79,8 +97,13 @@ export async function POST(request: NextRequest) {
     const scanDir = join(process.cwd(), "scan-captures");
     await mkdir(scanDir, { recursive: true });
 
-    const itemRows: { imagePath: string; capturedAt: Date | null; clientRef: string | null }[] = [];
-    for (const entry of items) {
+    const itemRows: {
+      imagePath: string;
+      imageHash: string;
+      capturedAt: Date | null;
+      clientRef: string | null;
+    }[] = [];
+    for (const { entry, imageHash } of uniqueItems) {
       if (typeof entry?.base64 !== "string") continue;
 
       const base64 = entry.base64.replace(/\s/g, "");
@@ -101,7 +124,7 @@ export async function POST(request: NextRequest) {
 
       const filename = `${randomUUID()}.jpg`;
       await writeFile(join(scanDir, filename), Buffer.from(base64, "base64"));
-      itemRows.push({ imagePath: filename, capturedAt, clientRef });
+      itemRows.push({ imagePath: filename, imageHash, capturedAt, clientRef });
     }
 
     if (itemRows.length === 0) {
