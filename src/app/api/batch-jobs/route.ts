@@ -118,6 +118,7 @@ export async function POST(request: NextRequest) {
       imagePath: string;
       imageHash: string;
       capturedAt: Date | null;
+      updatedAt: Date;
       clientRef: string | null;
       status?: string;
       error?: string | null;
@@ -143,7 +144,7 @@ export async function POST(request: NextRequest) {
 
       const filename = `${randomUUID()}.jpg`;
       await writeFile(join(scanDir, filename), Buffer.from(base64, "base64"));
-      itemRows.push({ imagePath: filename, imageHash, capturedAt, clientRef });
+      itemRows.push({ imagePath: filename, imageHash, capturedAt, updatedAt: new Date(), clientRef });
     }
 
     for (const { entry, imageHash } of allDuplicateItems) {
@@ -164,6 +165,7 @@ export async function POST(request: NextRequest) {
         imagePath: `duplicate-${randomUUID()}.skip`,
         imageHash,
         capturedAt,
+        updatedAt: new Date(),
         clientRef,
         status: "error",
         error: "duplicateImageDetected",
@@ -185,7 +187,7 @@ export async function POST(request: NextRequest) {
       const placeholders: string[] = [];
 
       for (const row of itemRows) {
-        placeholders.push("(?, ?, ?, ?, ?, ?, ?)");
+        placeholders.push("(?, ?, ?, ?, ?, ?, ?, ?)");
         values.push(
           job.id,
           row.imagePath,
@@ -193,12 +195,13 @@ export async function POST(request: NextRequest) {
           row.capturedAt ?? null,
           row.status ?? "pending",
           row.error ?? null,
-          row.clientRef ?? null
+          row.clientRef ?? null,
+          row.updatedAt
         );
       }
 
       await prisma.$executeRawUnsafe(
-        `INSERT INTO "BatchJobItem" ("jobId", "imagePath", "imageHash", "capturedAt", "status", "error", "clientRef") VALUES ${placeholders.join(", ")}`,
+        `INSERT INTO "BatchJobItem" ("jobId", "imagePath", "imageHash", "capturedAt", "status", "error", "clientRef", "updatedAt") VALUES ${placeholders.join(", ")}`,
         ...values
       );
     }
