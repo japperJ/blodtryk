@@ -92,6 +92,27 @@ npm run db:studio    # Open Prisma Studio
 3. **View:** Check 📋 Measurements for history with color-coded status
 4. **Export:** Generate 📄 PDF reports for your doctor
 
+## System Overview
+
+This app is a Next.js blood pressure tracking system: the user scans a monitor reading, the app extracts the values with an OCR model, stores the measurement, and presents trends, classifications, and reports.
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant UI as Next.js UI
+    participant API as /api/scan + /api/readings
+    participant AI as Ollama OCR
+    participant DB as Prisma + SQLite
+
+    User->>UI: Upload or scan a blood pressure monitor
+    UI->>API: Send image and person context
+    API->>AI: Extract systolic, diastolic, pulse
+    AI-->>API: Parsed values
+    API->>DB: Store reading and classification
+    DB-->>UI: Persisted result
+    UI-->>User: Show reading, history, and trends
+```
+
 ## Project Structure
 
 ```
