@@ -4,21 +4,20 @@ import { ArrowLeft, ImageOff, Pencil } from "lucide-react";
 import { useState } from "react";
 import { INTL_LOCALE } from "@/lib/i18n";
 import { useI18n } from "@/lib/I18nProvider";
+import type { Reading } from "@/types";
 
 interface Props {
   imageUrl: string | null;
-  reading: {
-    systolic: number;
-    diastolic: number;
-    pulse: number;
-  } | null;
+  reading: Reading | null;
   timestamp: string;
   onClose: () => void;
+  onSaved?: (updated: Reading) => void;
 }
 
-export default function ImageViewer({ imageUrl, reading, timestamp, onClose }: Props) {
+export default function ImageViewer({ imageUrl, reading, timestamp, onClose, onSaved }: Props) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedReading, setEditedReading] = useState(reading);
+  const [isSaving, setIsSaving] = useState(false);
   const { t, locale } = useI18n();
 
   if (!imageUrl) return null;
@@ -137,13 +136,34 @@ export default function ImageViewer({ imageUrl, reading, timestamp, onClose }: P
 
             <div className="flex gap-2 mt-4">
               <button
-                onClick={() => {
-                  // TODO: Gem den redigerede måling
-                  setIsEditing(false);
+                disabled={isSaving}
+                onClick={async () => {
+                  if (!editedReading || isSaving) return;
+                  setIsSaving(true);
+                  try {
+                    const res = await fetch(`/api/readings/${editedReading.id}`, {
+                      method: "PATCH",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        systolic: editedReading.systolic,
+                        diastolic: editedReading.diastolic,
+                        pulse: editedReading.pulse,
+                      }),
+                    });
+                    if (!res.ok) return;
+                    const updated: Reading = await res.json();
+                    setEditedReading(updated);
+                    onSaved?.(updated);
+                    setIsEditing(false);
+                  } catch (error) {
+                    console.error("Failed to update reading:", error);
+                  } finally {
+                    setIsSaving(false);
+                  }
                 }}
-                className="flex-1 bg-primary-600 text-white py-3 rounded-lg font-semibold"
+                className="flex-1 bg-primary-600 text-white py-3 rounded-lg font-semibold disabled:opacity-50"
               >
-                {t("viewer.saveFix")}
+                {isSaving ? t("common.saving") : t("viewer.saveFix")}
               </button>
               <button
                 onClick={() => {

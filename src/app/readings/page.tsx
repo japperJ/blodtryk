@@ -314,6 +314,7 @@ export default function ReadingsPage() {
                   reading={r}
                   onDelete={handleDelete}
                   onEdit={setEditingReading}
+                  onUpdated={handleEditSaved}
                 />
               ))}
             </div>
