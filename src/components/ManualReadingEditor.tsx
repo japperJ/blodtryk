@@ -108,11 +108,11 @@ export default function ManualReadingEditor({
 
       {/* Editable fields */}
       {fields.map(({ key, labelKey, color, unit }) => (
-        <div key={key} className="flex items-center gap-3">
-          <span className="w-20 text-sm text-gray-600 dark:text-gray-300 shrink-0">{t(labelKey)}</span>
+        <div key={key} className="flex items-center gap-1.5 sm:gap-3">
+          <span className="w-16 sm:w-20 text-sm text-gray-600 dark:text-gray-300 shrink-0">{t(labelKey)}</span>
           <button
             onClick={() => increment(key, -1)}
-            className="w-11 h-11 rounded-full bg-gray-100 dark:bg-gray-700 dark:text-gray-100 text-xl font-bold
+            className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-gray-100 dark:bg-gray-700 dark:text-gray-100 text-xl font-bold
                        hover:bg-gray-200 dark:hover:bg-gray-600 active:scale-90 transition-all"
             aria-label={t("common.decrement")}
           >
@@ -126,19 +126,19 @@ export default function ManualReadingEditor({
               setEditedReading((prev) => ({ ...prev, [key]: val }));
               setValidationError(null);
             }}
-            className={`flex-1 text-center text-2xl font-bold bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg p-2 ${color}`}
+            className={`flex-1 min-w-0 text-center text-2xl font-bold bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg p-2 ${color}`}
             min={key === "systolic" ? 50 : key === "diastolic" ? 20 : 20}
             max={key === "systolic" ? 300 : key === "diastolic" ? 200 : 250}
           />
           <button
             onClick={() => increment(key, 1)}
-            className="w-11 h-11 rounded-full bg-gray-100 dark:bg-gray-700 dark:text-gray-100 text-xl font-bold
+            className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-gray-100 dark:bg-gray-700 dark:text-gray-100 text-xl font-bold
                        hover:bg-gray-200 dark:hover:bg-gray-600 active:scale-90 transition-all"
             aria-label={t("common.increment")}
           >
             +
           </button>
-          <span className="w-16 text-sm text-gray-500 dark:text-gray-400 shrink-0 text-right">{unit}</span>
+          <span className="w-12 sm:w-16 text-sm text-gray-500 dark:text-gray-400 shrink-0 text-right">{unit}</span>
         </div>
       ))}
 
