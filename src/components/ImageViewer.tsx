@@ -61,7 +61,7 @@ export default function ImageViewer({ imageUrl, reading, timestamp, onClose, onS
       </div>
 
       {/* Info panel */}
-      <div className="bg-white dark:bg-gray-800 p-4 rounded-t-2xl shadow-lg">
+      <div className="w-full max-w-lg mx-auto bg-white dark:bg-gray-800 p-4 rounded-t-2xl shadow-lg">
         {reading && !isEditing && (
           <>
             <div className="flex justify-between items-center mb-3">
@@ -100,14 +100,14 @@ export default function ImageViewer({ imageUrl, reading, timestamp, onClose, onS
               { key: "diastolic" as const, labelKey: "field.diastolic", color: "text-orange-600 dark:text-orange-400" },
               { key: "pulse" as const, labelKey: "field.pulse", color: "text-blue-600 dark:text-blue-400" },
             ]).map(({ key, labelKey, color }) => (
-              <div key={key} className="flex items-center gap-3">
-                <span className="w-20 text-sm text-gray-600 dark:text-gray-300">{t(labelKey)}</span>
+              <div key={key} className="flex items-center gap-1.5 sm:gap-3">
+                <span className="w-16 sm:w-20 text-sm text-gray-600 dark:text-gray-300 shrink-0">{t(labelKey)}</span>
                 <button
                   onClick={() => setEditedReading({
                     ...editedReading,
                     [key]: editedReading[key] - 1,
                   })}
-                  className="w-11 h-11 rounded-full bg-gray-100 dark:bg-gray-700 dark:text-gray-100 text-xl font-bold
+                  className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-gray-100 dark:bg-gray-700 dark:text-gray-100 text-xl font-bold
                              hover:bg-gray-200 dark:hover:bg-gray-600 active:scale-90 transition-all"
                 >
                   −
@@ -119,14 +119,14 @@ export default function ImageViewer({ imageUrl, reading, timestamp, onClose, onS
                     ...editedReading,
                     [key]: Number(e.target.value) || 0,
                   })}
-                  className={`flex-1 text-center text-2xl font-bold bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg p-2 ${color}`}
+                  className={`flex-1 min-w-0 text-center text-2xl font-bold bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg p-2 ${color}`}
                 />
                 <button
                   onClick={() => setEditedReading({
                     ...editedReading,
                     [key]: editedReading[key] + 1,
                   })}
-                  className="w-11 h-11 rounded-full bg-gray-100 dark:bg-gray-700 dark:text-gray-100 text-xl font-bold
+                  className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-gray-100 dark:bg-gray-700 dark:text-gray-100 text-xl font-bold
                              hover:bg-gray-200 dark:hover:bg-gray-600 active:scale-90 transition-all"
                 >
                   +
