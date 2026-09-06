@@ -12,9 +12,10 @@ interface Props {
   reading: Reading;
   onDelete: (id: number) => void;
   onEdit?: (reading: Reading) => void;
+  onUpdated?: (reading: Reading) => void;
 }
 
-export default function ReadingCard({ reading, onDelete, onEdit }: Props) {
+export default function ReadingCard({ reading, onDelete, onEdit, onUpdated }: Props) {
   const { t, locale } = useI18n();
   const [showImageViewer, setShowImageViewer] = useState(false);
   const [showFullNote, setShowFullNote] = useState(false);
@@ -167,13 +168,10 @@ export default function ReadingCard({ reading, onDelete, onEdit }: Props) {
       {showImageViewer && (
         <ImageViewer
           imageUrl={reading.image}
-          reading={{
-            systolic: reading.systolic,
-            diastolic: reading.diastolic,
-            pulse: reading.pulse,
-          }}
+          reading={reading}
           timestamp={reading.createdAt}
           onClose={() => setShowImageViewer(false)}
+          onSaved={onUpdated}
         />
       )}
     </>
