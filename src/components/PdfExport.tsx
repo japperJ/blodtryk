@@ -7,11 +7,22 @@ import { timeOfDayLabel, shortArmLabel, exportFilename } from "@/lib/exporters";
 import { INTL_LOCALE } from "@/lib/i18n";
 import { useI18n } from "@/lib/I18nProvider";
 import { LINE_COLORS } from "@/components/charts/BPLineChart";
+import { formatMedicationDate } from "@/lib/medicationDate";
+
+/** Medicin som den bruges i PDF'en (samme form som API'et returnerer; datoer er ISO-strenge). */
+export interface PdfMedication {
+  id?: number;
+  name: string;
+  dose: string;
+  active: boolean;
+  startDate?: string | null;
+  endDate?: string | null;
+}
 
 interface Props {
   readings: Reading[];
   personName?: string;
-  medications?: { name: string; dose: string; active: boolean }[];
+  medications?: PdfMedication[];
 }
 
 // Dagligt gennemsnit beregnet lokalt af den filtrerede målliste (chart-grundlag)
@@ -19,6 +30,7 @@ interface DailyPoint {
   date: string; // YYYY-MM-DD (lokal tid)
   sysAvg: number;
   diaAvg: number;
+  mapAvg: number;
   pulseAvg: number;
 }
 
@@ -44,12 +56,18 @@ export function computeDailyAverages(readings: Reading[]): DailyPoint[] {
   }
   return Array.from(map.entries())
     .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
-    .map(([date, v]) => ({
-      date,
-      sysAvg: Math.round(v.sys / v.n),
-      diaAvg: Math.round(v.dia / v.n),
-      pulseAvg: Math.round(v.pul / v.n),
-    }));
+    .map(([date, v]) => {
+      const sysAvg = Math.round(v.sys / v.n);
+      const diaAvg = Math.round(v.dia / v.n);
+      return {
+        date,
+        sysAvg,
+        diaAvg,
+        // MAP = (sys + 2·dia) / 3 — samme formel som i trends-diagrammet
+        mapAvg: Math.round((sysAvg + 2 * diaAvg) / 3),
+        pulseAvg: Math.round(v.pul / v.n),
+      };
+    });
 }
 
 // Y-akse: "pæne" trin (multipla af 5) med luft i kanterne — samme tilgang som BPLineChart
@@ -67,25 +85,58 @@ function niceScale(min: number, max: number): { lo: number; hi: number; ticks: n
 const CHART_W_PX = 600;
 const CHART_H_PX = 230;
 const CHART_W_MM = 180;
-const CHART_H_MM = (CHART_W_MM * CHART_H_PX) / CHART_W_PX;
+// Medicin-linjer under x-aksen: én række pr. præparat (samme greb som BPLineChart)
+const CHART_MED_GAP = 10;
+const CHART_MED_ROW_H = 16;
+const CHART_MED_PAD_BOTTOM = 4;
+
+/** Samlet SVG-højde: basis-diagrammet plus plads til evt. medicin-rækker. */
+export function trendChartHeightPx(medCount: number): number {
+  return (
+    CHART_H_PX +
+    (medCount > 0 ? CHART_MED_GAP + medCount * CHART_MED_ROW_H + CHART_MED_PAD_BOTTOM : 0)
+  );
+}
+
+/** XML-escape af brugerdata (medicin-navn/dosis), så en "&" ikke ødelægger hele SVG'en. */
+function escapeXml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+/** Tekstetiketter i diagrammet — slås op via i18n i PdfExport-komponenten. */
+export interface TrendChartLabels {
+  sys: string;
+  dia: string;
+  map: string;
+  pulse: string;
+}
 
 /**
- * Byg en selvstændig SVG-streng med linjediagram over daglige sys/dia-gennemsnit.
+ * Byg en selvstændig SVG-streng med linjediagram over daglige sys/dia/MAP-gennemsnit
+ * samt medicin-linjer (start–stop) under x-aksen.
  * Ren streng-bygning (ingen React/DOM) så den kan rasteriseres via Image/canvas.
  * Farver deles med trends-sidens linjediagram (LINE_COLORS).
+ *
+ * medLabel formaterer én medicin-linjes tekst (navn, dosis, periode) — sendes ind
+ * fordi streng-bygningen ikke selv har adgang til i18n.
  */
 export function buildTrendChartSvg(
   data: DailyPoint[],
-  sysLabel: string,
-  diaLabel: string,
-  pulLabel: string
+  labels: TrendChartLabels,
+  medications: PdfMedication[] = [],
+  medLabel?: (med: PdfMedication) => string
 ): string {
   const W = CHART_W_PX;
   const H = CHART_H_PX;
+  const totalH = trendChartHeightPx(medications.length);
   const PAD = { top: 28, right: 12, bottom: 20, left: 34 };
 
   const values: number[] = [];
-  for (const p of data) values.push(p.sysAvg, p.diaAvg, p.pulseAvg);
+  for (const p of data) values.push(p.sysAvg, p.diaAvg, p.mapAvg, p.pulseAvg);
   const { lo, hi, ticks } = niceScale(Math.min(...values), Math.max(...values));
 
   const innerW = W - PAD.left - PAD.right;
@@ -108,10 +159,11 @@ export function buildTrendChartSvg(
     );
   }
 
-  // Kurver (dia først så sys tegnes øverst; puls som stiplet linje ligesom trends)
+  // Kurver (dia først så sys tegnes øverst; MAP og puls som stiplede linjer ligesom trends)
   parts.push(
     `<polyline points="${toPoints((p) => p.diaAvg)}" fill="none" stroke="${LINE_COLORS.diastolic}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`,
     `<polyline points="${toPoints((p) => p.sysAvg)}" fill="none" stroke="${LINE_COLORS.systolic}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`,
+    `<polyline points="${toPoints((p) => p.mapAvg)}" fill="none" stroke="${LINE_COLORS.map}" stroke-width="2" stroke-dasharray="6 4" stroke-linejoin="round" stroke-linecap="round"/>`,
     `<polyline points="${toPoints((p) => p.pulseAvg)}" fill="none" stroke="${LINE_COLORS.pulse}" stroke-width="1.5" stroke-dasharray="4 3" stroke-linejoin="round" stroke-linecap="round"/>`
   );
 
@@ -121,6 +173,7 @@ export function buildTrendChartSvg(
       parts.push(
         `<circle cx="${xAt(i)}" cy="${yAt(p.diaAvg)}" r="2.5" fill="${LINE_COLORS.diastolic}"/>`,
         `<circle cx="${xAt(i)}" cy="${yAt(p.sysAvg)}" r="2.5" fill="${LINE_COLORS.systolic}"/>`,
+        `<circle cx="${xAt(i)}" cy="${yAt(p.mapAvg)}" r="2.2" fill="${LINE_COLORS.map}"/>`,
         `<circle cx="${xAt(i)}" cy="${yAt(p.pulseAvg)}" r="2" fill="${LINE_COLORS.pulse}"/>`
       );
     });
@@ -146,9 +199,10 @@ export function buildTrendChartSvg(
 
   // Legende øverst til højre (tegnes fra højre mod venstre)
   const legend = [
-    { color: LINE_COLORS.pulse, label: pulLabel, dashed: true },
-    { color: LINE_COLORS.diastolic, label: diaLabel, dashed: false },
-    { color: LINE_COLORS.systolic, label: sysLabel, dashed: false },
+    { color: LINE_COLORS.pulse, label: labels.pulse, dashed: true },
+    { color: LINE_COLORS.map, label: labels.map, dashed: true },
+    { color: LINE_COLORS.diastolic, label: labels.dia, dashed: false },
+    { color: LINE_COLORS.systolic, label: labels.sys, dashed: false },
   ];
   let lx = W - PAD.right;
   for (const item of legend) {
@@ -167,8 +221,57 @@ export function buildTrendChartSvg(
     lx -= 10;
   }
 
+  // Medicin: vandret linje pr. præparat fra startdato til slutdato (som BPLineChart).
+  // Datoerne mappes via de faktiske datopunkter, så huller i målingerne ikke
+  // forskubber "startede/stoppet"-markeringerne.
+  const dayOf = (iso: string): string => iso.slice(0, 10);
+  const dateFraction = (iso: string): number => {
+    if (data.length === 1) return 0.5;
+    const target = dayOf(iso);
+    if (target <= dayOf(data[0].date)) return 0;
+    if (target >= dayOf(data[data.length - 1].date)) return 1;
+    for (let i = 0; i < data.length - 1; i++) {
+      const a = dayOf(data[i].date);
+      const b = dayOf(data[i + 1].date);
+      if (target >= a && target <= b) {
+        const span = new Date(b).getTime() - new Date(a).getTime();
+        const frac = span <= 0 ? 0 : (new Date(target).getTime() - new Date(a).getTime()) / span;
+        return (i + frac) / (data.length - 1);
+      }
+    }
+    return 1;
+  };
+  const xAtFraction = (f: number): number =>
+    data.length === 1 ? PAD.left + innerW / 2 : PAD.left + f * innerW;
+
+  const medAreaTop = H + CHART_MED_GAP;
+  medications.forEach((med, i) => {
+    const rowTop = medAreaTop + i * CHART_MED_ROW_H;
+    const lineY = rowTop + 5;
+    const x1 = xAtFraction(med.startDate ? dateFraction(med.startDate) : 0);
+    const x2 = Math.max(xAtFraction(med.endDate ? dateFraction(med.endDate) : 1), x1 + 3);
+    const label = escapeXml((medLabel?.(med) ?? `${med.name} ${med.dose}`.trim()).slice(0, 74));
+
+    // Hold etiketten inden for rammen: vend den mod højre kant når der ikke er plads
+    const estW = label.length * 4.6; // ca. tekstbredde ved font-size 8.5
+    const useEnd = x1 + 2 + estW > W - PAD.right;
+    const labelX = useEnd
+      ? Math.max(x2 - 2, PAD.left + estW)
+      : Math.min(x1 + 2, W - PAD.right - estW);
+
+    parts.push(
+      `<g opacity="${med.active ? 1 : 0.5}">`,
+      `<line x1="${x1}" x2="${x2}" y1="${lineY}" y2="${lineY}" stroke="${LINE_COLORS.medication}" stroke-width="2.5" stroke-linecap="round"${med.active ? "" : ' stroke-dasharray="3 2"'}/>`,
+      med.endDate
+        ? `<line x1="${x2}" x2="${x2}" y1="${lineY - 4}" y2="${lineY + 4}" stroke="${LINE_COLORS.medication}" stroke-width="1.5" opacity="0.8"/>`
+        : `<polygon points="${x2},${lineY - 3} ${x2 + 4},${lineY} ${x2},${lineY + 3}" fill="${LINE_COLORS.medication}"/>`,
+      `<text x="${labelX}" y="${rowTop + CHART_MED_ROW_H - 2}" text-anchor="${useEnd ? "end" : "start"}" font-size="8.5" fill="#6b7280">${label}</text>`,
+      `</g>`
+    );
+  });
+
   return (
-    `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" font-family="sans-serif">` +
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${totalH}" viewBox="0 0 ${W} ${totalH}" font-family="sans-serif">` +
     parts.join("") +
     `</svg>`
   );
@@ -509,22 +612,37 @@ export default function PdfExport({ readings, personName, medications }: Props) 
       try {
         const daily = computeDailyAverages(readings);
         if (daily.length >= 2) {
+          const meds = medications ?? [];
           const svg = buildTrendChartSvg(
             daily,
-            t("field.systolic"),
-            t("field.diastolic"),
-            t("field.pulse")
+            {
+              sys: t("field.systolic"),
+              dia: t("field.diastolic"),
+              map: t("field.map"),
+              pulse: t("field.pulse"),
+            },
+            meds,
+            (med) =>
+              t("chart.medLine", {
+                name: med.name,
+                dose: med.dose,
+                start: formatMedicationDate(med.startDate ?? null) ?? t("meds.dateUnknown"),
+                end: formatMedicationDate(med.endDate ?? null) ?? t("meds.ongoing"),
+              })
           );
-          const png = await rasterizeSvgToPng(svg, CHART_W_PX, CHART_H_PX);
+          // Diagrammet vokser med antallet af medicin-rækker, så højden følger med
+          const chartHPx = trendChartHeightPx(meds.length);
+          const chartHMm = (CHART_W_MM * chartHPx) / CHART_W_PX;
+          const png = await rasterizeSvgToPng(svg, CHART_W_PX, chartHPx);
           if (png) {
-            checkPage(CHART_H_MM + 14);
+            checkPage(chartHMm + 14);
             doc.setFontSize(9);
             doc.setFont("helvetica", "bold");
             doc.setTextColor(0);
             doc.text(t("pdf.dailyAverages"), margin, y);
             y += 4;
-            doc.addImage(png, "PNG", margin, y, CHART_W_MM, CHART_H_MM);
-            y += CHART_H_MM + 6;
+            doc.addImage(png, "PNG", margin, y, CHART_W_MM, chartHMm);
+            y += chartHMm + 6;
           }
         }
       } catch {
