@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import ReadingCard from "@/components/ReadingCard";
 import EditReadingDialog from "@/components/EditReadingDialog";
-import PdfExport from "@/components/PdfExport";
+import PdfExport, { type PdfMedication } from "@/components/PdfExport";
 import EmptyState from "@/components/EmptyState";
 import { ReadingCardSkeleton } from "@/components/Skeleton";
 import { downloadReadingsCsv, downloadReadingsJson } from "@/lib/exporters";
@@ -34,9 +34,8 @@ export default function ReadingsPage() {
   const [timeFilter, setTimeFilter] = useState<TimeFilterType>("all");
   const [selectedPerson, setSelectedPerson] = useState<PersonSummary | null>(null);
   const [editingReading, setEditingReading] = useState<Reading | null>(null);
-  const [medications, setMedications] = useState<
-    { name: string; dose: string; active: boolean }[]
-  >([]);
+  // Medicin til PDF'en (#14): navn, dosis og periode vises i resuméet og i trenddiagrammet
+  const [medications, setMedications] = useState<PdfMedication[]>([]);
 
   const fetchReadings = useCallback(async () => {
     const savedId = localStorage.getItem("selectedPersonId");
