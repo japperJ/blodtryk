@@ -10,6 +10,8 @@ import { getAgeGroupKey, type Severity } from "@/lib/bpClassification";
 import EmptyState from "@/components/EmptyState";
 import { TrendsSkeleton } from "@/components/Skeleton";
 import { useI18n } from "@/lib/I18nProvider";
+import { formatMedicationRange } from "@/lib/medicationDate";
+import type { Medication } from "@/components/MedicationPanel";
 import type { PersonSummary, ReadingStats } from "@/types";
 
 type RangeValue = "7" | "30" | "90" | "all";
@@ -49,6 +51,7 @@ export default function TrendsPage() {
   const [loading, setLoading] = useState(true);
   const [range, setRange] = useState<RangeValue>("30");
   const [stats, setStats] = useState<ReadingStats | null>(null);
+  const [medications, setMedications] = useState<Medication[]>([]);
   const [statsLoading, setStatsLoading] = useState(false);
   const [showSystolic, setShowSystolic] = useState(true);
   const [showDiastolic, setShowDiastolic] = useState(true);
@@ -89,6 +92,29 @@ export default function TrendsPage() {
   useEffect(() => {
     fetchStats();
   }, [fetchStats]);
+
+  // Medicin for personen — tegnes som linjer under kurven (#medicin-historik)
+  const personId = person?.id ?? null;
+  useEffect(() => {
+    if (personId === null) {
+      setMedications([]);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/persons/${personId}/medications`);
+        if (!res.ok) throw new Error();
+        const all: Medication[] = await res.json();
+        if (!cancelled) setMedications(all);
+      } catch {
+        if (!cancelled) setMedications([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [personId]);
 
   // Alder og målbånd for den valgte person (manglende fødselsår → under 65)
   const age =
@@ -234,6 +260,7 @@ export default function TrendsPage() {
               <BPLineChart
                 data={stats.daily}
                 band={band}
+                medications={medications}
                 showSystolic={showSystolic}
                 showDiastolic={showDiastolic}
                 showMap={showMap}
@@ -314,6 +341,43 @@ export default function TrendsPage() {
                 Sys {band.sysMin}–{band.sysMax} · Dia {band.diaMin}–{band.diaMax} mmHg ·{" "}
                 {t("trends.legendCount", { count: stats.count })}
               </p>
+
+              {/* Medicin-historik: navn, dosis og periode (samme stil som sys/dia-teksten) */}
+              {medications.length > 0 && (
+                <div className="mt-2 space-y-0.5">
+                  <p className="text-xs font-medium text-gray-600 dark:text-gray-300">
+                    {t("trends.medLegend")}
+                  </p>
+                  {medications.map((med) => (
+                    <p
+                      key={med.id}
+                      className={`flex flex-wrap items-center gap-x-1.5 text-xs ${
+                        med.active
+                          ? "text-gray-600 dark:text-gray-300"
+                          : "text-gray-400 dark:text-gray-500"
+                      }`}
+                    >
+                      <span
+                        className="inline-block h-1.5 w-3 shrink-0 rounded-sm"
+                        style={{
+                          backgroundColor: LINE_COLORS.medication,
+                          opacity: med.active ? 1 : 0.5,
+                        }}
+                        aria-hidden
+                      />
+                      <span className="font-medium">{med.name}</span>
+                      <span>{med.dose}</span>
+                      <span aria-hidden>·</span>
+                      <span>
+                        {formatMedicationRange(med.startDate, med.endDate, {
+                          unknown: t("meds.dateUnknown"),
+                          ongoing: t("meds.ongoing"),
+                        })}
+                      </span>
+                    </p>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Ugentlige gennemsnit — kompakte bar-rækker med lille målband-indikator */}

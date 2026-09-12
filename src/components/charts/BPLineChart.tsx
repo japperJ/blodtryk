@@ -4,6 +4,7 @@
 
 import { countKey } from "@/lib/i18n";
 import { useI18n } from "@/lib/I18nProvider";
+import { formatMedicationDate } from "@/lib/medicationDate";
 import type { DailyAverage } from "@/types";
 
 // Målbånd (grøn zone) for personens aldersgruppe — se getTargetBand i app/trends/page.tsx
@@ -16,9 +17,20 @@ export interface TargetBand {
   mapMax?: number;
 }
 
+// Medicin-linjer under diagrammet: hvornår et præparat blev startet og stoppet
+export interface MedicationLane {
+  id: number;
+  name: string;
+  dose: string;
+  startDate: string | null;
+  endDate: string | null;
+  active: boolean;
+}
+
 interface BPLineChartProps {
   data: DailyAverage[]; // daglige gennemsnit (allerede aggregeret fra stats-API'en)
   band: TargetBand;
+  medications?: MedicationLane[]; // vises som vandrette linjer under x-aksen
   showSystolic: boolean;
   showDiastolic: boolean;
   showMap: boolean;
@@ -32,6 +44,7 @@ export const LINE_COLORS = {
   map: "#f59e0b", // amber-500
   pulse: "#9333ea", // purple-600
   band: "#22c55e", // green-500
+  medication: "#db2777", // pink-600
 } as const;
 
 function getMapValue(sys: number, dia: number): number {
@@ -42,6 +55,10 @@ function getMapValue(sys: number, dia: number): number {
 const WIDTH = 360;
 const HEIGHT = 220;
 const PAD = { top: 12, right: 10, bottom: 24, left: 34 };
+// Medicin-bånd under x-aksen: én række pr. præparat
+const MED_GAP = 8;
+const MED_ROW_H = 14;
+const MED_PAD_BOTTOM = 3; // luft under nederste etiket, så descender ikke klippes
 
 // Y-akse: "pæne" trin (multipla af 5) med luft i kanterne
 function niceScale(min: number, max: number): { lo: number; hi: number; ticks: number[] } {
@@ -63,6 +80,7 @@ function shortDate(iso: string): string {
 export default function BPLineChart({
   data,
   band,
+  medications,
   showSystolic,
   showDiastolic,
   showMap,
@@ -70,6 +88,11 @@ export default function BPLineChart({
 }: BPLineChartProps) {
   const { t } = useI18n();
   if (data.length === 0) return null;
+
+  const meds = medications ?? [];
+  const medAreaTop = HEIGHT + MED_GAP;
+  const totalHeight =
+    HEIGHT + (meds.length > 0 ? MED_GAP + meds.length * MED_ROW_H + MED_PAD_BOTTOM : 0);
 
   const values: number[] = [];
   if (showSystolic) values.push(band.sysMin, band.sysMax);
@@ -96,6 +119,28 @@ export default function BPLineChart({
   const toPoints = (get: (p: DailyAverage) => number): string =>
     data.map((p, i) => `${xAt(i)},${yAt(get(p))}`).join(" ");
 
+  // Medicin-datoer mappes til x-positioner via de faktiske datopunkter, så huller
+  // i målingerne ikke forskubber "startede/stoppet"-markeringerne.
+  const dayOf = (iso: string): string => iso.slice(0, 10);
+  const dateFraction = (iso: string): number => {
+    if (data.length === 1) return 0.5;
+    const target = dayOf(iso);
+    if (target <= dayOf(data[0].date)) return 0;
+    if (target >= dayOf(data[data.length - 1].date)) return 1;
+    for (let i = 0; i < data.length - 1; i++) {
+      const a = dayOf(data[i].date);
+      const b = dayOf(data[i + 1].date);
+      if (target >= a && target <= b) {
+        const span = new Date(b).getTime() - new Date(a).getTime();
+        const frac = span <= 0 ? 0 : (new Date(target).getTime() - new Date(a).getTime()) / span;
+        return (i + frac) / (data.length - 1);
+      }
+    }
+    return 1;
+  };
+  const xAtFraction = (f: number): number =>
+    data.length === 1 ? PAD.left + innerW / 2 : PAD.left + f * innerW;
+
   const labelIndexes = new Set<number>();
   if (data.length <= 8) {
     for (let i = 0; i < data.length; i++) labelIndexes.add(i);
@@ -115,7 +160,7 @@ export default function BPLineChart({
 
   return (
     <svg
-      viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
+      viewBox={`0 0 ${WIDTH} ${totalHeight}`}
       className="w-full h-auto text-gray-200 dark:text-gray-700"
       role="img"
       aria-label={t("chart.lineAria")}
@@ -276,6 +321,68 @@ export default function BPLineChart({
           {shortDate(data[i].date)}
         </text>
       ))}
+
+      {/* Medicin: vandret linje pr. præparat fra startdato til slutdato */}
+      {meds.map((med, i) => {
+        const rowTop = medAreaTop + i * MED_ROW_H;
+        const lineY = rowTop + 4;
+        const x1 = xAtFraction(med.startDate ? dateFraction(med.startDate) : 0);
+        const x2 = Math.max(
+          xAtFraction(med.endDate ? dateFraction(med.endDate) : 1),
+          x1 + 3
+        );
+        const label = `${med.name} ${med.dose}`.trim();
+        const title = t("chart.medLine", {
+          name: med.name,
+          dose: med.dose,
+          start: formatMedicationDate(med.startDate) ?? t("meds.dateUnknown"),
+          end: formatMedicationDate(med.endDate) ?? t("meds.ongoing"),
+        });
+        // Hold etiketten inden for rammen: vend den mod højre kant når der ikke er plads
+        const anchorEnd = x1 + 4 + label.length * 3.9 > WIDTH - PAD.right;
+
+        return (
+          <g key={med.id} opacity={med.active ? 1 : 0.5}>
+            <line
+              x1={x1}
+              x2={x2}
+              y1={lineY}
+              y2={lineY}
+              stroke={LINE_COLORS.medication}
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeDasharray={med.active ? undefined : "3 2"}
+            >
+              <title>{title}</title>
+            </line>
+            {med.endDate ? (
+              <line
+                x1={x2}
+                x2={x2}
+                y1={lineY - 4}
+                y2={lineY + 4}
+                stroke={LINE_COLORS.medication}
+                strokeWidth="1.5"
+                opacity="0.8"
+              />
+            ) : (
+              <polygon
+                points={`${x2},${lineY - 3} ${x2 + 4},${lineY} ${x2},${lineY + 3}`}
+                fill={LINE_COLORS.medication}
+              />
+            )}
+            <text
+              x={anchorEnd ? x2 - 2 : x1 + 2}
+              y={rowTop + MED_ROW_H - 2}
+              textAnchor={anchorEnd ? "end" : "start"}
+              fontSize="7.5"
+              fill="#9ca3af"
+            >
+              {label}
+            </text>
+          </g>
+        );
+      })}
     </svg>
   );
 }

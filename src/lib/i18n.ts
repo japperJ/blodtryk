@@ -313,6 +313,7 @@ const da: Record<string, string> = {
   "trends.weeklyAvg": "Ugentlige gennemsnit",
   "trends.bandLegend": "Målbånd ({group})",
   "trends.legendCount": "{count} målinger",
+  "trends.medLegend": "Medicin",
   "trends.classification": "Klassificering af målinger",
   "trends.timesEqual": "Morgen og aften er ens",
   "trends.eveningHigher": "Aftenen ligger {diff} mmHg over morgenen",
@@ -334,6 +335,7 @@ const da: Record<string, string> = {
   "chart.readingMany": "{count} målinger",
   "chart.dot": "{date}: {field} {value} ({readings})",
   "chart.dotPlain": "{date}: {field} {value}",
+  "chart.medLine": "{name} {dose}: {start} – {end}",
 
   // Personer
   "persons.title": "Personer",
@@ -404,6 +406,13 @@ const da: Record<string, string> = {
   "meds.loading": "Indlæser...",
   "meds.loadError": "Kunne ikke hente medicin",
   "meds.addError": "Kunne ikke tilføje medicin",
+  "meds.updateError": "Kunne ikke gemme medicin",
+  "meds.startDate": "Startdato",
+  "meds.endDate": "Slutdato",
+  "meds.dateUnknown": "Ukendt start",
+  "meds.ongoing": "Løbende",
+  "meds.endBeforeStart": "Slutdato kan ikke ligge før startdato",
+  "meds.editTitle": "Redigér medicin",
 
   // PDF-rapport
   "pdf.report": "Blodtryksrapport",
@@ -736,6 +745,7 @@ const en: Record<string, string> = {
   "trends.weeklyAvg": "Weekly averages",
   "trends.bandLegend": "Target band ({group})",
   "trends.legendCount": "{count} readings",
+  "trends.medLegend": "Medication",
   "trends.classification": "Classification of readings",
   "trends.timesEqual": "Morning and evening are equal",
   "trends.eveningHigher": "Evening is {diff} mmHg above morning",
@@ -757,6 +767,7 @@ const en: Record<string, string> = {
   "chart.readingMany": "{count} readings",
   "chart.dot": "{date}: {field} {value} ({readings})",
   "chart.dotPlain": "{date}: {field} {value}",
+  "chart.medLine": "{name} {dose}: {start} – {end}",
 
   // Persons
   "persons.title": "People",
@@ -826,6 +837,13 @@ const en: Record<string, string> = {
   "meds.loading": "Loading...",
   "meds.loadError": "Could not load medication",
   "meds.addError": "Could not add medication",
+  "meds.updateError": "Could not save medication",
+  "meds.startDate": "Start date",
+  "meds.endDate": "End date",
+  "meds.dateUnknown": "Unknown start",
+  "meds.ongoing": "Ongoing",
+  "meds.endBeforeStart": "End date cannot be before the start date",
+  "meds.editTitle": "Edit medication",
 
   // PDF report
   "pdf.report": "Blood Pressure Report",
