@@ -48,7 +48,7 @@ model Reading {
 | `GET /api/persons` | NY — hent alle personer |
 | `POST /api/persons` | NY — opret person |
 | `PATCH /api/persons/[id]` | NY — rediger person |
-| `DELETE /api/persons/[id]` | NY — slet person (flyt målinger til "Standard") |
+| `DELETE /api/persons/[id]` | NY — slet person med alle data (målinger, medicin, batch-jobs og billeder) |
 
 ## Implementeringsplan (10 trin)
 
@@ -67,7 +67,7 @@ model Reading {
 
 **Ny fil:** `src/app/api/persons/[id]/route.ts`
 - `PATCH`: Opdater navn
-- `DELETE`: Slet person + flyt målinger til "Standard"-personen
+- `DELETE`: Slet person + alle tilknyttede data (målinger, medicin, batch-jobs) og deres billedfiler
 
 ### Trin 3: Opdater readings API
 **Fil:** `src/app/api/readings/route.ts`

@@ -127,10 +127,16 @@ export default function PersonsPage() {
           persistSelectedPersonId("1");
           setSelectedPersonId(1);
         }
-        await fetchPersons();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        window.alert(data.error ? tError(data.error) : tError("personDeleteFailed"));
       }
+      // Listen hentes altid på ny, så den afspejler databasen — også hvis
+      // sletningen fejlede undervejs.
+      await fetchPersons();
     } catch (err) {
       console.error("Failed to delete person:", err);
+      window.alert(tError("personDeleteFailed"));
     }
   };
 

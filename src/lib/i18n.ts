@@ -345,7 +345,7 @@ const da: Record<string, string> = {
   "persons.born": "Født {year} · ",
   "persons.lastReading": "· Seneste: {date}",
   "persons.confirmDelete":
-    'Er du sikker på du vil slette "{name}"?\n\nMålinger flyttes til Standard.',
+    'Er du sikker på du vil slette "{name}"?\n\nAlle målinger, medicin og billeder slettes.',
   "persons.backupBeforeDelete": 'Før sletning downloades en backup af "{name}". Fortsæt?',
   "persons.footerHint": "Tryk på en person for at vælge den · Valgte person er fremhævet",
   "persons.loading": "Indlæser personer",
@@ -768,7 +768,7 @@ const en: Record<string, string> = {
   "persons.born": "Born {year} · ",
   "persons.lastReading": "· Latest: {date}",
   "persons.confirmDelete":
-    'Are you sure you want to delete "{name}"?\n\nReadings move to Default.',
+    'Are you sure you want to delete "{name}"?\n\nAll readings, medications and images will be deleted.',
   "persons.backupBeforeDelete": 'Before deletion, a backup of "{name}" will be downloaded. Continue?',
   "persons.footerHint": "Tap a person to select them · The selected person is highlighted",
   "persons.loading": "Loading people",
