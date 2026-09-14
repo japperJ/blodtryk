@@ -443,6 +443,7 @@ const da: Record<string, string> = {
   "pdf.images": "Målingsbilleder",
   "pdf.exportWithImages": "Med billeder",
   "pdf.exportWithoutImages": "Uden billeder",
+  "pdf.exportDanishForm": "Dansk lægeskema",
 
   // Eksport (CSV-headere)
   "csv.date": "Dato",
@@ -874,6 +875,7 @@ const en: Record<string, string> = {
   "pdf.images": "Measurement images",
   "pdf.exportWithImages": "With images",
   "pdf.exportWithoutImages": "Without images",
+  "pdf.exportDanishForm": "Danish clinical form",
 
   // Export (CSV headers)
   "csv.date": "Date",

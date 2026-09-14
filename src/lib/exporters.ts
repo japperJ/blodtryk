@@ -86,21 +86,23 @@ export function buildJsonString(readings: Reading[]): string {
 }
 
 /**
- * Filnavn på formen blodtryk-<person>-<YYYY-MM-DD_HH-mm>.<ext> (person udelades hvis ukendt).
- * Tidsstempel i lokaltid gør navnet unikt pr. eksport, så mobile browsere ikke
- * genbruger en cachet fil med samme navn (#53).
+ * Filnavn på formen blodtryk-<person>-<YYYY-MM-DD_HH-mm>[-<suffix>].<ext>
+ * (person udelades hvis ukendt). Tidsstempel i lokaltid gør navnet unikt pr.
+ * eksport, så mobile browsere ikke genbruger en cachet fil med samme navn (#53).
+ * Suffix bruges til at skelne alternative rapportformater fra hinanden.
  */
-export function exportFilename(personName: string | undefined, ext: string): string {
+export function exportFilename(personName: string | undefined, ext: string, suffix?: string): string {
   const d = new Date();
   const p = (n: number) => String(n).padStart(2, "0");
   const stamp = `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}_${p(d.getHours())}-${p(d.getMinutes())}`;
-  if (!personName) return `blodtryk-${stamp}.${ext}`;
+  const tail = suffix ? `-${suffix}` : "";
+  if (!personName) return `blodtryk-${stamp}${tail}.${ext}`;
   const slug = personName
     .toLowerCase()
     .trim()
     .replace(/\s+/g, "-")
     .replace(/[^a-z0-9æøå-]/g, "");
-  return slug ? `blodtryk-${slug}-${stamp}.${ext}` : `blodtryk-${stamp}.${ext}`;
+  return slug ? `blodtryk-${slug}-${stamp}${tail}.${ext}` : `blodtryk-${stamp}${tail}.${ext}`;
 }
 
 /** Fælles download-mekanisme: midlertidigt <a download> + object URL. */
