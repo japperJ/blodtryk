@@ -4,11 +4,16 @@ import jsPDF from "jspdf";
 import type { Reading } from "@/types";
 import { getBPStatus, getAgeGroupKey, type Severity } from "@/lib/bpClassification";
 import { timeOfDayLabel, shortArmLabel, exportFilename } from "@/lib/exporters";
-import { createDanishReportPdf } from "@/lib/danishReportPdf";
+import {
+  createDanishReportPdf,
+  groupReadingsByDay,
+  type DanishReportPeriod,
+} from "@/lib/danishReportPdf";
 import { INTL_LOCALE } from "@/lib/i18n";
 import { useI18n } from "@/lib/I18nProvider";
 import { LINE_COLORS } from "@/components/charts/BPLineChart";
 import { formatMedicationDate } from "@/lib/medicationDate";
+import DanishReportDialog from "@/components/DanishReportDialog";
 
 /** Medicin som den bruges i PDF'en (samme form som API'et returnerer; datoer er ISO-strenge). */
 export interface PdfMedication {
@@ -369,6 +374,7 @@ async function fetchImageForPdf(
 export default function PdfExport({ readings, personName, medications }: Props) {
   const [generating, setGenerating] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [danishDialogOpen, setDanishDialogOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const { t, locale } = useI18n();
   const intlLocale = INTL_LOCALE[locale];
@@ -882,19 +888,31 @@ export default function PdfExport({ readings, personName, medications }: Props) 
   };
 
   // Dansk lægeskema: samme skemaformat, danske læger får fra web-patient.dk
-  // (side 1 = opsummering, side 2+ = én skematabel pr. dag)
-  const exportDanishReport = () => {
+  // (side 1 = opsummering, side 2+ = én skematabel pr. dag). Brugeren vælger
+  // først perioden, som både afgrænser målingerne og vises i skemaet.
+  const openDanishDialog = () => {
     setMenuOpen(false);
+    setDanishDialogOpen(true);
+  };
+
+  const exportDanishReport = (period: DanishReportPeriod) => {
     setGenerating(true);
     try {
-      const doc = createDanishReportPdf(readings, personName);
+      const doc = createDanishReportPdf(readings, personName, period);
       doc.save(exportFilename(personName ?? undefined, "pdf", "laegeskema"));
+      setDanishDialogOpen(false);
     } finally {
       setGenerating(false);
     }
   };
 
+  // Standardperiode: den periode målingerne dækker
+  const danishDays = groupReadingsByDay(readings);
+  const danishDefaultStart = danishDays.length ? danishDays[0].date : new Date();
+  const danishDefaultEnd = danishDays.length ? danishDays[danishDays.length - 1].date : new Date();
+
   return (
+    <>
     <div ref={menuRef} className="relative shrink-0">
       <button
         onClick={() => setMenuOpen((o) => !o)}
@@ -935,7 +953,7 @@ export default function PdfExport({ readings, personName, medications }: Props) 
           <button
             role="menuitem"
             disabled={generating}
-            onClick={exportDanishReport}
+            onClick={openDanishDialog}
             className="w-full text-left px-3 py-2 rounded-lg text-sm font-medium text-gray-900 dark:text-gray-100
                        hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
           >
@@ -944,5 +962,17 @@ export default function PdfExport({ readings, personName, medications }: Props) 
         </div>
       )}
     </div>
+
+    {danishDialogOpen && (
+      <DanishReportDialog
+        readings={readings}
+        defaultStart={danishDefaultStart}
+        defaultEnd={danishDefaultEnd}
+        busy={generating}
+        onExport={exportDanishReport}
+        onClose={() => setDanishDialogOpen(false)}
+      />
+    )}
+    </>
   );
 }

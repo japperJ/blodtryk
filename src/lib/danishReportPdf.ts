@@ -8,10 +8,15 @@
 //
 // Sådan læses originalen:
 //   side 1 = OPSUMMERING (analyse-tabel + tabel med gennemsnit/variation/normal)
-//   side 2+ = "Startdato" og én blok pr. dag ("Dag N") med morgen/aften-skemaer
+//   side 2+ = "Startdato"/"Slutdato" og én blok pr. dag ("Dag N") med
+//             morgen/aften-skemaer
 //
 // Opsummeringen i originalen udelader første måledag (verificeret: alle
 // gennemsnit, min/maks og variationer svarer til dag 2 og frem).
+//
+// Brugeren vælger perioden (start- og slutdato), og kun målinger inden for
+// perioden kommer med i skemaet. Originalens "Sendt til behandler"-linje er
+// udeladt; i stedet viser side 1 den valgte periode.
 import jsPDF from "jspdf";
 import type { Reading } from "@/types";
 
@@ -59,7 +64,8 @@ const SUMMARY_FRAME_TOP = 101.6;
 const SUMMARY_FRAME_H = 301.6;
 const TITLE = { x: 45.6, base: 43.2 };
 const PERSON = { x: 45.6, base: 72 };
-const SENT = { right: 521.0, base: 86.4 };
+// Perioden vises i samme position og skrift som originalens "Sendt til behandler"
+const PERIOD_LINE = { right: 521.0, base: 86.4 };
 
 // Analyse-tabel (OPSUMMERING): Analysenavn | Værdi | Analysekode
 const ANALYSIS_TOP = 124.8;
@@ -102,9 +108,13 @@ const TARGETS: Record<ParameterKey, string> = {
 const UNIT: Record<ParameterKey, string> = { systolic: "mm Hg", diastolic: "mm Hg", pulse: "pr min" };
 
 // ---------------------------------------------------------------- side 2+
-const START_DATE_LABEL = { x: 38.4, base: 24 };
-const START_DATE_BOX = { x: 38.4, y: 32, w: 112, h: 17.6 };
-const START_DATE_TEXT = { x: 40.8, base: 44 };
+const START_DATE_X = 38.4;
+// Slutdato-feltet står ved siden af startdato med samme mål (112 x 17,6 pt)
+const END_DATE_X = 166.4;
+const DATE_FIELD_LABEL_BASE = 24;
+const DATE_FIELD_BOX = { y: 32, w: 112, h: 17.6 };
+const DATE_FIELD_TEXT_BASE = 44;
+const DATE_TEXT_INSET = 2.4; // feltets venstre kant -> datoens venstre kant
 
 const DAY_BAR_TOP = 61.6;
 const DAY_BLOCK_PITCH = 140.8;
@@ -172,11 +182,39 @@ export interface DanishReportSummary {
   pulse: DanishParameterSummary;
 }
 
+/** Den valgte rapporteringsperiode. Start- og slutdagen tælles begge med. */
+export interface DanishReportPeriod {
+  start: Date;
+  end: Date;
+}
+
 const pad2 = (n: number) => String(n).padStart(2, "0");
 
 /** Lokal kalenderdag som YYYY-MM-DD. */
 function dayKey(d: Date): string {
   return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+}
+
+/** Første/sidste øjeblik på en lokal kalenderdag. */
+function startOfDay(d: Date): number {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+}
+
+function endOfDay(d: Date): number {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999).getTime();
+}
+
+/**
+ * Målinger inden for perioden. Hele start- og slutdagen tælles med, så en
+ * slutdato også omfatter dagens målinger.
+ */
+export function filterReadingsByPeriod(readings: Reading[], period: DanishReportPeriod): Reading[] {
+  const from = startOfDay(period.start);
+  const to = endOfDay(period.end);
+  return readings.filter((r) => {
+    const t = new Date(r.createdAt).getTime();
+    return t >= from && t <= to;
+  });
 }
 
 /** Morgen/aften ud fra tag; mangler tagget, bruges klokketiden (før 12 = morgen). */
@@ -325,13 +363,6 @@ function drawTable(
   fillRect(doc, columns[columns.length - 1][1], top, BORDER, bottom - top, GRID);
 }
 
-/** "14/09/2026 09:50" — samme format som originalen. */
-function formatSentAt(d: Date): string {
-  return `${pad2(d.getDate())}/${pad2(d.getMonth() + 1)}/${d.getFullYear()} ${pad2(
-    d.getHours()
-  )}:${pad2(d.getMinutes())}`;
-}
-
 /** "9/9/2026" — samme format som originalens startdato-felt. */
 function formatShortDate(d: Date): string {
   return `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`;
@@ -346,14 +377,22 @@ function formatVariation(p: DanishParameterSummary, key: ParameterKey): string |
   return `${p.min}-${p.max} ${UNIT[key]}`;
 }
 
-function renderSummaryPage(doc: jsPDF, summary: DanishReportSummary, name: string): void {
+function renderSummaryPage(
+  doc: jsPDF,
+  summary: DanishReportSummary,
+  name: string,
+  period: DanishReportPeriod | null
+): void {
   drawText(doc, "Hjemmeblodtryk", TITLE.x, TITLE.base, { size: SIZE_BODY, color: TEXT, bold: true });
   drawText(doc, name, PERSON.x, PERSON.base, { size: SIZE_BODY, color: TEXT });
-  drawText(doc, `Sendt til behandler: ${formatSentAt(new Date())}`, SENT.right, SENT.base, {
-    size: SIZE_BODY,
-    color: TEXT,
-    align: "right",
-  });
+  if (period) {
+    const range = `${formatShortDate(period.start)} - ${formatShortDate(period.end)}`;
+    drawText(doc, `Periode: ${range}`, PERIOD_LINE.right, PERIOD_LINE.base, {
+      size: SIZE_BODY,
+      color: TEXT,
+      align: "right",
+    });
+  }
 
   // --- OPSUMMERING ---
   drawBlockFrame(doc, SUMMARY_FRAME_TOP, SUMMARY_FRAME_H);
@@ -432,19 +471,28 @@ function renderSummaryPage(doc: jsPDF, summary: DanishReportSummary, name: strin
   });
 }
 
-/** "Startdato"-feltet øverst på første dagsoversigt. */
-function renderStartDate(doc: jsPDF, date: Date): void {
-  drawText(doc, "Startdato", START_DATE_LABEL.x, START_DATE_LABEL.base, { size: SIZE_CELL, color: TEXT });
-  const { x, y, w, h } = START_DATE_BOX;
+/**
+ * Et dato-felt i originalens felt-stil. Feltet har samme mål som originalens
+ * startdato-felt, blot forskudt vandret, så start- og slutdato står side om side.
+ */
+function renderDateField(doc: jsPDF, label: string, x: number, date: Date): void {
+  drawText(doc, label, x, DATE_FIELD_LABEL_BASE, { size: SIZE_CELL, color: TEXT });
+  const { y, w, h } = DATE_FIELD_BOX;
   fillRect(doc, x, y, w, h, WHITE);
   fillRect(doc, x, y, w, BORDER, INPUT_BORDER);
   fillRect(doc, x, y + h - BORDER, w, BORDER, INPUT_BORDER);
   fillRect(doc, x, y, BORDER, h, INPUT_BORDER);
   fillRect(doc, x + w - BORDER, y, BORDER, h, INPUT_BORDER);
-  drawText(doc, formatShortDate(date), START_DATE_TEXT.x, START_DATE_TEXT.base, {
+  drawText(doc, formatShortDate(date), x + DATE_TEXT_INSET, DATE_FIELD_TEXT_BASE, {
     size: SIZE_BODY,
     color: BLACK,
   });
+}
+
+/** Perioden øverst på første dagsoversigt: Startdato og Slutdato. */
+function renderPeriodFields(doc: jsPDF, period: DanishReportPeriod): void {
+  renderDateField(doc, "Startdato", START_DATE_X, period.start);
+  renderDateField(doc, "Slutdato", END_DATE_X, period.end);
 }
 
 /** Én "Dag N"-blok: bjælke + skema med morgen/aften-målinger. */
@@ -477,11 +525,15 @@ function renderDayBlock(doc: jsPDF, day: DanishReportDay, dayNumber: number, bar
   });
 }
 
-function renderDayPages(doc: jsPDF, days: DanishReportDay[]): void {
+function renderDayPages(
+  doc: jsPDF,
+  days: DanishReportDay[],
+  period: DanishReportPeriod | null
+): void {
   const pageCount = Math.max(1, Math.ceil(days.length / DAY_BLOCKS_PER_PAGE));
   for (let page = 0; page < pageCount; page++) {
     doc.addPage();
-    if (page === 0 && days.length > 0) renderStartDate(doc, days[0].date);
+    if (page === 0 && period) renderPeriodFields(doc, period);
     const pageDays = days.slice(page * DAY_BLOCKS_PER_PAGE, (page + 1) * DAY_BLOCKS_PER_PAGE);
     pageDays.forEach((day, i) => {
       renderDayBlock(doc, day, page * DAY_BLOCKS_PER_PAGE + i + 1, DAY_BAR_TOP + i * DAY_BLOCK_PITCH);
@@ -506,17 +558,29 @@ function renderFooters(doc: jsPDF, name: string, totalPages: number): void {
  * Byg den danske lægeskema-PDF (A4, side 1 = opsummering, side 2+ = dage).
  * Returnerer dokumentet, så kalderen selv kan gemme det med et passende navn.
  */
-export function createDanishReportPdf(readings: Reading[], personName?: string | null): jsPDF {
+export function createDanishReportPdf(
+  readings: Reading[],
+  personName?: string | null,
+  period?: DanishReportPeriod | null
+): jsPDF {
   // Præcis samme sidestørrelse som originalen (595 x 842 pt), ikke jsPDF's "a4"
   // (595,28 x 841,89), så geometrien kan sammenlignes 1:1.
   const doc = new jsPDF({ unit: "pt", format: [PAGE_W, PAGE_H] });
   const name = (personName ?? "").trim();
-  const days = groupReadingsByDay(readings);
-  const summary = computeDanishSummary(readings, days);
+  // Den valgte periode afgrænser målingerne; uden periode bruges alle
+  const scoped = period ? filterReadingsByPeriod(readings, period) : readings;
+  const days = groupReadingsByDay(scoped);
+  const summary = computeDanishSummary(scoped, days);
   const totalPages = 1 + Math.max(1, Math.ceil(days.length / DAY_BLOCKS_PER_PAGE));
+  // Datoerne i skemaet: den valgte periode, ellers første og sidste måledag
+  const shownPeriod: DanishReportPeriod | null = period
+    ? period
+    : days.length
+      ? { start: days[0].date, end: days[days.length - 1].date }
+      : null;
 
-  renderSummaryPage(doc, summary, name);
-  renderDayPages(doc, days);
+  renderSummaryPage(doc, summary, name, shownPeriod);
+  renderDayPages(doc, days, shownPeriod);
   renderFooters(doc, name, totalPages);
   return doc;
 }
