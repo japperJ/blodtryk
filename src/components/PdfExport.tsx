@@ -4,6 +4,7 @@ import jsPDF from "jspdf";
 import type { Reading } from "@/types";
 import { getBPStatus, getAgeGroupKey, type Severity } from "@/lib/bpClassification";
 import { timeOfDayLabel, shortArmLabel, exportFilename } from "@/lib/exporters";
+import { createDanishReportPdf } from "@/lib/danishReportPdf";
 import { INTL_LOCALE } from "@/lib/i18n";
 import { useI18n } from "@/lib/I18nProvider";
 import { LINE_COLORS } from "@/components/charts/BPLineChart";
@@ -880,6 +881,19 @@ export default function PdfExport({ readings, personName, medications }: Props) 
     }
   };
 
+  // Dansk lægeskema: samme skemaformat, danske læger får fra web-patient.dk
+  // (side 1 = opsummering, side 2+ = én skematabel pr. dag)
+  const exportDanishReport = () => {
+    setMenuOpen(false);
+    setGenerating(true);
+    try {
+      const doc = createDanishReportPdf(readings, personName);
+      doc.save(exportFilename(personName ?? undefined, "pdf", "laegeskema"));
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   return (
     <div ref={menuRef} className="relative shrink-0">
       <button
@@ -916,6 +930,16 @@ export default function PdfExport({ readings, personName, medications }: Props) 
                        hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
           >
             {t("pdf.exportWithoutImages")}
+          </button>
+          <div className="my-1 border-t border-gray-200 dark:border-gray-700" />
+          <button
+            role="menuitem"
+            disabled={generating}
+            onClick={exportDanishReport}
+            className="w-full text-left px-3 py-2 rounded-lg text-sm font-medium text-gray-900 dark:text-gray-100
+                       hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
+          >
+            {t("pdf.exportDanishForm")}
           </button>
         </div>
       )}
