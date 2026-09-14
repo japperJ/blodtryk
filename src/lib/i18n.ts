@@ -444,6 +444,15 @@ const da: Record<string, string> = {
   "pdf.exportWithImages": "Med billeder",
   "pdf.exportWithoutImages": "Uden billeder",
   "pdf.exportDanishForm": "Dansk lægeskema",
+  "pdf.danishPeriodTitle": "Vælg periode",
+  "pdf.danishPeriodHint": "Skemaet viser kun målinger inden for perioden.",
+  "pdf.periodStart": "Startdato",
+  "pdf.periodEnd": "Slutdato",
+  "pdf.periodReadingsOne": "{count} måling i perioden",
+  "pdf.periodReadingsMany": "{count} målinger i perioden",
+  "pdf.invalidPeriod": "Startdato skal være før eller lig slutdato",
+  "pdf.exportDanishAction": "Eksportér skema",
+  "pdf.generating": "Genererer...",
 
   // Eksport (CSV-headere)
   "csv.date": "Dato",
@@ -876,6 +885,15 @@ const en: Record<string, string> = {
   "pdf.exportWithImages": "With images",
   "pdf.exportWithoutImages": "Without images",
   "pdf.exportDanishForm": "Danish clinical form",
+  "pdf.danishPeriodTitle": "Choose period",
+  "pdf.danishPeriodHint": "The form only includes measurements within the period.",
+  "pdf.periodStart": "Start date",
+  "pdf.periodEnd": "End date",
+  "pdf.periodReadingsOne": "{count} measurement in the period",
+  "pdf.periodReadingsMany": "{count} measurements in the period",
+  "pdf.invalidPeriod": "Start date must be on or before the end date",
+  "pdf.exportDanishAction": "Export form",
+  "pdf.generating": "Generating...",
 
   // Export (CSV headers)
   "csv.date": "Date",
