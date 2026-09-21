@@ -216,7 +216,7 @@ export default function BatchUpload({ onImagesReady }: Props) {
             className="w-full bg-primary-600 text-white py-4 rounded-xl text-lg font-semibold
                        hover:bg-primary-700 active:scale-95 transition-all"
           >
-            🔍 {t(countKey("batch.scanImages", selectedImages.length), { count: selectedImages.length })}
+            {t(countKey("batch.scanImages", selectedImages.length), { count: selectedImages.length })}
           </button>
         </>
       )}

@@ -1,6 +1,8 @@
 "use client";
 
-import { AlertTriangle, CheckCircle2, Hourglass, Loader2, OctagonAlert, X, XCircle } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Hourglass, Image as ImageIcon, Loader2, OctagonAlert, X, XCircle } from "lucide-react";
+import { useState } from "react";
+import BatchManualViewer from "./BatchManualViewer";
 import { useI18n } from "@/lib/I18nProvider";
 
 export interface ScanResult {
@@ -18,6 +20,8 @@ export interface BatchItemView {
   thumbnail: string | null;
   displayTime: string;
   exifModel?: string; // valgfri kameramodel til tidslinjen
+  /** Billede i fuld størrelse til "se billede og indtast selv" */
+  fullImage?: string | null;
 }
 
 interface Props {
@@ -27,10 +31,26 @@ interface Props {
   /** Sæt når køen venter på AI-serveren (#60): "ollamaOffline" | "ollamaModelMissing" */
   waitReason?: string | null;
   onCancel: () => void;
+  /** Batch-job-id — nødvendigt for at gemme en manuel indtastning */
+  jobId?: string | null;
+  /** Personens alder (valideringskontekst i indtastningsfeltet) */
+  age?: number | null;
+  /** Kaldes når brugeren har gemt en manuel indtastning for et billede */
+  onManualSaved?: (result: ScanResult) => void;
 }
 
-export default function BatchProgress({ items, results, isComplete, waitReason, onCancel }: Props) {
+export default function BatchProgress({
+  items,
+  results,
+  isComplete,
+  waitReason,
+  onCancel,
+  jobId,
+  age,
+  onManualSaved,
+}: Props) {
   const { t, tError } = useI18n();
+  const [manualItemId, setManualItemId] = useState<string | null>(null);
   const completedCount = results.length;
   const totalCount = items.length;
   const progressPercent = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
@@ -39,6 +59,8 @@ export default function BatchProgress({ items, results, isComplete, waitReason, 
     (item) => !results.some((r) => r.imageId === item.id)
   );
   const isWaiting = !isComplete && !!waitReason;
+  const manualItem = manualItemId ? items.find((item) => item.id === manualItemId) : undefined;
+  const canEnterManually = !!jobId && !!onManualSaved;
 
   return (
     <div className="space-y-4">
@@ -50,6 +72,11 @@ export default function BatchProgress({ items, results, isComplete, waitReason, 
           </p>
           <p className="text-xs text-amber-700 dark:text-amber-400 mt-1">{tError(waitReason!)}</p>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t("batch.waitingForAiHint")}</p>
+          {canEnterManually && (
+            <p className="text-xs font-medium text-amber-800 dark:text-amber-300 mt-2">
+              {t("batch.manualWhileWaiting")}
+            </p>
+          )}
         </div>
       )}
 
@@ -92,7 +119,12 @@ export default function BatchProgress({ items, results, isComplete, waitReason, 
           const result = results.find(r => r.imageId === item.id);
           const isActive = index === currentIndex && !isComplete;
           const isDone = result !== undefined;
-          const hasError = result?.error !== null;
+          const hasError = Boolean(result?.error);
+          // Manuel indtastning: altid for billeder AI'en har opgivet, og for
+          // billeder der stadig venter i køen — men ikke mens AI'en læser
+          // billedet, medmindre køen står stille og venter på Ollama (#60).
+          const canEnterThis =
+            canEnterManually && (hasError || !isDone) && (!isActive || isWaiting);
 
           return (
             <div
@@ -143,6 +175,16 @@ export default function BatchProgress({ items, results, isComplete, waitReason, 
                     {isWaiting ? t("batch.waiting") : t("batch.scanningShort")}
                   </p>
                 )}
+
+                {canEnterThis && (
+                  <button
+                    onClick={() => setManualItemId(item.id)}
+                    className="mt-1 text-xs font-medium text-primary-600 dark:text-primary-400
+                               inline-flex items-center gap-1 hover:underline active:scale-95 transition-all"
+                  >
+                    <ImageIcon className="w-3.5 h-3.5" /> {t("batch.viewImageAndEnter")}
+                  </button>
+                )}
               </div>
 
               {/* Status ikon */}
@@ -170,6 +212,19 @@ export default function BatchProgress({ items, results, isComplete, waitReason, 
         >
           <X className="w-4 h-4 mr-1 inline" /> {t("batch.cancelScan")}
         </button>
+      )}
+
+      {/* Se billede og indtast tallene selv (fx når Ollama ikke kører) */}
+      {manualItem && jobId && (
+        <BatchManualViewer
+          jobId={jobId}
+          itemId={manualItem.id}
+          imageUrl={manualItem.fullImage ?? manualItem.thumbnail}
+          displayTime={manualItem.displayTime}
+          age={age}
+          onClose={() => setManualItemId(null)}
+          onSaved={(result) => onManualSaved?.(result)}
+        />
       )}
     </div>
   );

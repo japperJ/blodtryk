@@ -71,6 +71,8 @@ const da: Record<string, string> = {
   "common.loading": "Indlæser...",
   "common.error": "Fejl",
   "common.unknownError": "Ukendt fejl",
+  "common.increment": "Forøg",
+  "common.decrement": "Formindsk",
 
   // Felter
   "field.systolic": "Systolisk",
@@ -94,6 +96,10 @@ const da: Record<string, string> = {
   // Kontekst-tags
   "tags.timeLabel": "Tidspunkt",
   "tags.armLabel": "Arm",
+  "tod.label": "Tidspunkt",
+  "tod.notSet": "Ikke angivet",
+  "arm.label": "Arm",
+  "arm.notSet": "Ikke angivet",
   "tod.morning": "Morgen",
   "tod.evening": "Aften",
   "tod.morningEmoji": "🌅 Morgen",
@@ -183,6 +189,11 @@ const da: Record<string, string> = {
   "err.ollamaModelMissing": "AI-modellen glm-ocr findes ikke på Ollama-serveren. Kør: ollama pull glm-ocr",
   "err.duplicateImageDetected": "Dette billede er allerede uploadet for denne person og blev sprunget over.",
   "err.tooManyImages": "For mange billeder i én upload (maks. 50)",
+  "err.batchJobItemNotFound": "Billedet blev ikke fundet i jobbet",
+  "err.itemAlreadySaved": "Billedet er allerede gemt som en måling",
+  "err.itemBusy": "Billedet bliver læst lige nu — prøv igen om et øjeblik",
+  "err.itemNotScannable": "Billedet kan ikke indtastes manuelt i denne tilstand",
+  "err.manualEntryFailed": "Kunne ikke gemme den manuelle måling",
   "err.unknown": "Ukendt fejl",
   "err.fetchMedicationsFailed": "Kunne ikke hente medicin",
 
@@ -256,6 +267,8 @@ const da: Record<string, string> = {
   "batch.autoSaved": "Målingerne gemmes automatisk på serveren, mens du scanner",
   "batch.waitingForAi": "Venter på AI-serveren...",
   "batch.waitingForAiHint": "Ollama kører ikke eller mangler modellen. Start Ollama (kør evt. \"ollama pull glm-ocr\") — scanningen fortsætter automatisk.",
+  "batch.manualWhileWaiting": "Du kan også selv indtaste tallene fra billederne herunder, mens du venter.",
+  "batch.viewImageAndEnter": "Se billede og indtast selv",
   "batch.retryFailed": "Prøv de mislykkede billeder igen",
 
   // Upload-kø-status (#50)
@@ -392,6 +405,8 @@ const da: Record<string, string> = {
   "viewer.fixTitle": "Ret måling:",
   "viewer.saveFix": "Gem rettelse",
   "viewer.unreadable": "Billedet kunne ikke aflæses",
+  "viewer.manualEntryTitle": "Se billedet og indtast målingen:",
+  "viewer.manualEntryHint": "Målingen gemmes sammen med billedet — også selv om AI'en ikke kunne læse det.",
 
   // Medicin
   "meds.panel": "Medicin",
@@ -512,6 +527,8 @@ const en: Record<string, string> = {
   "common.loading": "Loading...",
   "common.error": "Error",
   "common.unknownError": "Unknown error",
+  "common.increment": "Increase",
+  "common.decrement": "Decrease",
 
   // Fields
   "field.systolic": "Systolic",
@@ -535,6 +552,10 @@ const en: Record<string, string> = {
   // Context tags
   "tags.timeLabel": "Time of day",
   "tags.armLabel": "Arm",
+  "tod.label": "Time of day",
+  "tod.notSet": "Not set",
+  "arm.label": "Arm",
+  "arm.notSet": "Not set",
   "tod.morning": "Morning",
   "tod.evening": "Evening",
   "tod.morningEmoji": "🌅 Morning",
@@ -624,6 +645,11 @@ const en: Record<string, string> = {
   "err.ollamaModelMissing": "The AI model glm-ocr is not installed on the Ollama server. Run: ollama pull glm-ocr",
   "err.duplicateImageDetected": "This image was already uploaded for this person and was skipped.",
   "err.tooManyImages": "Too many images in one upload (max. 50)",
+  "err.batchJobItemNotFound": "The image was not found in the job",
+  "err.itemAlreadySaved": "The image has already been saved as a reading",
+  "err.itemBusy": "The image is being read right now — try again in a moment",
+  "err.itemNotScannable": "The image cannot be entered manually in this state",
+  "err.manualEntryFailed": "Could not save the manual reading",
   "err.unknown": "Unknown error",
   "err.fetchMedicationsFailed": "Could not load medications",
 
@@ -698,6 +724,8 @@ const en: Record<string, string> = {
   "batch.autoSaved": "Readings are saved automatically on the server while you scan",
   "batch.waitingForAi": "Waiting for the AI server...",
   "batch.waitingForAiHint": "Ollama is not running or the model is missing. Start Ollama (or run \"ollama pull glm-ocr\") — scanning continues automatically.",
+  "batch.manualWhileWaiting": "You can also type the numbers yourself from the images below while you wait.",
+  "batch.viewImageAndEnter": "View image and enter manually",
   "batch.retryFailed": "Retry the failed images",
 
   // Upload queue status (#50)
@@ -833,6 +861,8 @@ const en: Record<string, string> = {
   "viewer.fixTitle": "Fix measurement:",
   "viewer.saveFix": "Save fix",
   "viewer.unreadable": "The image could not be read",
+  "viewer.manualEntryTitle": "View the image and enter the measurement:",
+  "viewer.manualEntryHint": "The reading is saved together with the image — even if the AI could not read it.",
 
   // Medication
   "meds.panel": "Medication",
