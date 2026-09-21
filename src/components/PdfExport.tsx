@@ -6,6 +6,7 @@ import { getBPStatus, getAgeGroupKey, type Severity } from "@/lib/bpClassificati
 import { timeOfDayLabel, shortArmLabel, exportFilename } from "@/lib/exporters";
 import {
   createDanishReportPdf,
+  filterReadingsByPeriod,
   groupReadingsByDay,
   type DanishReportPeriod,
 } from "@/lib/danishReportPdf";
@@ -13,7 +14,7 @@ import { INTL_LOCALE } from "@/lib/i18n";
 import { useI18n } from "@/lib/I18nProvider";
 import { LINE_COLORS } from "@/components/charts/BPLineChart";
 import { formatMedicationDate } from "@/lib/medicationDate";
-import DanishReportDialog from "@/components/DanishReportDialog";
+import ReportPeriodDialog from "@/components/ReportPeriodDialog";
 
 /** Medicin som den bruges i PDF'en (samme form som API'et returnerer; datoer er ISO-strenge). */
 export interface PdfMedication {
@@ -371,10 +372,12 @@ async function fetchImageForPdf(
   };
 }
 
-export default function PdfExport({ readings, personName, medications }: Props) {
+export default function PdfExport({ readings: allReadings, personName, medications }: Props) {
   const [generating, setGenerating] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [danishDialogOpen, setDanishDialogOpen] = useState(false);
+  // null = lukket, ellers hvilken PDF-variant der vælges periode til
+  const [pdfDialogMode, setPdfDialogMode] = useState<boolean | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const { t, locale } = useI18n();
   const intlLocale = INTL_LOCALE[locale];
@@ -398,11 +401,13 @@ export default function PdfExport({ readings, personName, medications }: Props) 
     };
   }, [menuOpen]);
 
-  // #51: includeImages styrer om målingsbillederne (#49) skal med i rapporten
-  const exportPdf = async (includeImages: boolean) => {
-    setMenuOpen(false);
+  // #51: includeImages styrer om målingsbillederne (#49) skal med i rapporten.
+  // Perioden vælges i dialogen (samme dato-vælger som det danske lægeskema) og
+  // afgrænser målingerne i hele rapporten.
+  const exportPdf = async (includeImages: boolean, period: DanishReportPeriod) => {
     setGenerating(true);
     try {
+      const readings = filterReadingsByPeriod(allReadings, period);
       const doc = new jsPDF();
       const pageWidth = 210;
       const pageHeight = 297;
@@ -882,6 +887,7 @@ export default function PdfExport({ readings, personName, medications }: Props) 
       const filename = exportFilename(personName ?? undefined, "pdf");
 
       doc.save(filename);
+      setPdfDialogMode(null);
     } finally {
       setGenerating(false);
     }
@@ -898,7 +904,7 @@ export default function PdfExport({ readings, personName, medications }: Props) 
   const exportDanishReport = (period: DanishReportPeriod) => {
     setGenerating(true);
     try {
-      const doc = createDanishReportPdf(readings, personName, period);
+      const doc = createDanishReportPdf(allReadings, personName, period);
       doc.save(exportFilename(personName ?? undefined, "pdf", "laegeskema"));
       setDanishDialogOpen(false);
     } finally {
@@ -907,9 +913,9 @@ export default function PdfExport({ readings, personName, medications }: Props) 
   };
 
   // Standardperiode: den periode målingerne dækker
-  const danishDays = groupReadingsByDay(readings);
-  const danishDefaultStart = danishDays.length ? danishDays[0].date : new Date();
-  const danishDefaultEnd = danishDays.length ? danishDays[danishDays.length - 1].date : new Date();
+  const days = groupReadingsByDay(allReadings);
+  const defaultStart = days.length ? days[0].date : new Date();
+  const defaultEnd = days.length ? days[days.length - 1].date : new Date();
 
   return (
     <>
@@ -934,7 +940,10 @@ export default function PdfExport({ readings, personName, medications }: Props) 
           <button
             role="menuitem"
             disabled={generating}
-            onClick={() => exportPdf(true)}
+            onClick={() => {
+              setMenuOpen(false);
+              setPdfDialogMode(true);
+            }}
             className="w-full text-left px-3 py-2 rounded-lg text-sm font-medium text-gray-900 dark:text-gray-100
                        hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
           >
@@ -943,7 +952,10 @@ export default function PdfExport({ readings, personName, medications }: Props) 
           <button
             role="menuitem"
             disabled={generating}
-            onClick={() => exportPdf(false)}
+            onClick={() => {
+              setMenuOpen(false);
+              setPdfDialogMode(false);
+            }}
             className="w-full text-left px-3 py-2 rounded-lg text-sm font-medium text-gray-900 dark:text-gray-100
                        hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
           >
@@ -963,12 +975,29 @@ export default function PdfExport({ readings, personName, medications }: Props) 
       )}
     </div>
 
-    {danishDialogOpen && (
-      <DanishReportDialog
-        readings={readings}
-        defaultStart={danishDefaultStart}
-        defaultEnd={danishDefaultEnd}
+    {pdfDialogMode !== null && (
+      <ReportPeriodDialog
+        readings={allReadings}
+        defaultStart={defaultStart}
+        defaultEnd={defaultEnd}
         busy={generating}
+        titleKey="pdf.periodTitle"
+        hintKey="pdf.periodHint"
+        actionKey="pdf.exportPdfAction"
+        onExport={(period) => void exportPdf(pdfDialogMode, period)}
+        onClose={() => setPdfDialogMode(null)}
+      />
+    )}
+
+    {danishDialogOpen && (
+      <ReportPeriodDialog
+        readings={allReadings}
+        defaultStart={defaultStart}
+        defaultEnd={defaultEnd}
+        busy={generating}
+        titleKey="pdf.periodTitle"
+        hintKey="pdf.danishPeriodHint"
+        actionKey="pdf.exportDanishAction"
         onExport={exportDanishReport}
         onClose={() => setDanishDialogOpen(false)}
       />
