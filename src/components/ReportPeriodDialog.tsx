@@ -12,6 +12,10 @@ interface Props {
   defaultStart: Date;
   defaultEnd: Date;
   busy: boolean;
+  /** Oversættelsesnøgler, så samme dialog kan bruges til alle rapporttyper. */
+  titleKey: string;
+  hintKey: string;
+  actionKey: string;
   onExport: (period: DanishReportPeriod) => void;
   onClose: () => void;
 }
@@ -35,13 +39,17 @@ function fromInputValue(value: string): Date | null {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
-// Periode-vælger til det danske lægeskema: kun målinger i perioden kommer med,
-// og datoerne vises øverst i skemaet.
-export default function DanishReportDialog({
+// Periode-vælger til PDF-eksport: kun målinger i perioden kommer med, og
+// datoerne vises øverst i rapporten/skemaet. Bruges af alle rapporttyper, så
+// "med billeder", "uden billeder" og det danske lægeskema vælger dato ens.
+export default function ReportPeriodDialog({
   readings,
   defaultStart,
   defaultEnd,
   busy,
+  titleKey,
+  hintKey,
+  actionKey,
   onExport,
   onClose,
 }: Props) {
@@ -65,7 +73,7 @@ export default function DanishReportDialog({
                       shadow-xl animate-in slide-in-from-bottom duration-200">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">
-            {t("pdf.danishPeriodTitle")}
+            {t(titleKey)}
           </h2>
           <button
             onClick={onClose}
@@ -76,7 +84,7 @@ export default function DanishReportDialog({
           </button>
         </div>
 
-        <p className="mb-4 text-sm text-gray-600 dark:text-gray-400">{t("pdf.danishPeriodHint")}</p>
+        <p className="mb-4 text-sm text-gray-600 dark:text-gray-400">{t(hintKey)}</p>
 
         <div className="flex flex-wrap gap-3">
           <label className="flex flex-1 min-w-[140px] flex-col gap-1 text-xs text-gray-500 dark:text-gray-400">
@@ -123,7 +131,7 @@ export default function DanishReportDialog({
             className="min-h-[44px] flex-1 rounded-xl bg-primary-600 px-4 py-2 text-sm font-medium text-white
                        hover:bg-primary-700 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {busy ? t("pdf.generating") : t("pdf.exportDanishAction")}
+            {busy ? t("pdf.generating") : t(actionKey)}
           </button>
         </div>
       </div>
