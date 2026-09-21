@@ -201,6 +201,9 @@ export default function ScanPage() {
       thumbnail: img.thumbnail || null,
       displayTime: img.displayTime,
       exifModel: img.exif.model || undefined,
+      // Det komprimerede billede i fuld størrelse bruges til "se billede og
+      // indtast selv" mens jobbet stadig venter i køen
+      fullImage: img.compressedBase64 ? `data:image/jpeg;base64,${img.compressedBase64}` : null,
     }));
   }, []);
 
@@ -293,6 +296,7 @@ export default function ScanPage() {
               : data.items!.map((item) => ({
                   id: item.clientRef ?? `srv-${item.id}`,
                   thumbnail: `/api/image/${encodeURIComponent(item.imagePath)}`,
+                  fullImage: `/api/image/${encodeURIComponent(item.imagePath)}`,
                   displayTime: item.capturedAt
                     ? new Date(item.capturedAt).toLocaleString(INTL_LOCALE[locale])
                     : "",
@@ -339,6 +343,7 @@ export default function ScanPage() {
         const views: BatchItemView[] = data.items.map((item) => ({
           id: item.clientRef ?? `srv-${item.id}`,
           thumbnail: `/api/image/${encodeURIComponent(item.imagePath)}`,
+          fullImage: `/api/image/${encodeURIComponent(item.imagePath)}`,
           displayTime: item.capturedAt
             ? new Date(item.capturedAt).toLocaleString(INTL_LOCALE[locale])
             : "",
@@ -415,6 +420,16 @@ export default function ScanPage() {
     setBatchResults([]);
     await startBatchScan(failedImages);
   };
+
+  // Manuel indtastning af et billede der stadig venter i køen (fx når Ollama
+  // ikke kører): vis målingen med det samme i listen — næste poll bekræfter
+  // den fra serveren.
+  const handleBatchManualSaved = useCallback((result: ScanResult) => {
+    setBatchResults((prev) => [
+      ...prev.filter((r) => r.imageId !== result.imageId),
+      result,
+    ]);
+  }, []);
 
   const handleBatchReset = () => {
     setBatchStep("upload");
@@ -762,6 +777,9 @@ export default function ScanPage() {
                 isComplete={false}
                 waitReason={batchWaitReason}
                 onCancel={handleCancelBatch}
+                jobId={batchJobId}
+                age={derivedAge}
+                onManualSaved={handleBatchManualSaved}
               />
             )}
 

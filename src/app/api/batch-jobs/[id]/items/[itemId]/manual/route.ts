@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { validateReadingInput, validateBirthYear } from "@/lib/validation";
+import {
+  validateReadingInput,
+  validateBirthYear,
+  CREATED_AT_FUTURE_TOLERANCE_MS,
+} from "@/lib/validation";
 
 // PATCH /api/batch-jobs/[id]/items/[itemId]/manual
-// Save manual entry for a failed batch job item
+// Save manual entry for a batch job item — either one the AI gave up on
+// ("error") or one that is still queued ("pending"), e.g. while Ollama is
+// offline and the batch is waiting for the AI.
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string; itemId: string }> }
@@ -41,8 +47,14 @@ export async function PATCH(
       return NextResponse.json({ error: "batchJobItemNotFound" }, { status: 404 });
     }
 
-    if (item.status !== "error") {
-      return NextResponse.json({ error: "itemNotFailed" }, { status: 400 });
+    if (item.status === "saved") {
+      return NextResponse.json({ error: "itemAlreadySaved" }, { status: 409 });
+    }
+    if (item.status === "scanning") {
+      return NextResponse.json({ error: "itemBusy" }, { status: 409 });
+    }
+    if (item.status !== "pending" && item.status !== "error") {
+      return NextResponse.json({ error: "itemNotScannable" }, { status: 400 });
     }
 
     let body: unknown;
@@ -63,6 +75,15 @@ export async function PATCH(
     const age =
       item.job.person.birthYear != null ? currentYear - item.job.person.birthYear : null;
 
+    // Samme tolerance som arbejderen: et EXIF-tidspunkt langt ude i fremtiden
+    // (forkert kameraur) må ikke blokere en manuel indtastning — brug da
+    // serverens tid i stedet.
+    const capturedAt = item.capturedAt ? new Date(item.capturedAt) : null;
+    const createdAtInput =
+      capturedAt && capturedAt.getTime() <= Date.now() + CREATED_AT_FUTURE_TOLERANCE_MS
+        ? capturedAt.toISOString()
+        : null;
+
     // Prepare data for validation
     const validationData = {
       systolic: rawBody.systolic,
@@ -74,7 +95,7 @@ export async function PATCH(
       timeOfDay: rawBody.timeOfDay ?? null,
       arm: rawBody.arm ?? null,
       personId,
-      createdAt: item.capturedAt ? new Date(item.capturedAt).toISOString() : null,
+      createdAt: createdAtInput,
     };
 
     const validation = validateReadingInput(validationData);
@@ -84,21 +105,43 @@ export async function PATCH(
 
     const { systolic, diastolic, pulse, note, timeOfDay, arm, createdAt } = validation.data;
 
-    // Create the reading
-    const reading = await prisma.reading.create({
-      data: {
-        systolic,
-        diastolic,
-        pulse,
-        age,
-        note,
-        image: item.imagePath,
-        timeOfDay,
-        arm,
-        personId,
-        ...(createdAt ? { createdAt } : {}),
-      },
+    // Overtag billedet atomisk, så arbejderen ikke scanner det samtidig.
+    const claim = await prisma.batchJobItem.updateMany({
+      where: { id: item.id, status: item.status },
+      data: { status: "scanning", error: null },
     });
+    if (claim.count === 0) {
+      return NextResponse.json({ error: "itemBusy" }, { status: 409 });
+    }
+
+    // Create the reading
+    let reading;
+    try {
+      reading = await prisma.reading.create({
+        data: {
+          systolic,
+          diastolic,
+          pulse,
+          age,
+          note,
+          image: item.imagePath,
+          timeOfDay,
+          arm,
+          personId,
+          ...(createdAt ? { createdAt } : {}),
+        },
+      });
+    } catch (error) {
+      // Kunne målingen ikke gemmes, gives billedet tilbage til sin gamle
+      // tilstand, så det ikke hænger fast i "scanning".
+      await prisma.batchJobItem
+        .updateMany({
+          where: { id: item.id, status: "scanning" },
+          data: { status: item.status, error: item.error },
+        })
+        .catch(() => undefined);
+      throw error;
+    }
 
     // Update batch job item with manual entry and mark as saved
     await prisma.batchJobItem.update({

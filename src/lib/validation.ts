@@ -22,7 +22,7 @@ export const MEDICATION_DOSE_MAX_LENGTH = 100;
 
 // Tolerance for urforskel mellem klient og server — tidspunkter mere end dette
 // i fremtiden afvises som "far-future"
-const CREATED_AT_FUTURE_TOLERANCE_MS = 5 * 60 * 1000;
+export const CREATED_AT_FUTURE_TOLERANCE_MS = 5 * 60 * 1000;
 
 // Tilladte kontekst-tags (SQLite har ingen enums — strenge valideres her)
 export const TIME_OF_DAY_VALUES = ["morning", "evening"] as const;

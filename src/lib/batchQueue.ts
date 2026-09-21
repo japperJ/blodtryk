@@ -60,16 +60,6 @@ function sleep(ms: number): Promise<void> {
  * Returnerer true hvis der var en item at behandle, false hvis køen er tom.
  */
 async function processNextItem(): Promise<boolean> {
-  // Crash-recovery: items der sad i "scanning" da serveren døde, prøves igen.
-  // Sikkert fordi kun én worker kører ad gangen (guard på globalThis-flagget).
-  const stuckCount = await prisma.batchJobItem.updateMany({
-    where: { status: "scanning" },
-    data: { status: "pending" },
-  });
-  if (stuckCount.count > 0) {
-    console.log(`Batch queue: recovered ${stuckCount.count} stuck item(s)`);
-  }
-
   const item = await prisma.batchJobItem.findFirst({
     where: {
       status: "pending",
@@ -86,10 +76,14 @@ async function processNextItem(): Promise<boolean> {
     data: { status: "processing" },
   }).catch(() => undefined);
 
-  await prisma.batchJobItem.update({
-    where: { id: item.id },
+  // Overtag billedet atomisk: er det i mellemtiden tastet manuelt (eller
+  // annulleret), springer vi det over i stedet for at gemme en dublet-måling.
+  const claim = await prisma.batchJobItem.updateMany({
+    where: { id: item.id, status: "pending", job: { status: { not: "cancelled" } } },
     data: { status: "scanning", error: null },
   });
+
+  if (claim.count === 0) return true;
 
   try {
     const buffer = await readFile(join(SCAN_DIR, item.imagePath));
@@ -204,8 +198,25 @@ async function failRemainingPending(reason: OllamaWaitReason): Promise<void> {
   }
 }
 
+/**
+ * Crash-recovery: items der sad i "scanning" da serveren døde, lægges tilbage i
+ * køen. Køres ÉN gang ved arbejderens start — ikke pr. billede — så et billede
+ * der samtidig tastes manuelt (status "scanning") ikke rives tilbage i køen.
+ */
+async function recoverStuckItems(): Promise<void> {
+  const stuckCount = await prisma.batchJobItem.updateMany({
+    where: { status: "scanning" },
+    data: { status: "pending" },
+  });
+  if (stuckCount.count > 0) {
+    console.log(`Batch queue: recovered ${stuckCount.count} stuck item(s)`);
+  }
+}
+
 async function runWorker(): Promise<void> {
   try {
+    await recoverStuckItems();
+
     // Cachet sundhedstjek (#60): mens Ollama er nede tjekkes der kun hvert
     // WAIT_RECHECK_INTERVAL_MS i stedet for ved hvert eneste billede.
     let health: OllamaHealth = await checkOllama();
