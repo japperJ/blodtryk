@@ -92,10 +92,19 @@ test("raw decimal values are compared without rounding", () => {
 });
 
 test("classification requires a recorded age of at least 19", () => {
-  for (const age of [null, 1, 17, 18]) {
+  for (const age of [
+    null,
+    undefined,
+    Number.NaN,
+    Number.POSITIVE_INFINITY,
+    Number.NEGATIVE_INFINITY,
+    1,
+    17,
+    18,
+  ]) {
     const status = getBPStatus(135, 85, age);
-    assert.equal(status.severity, "unclassified");
-    assert.equal(status.descriptionKey, "bp.unclassified.ageDesc");
+    assert.equal(status.severity, "unclassified", `age ${String(age)}`);
+    assert.equal(status.descriptionKey, "bp.unclassified.ageDesc", `age ${String(age)}`);
   }
 
   assert.equal(getBPStatus(135, 85, 19).severity, "grade1");
@@ -104,10 +113,26 @@ test("classification requires a recorded age of at least 19", () => {
 test("period means require every recorded age to be at least 19", () => {
   assert.equal(getBPStatusForPeriodMean(135, 85, [19, 64]).severity, "grade1");
 
-  for (const ages of [[], [null], [18], [19, null], [18, 19]]) {
+  const ineligibleAges = [
+    ["one sparse slot", new Array(1)],
+    ["sparse middle age", [19, , 19]],
+    ["empty array", []],
+    ["null age", [null]],
+    ["undefined age", [undefined]],
+    ["NaN age", [Number.NaN]],
+    ["positive infinity age", [Number.POSITIVE_INFINITY]],
+    ["negative infinity age", [Number.NEGATIVE_INFINITY]],
+    ["age 1", [1]],
+    ["age 17", [17]],
+    ["age 18", [18]],
+    ["mixed missing age", [19, null]],
+    ["mixed underage", [18, 19]],
+  ];
+
+  for (const [description, ages] of ineligibleAges) {
     const status = getBPStatusForPeriodMean(135, 85, ages);
-    assert.equal(status.severity, "unclassified", `ages ${JSON.stringify(ages)}`);
-    assert.equal(status.descriptionKey, "bp.unclassified.ageDesc", `ages ${JSON.stringify(ages)}`);
+    assert.equal(status.severity, "unclassified", `${description}: ${JSON.stringify(ages)}`);
+    assert.equal(status.descriptionKey, "bp.unclassified.ageDesc", `${description}: ${JSON.stringify(ages)}`);
   }
 });
 

@@ -168,7 +168,7 @@ export function getBPStatusForPeriodMean(
 ): BPStatus {
   const allAgesEligible =
     ages.length > 0 &&
-    ages.every(
+    Array.from(ages).every(
       (age) =>
         typeof age === "number" &&
         Number.isFinite(age) &&
