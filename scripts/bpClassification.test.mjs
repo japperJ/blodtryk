@@ -11,12 +11,13 @@ const compiled = ts.transpileModule(source, {
   },
 }).outputText;
 const classifier = await import(`data:text/javascript;base64,${Buffer.from(compiled).toString("base64")}`);
-const { BP_CLASSIFICATION_METADATA: metadata, getBPStatus } = classifier;
+const { BP_CLASSIFICATION_METADATA: metadata, getBPStatus, getBPStatusForPeriodMean } = classifier;
 
-const severity = (systolic, diastolic) => getBPStatus(systolic, diastolic).severity;
+const severity = (systolic, diastolic, age = 19) => getBPStatus(systolic, diastolic, age).severity;
 
 test("classification metadata identifies the reviewed source and version", () => {
   assert.equal(metadata.ruleVersion, "dcs-nbv-2026-4-table-27-1-v1");
+  assert.equal(metadata.ageEligibility.minimumRecordedAge, 19);
   assert.equal(metadata.verifiedOn, "2026-09-23");
   assert.equal(metadata.source.organization, "Dansk Cardiologisk Selskab (DCS)");
   assert.equal(metadata.source.revision, "2026/4");
@@ -90,9 +91,37 @@ test("raw decimal values are compared without rounding", () => {
   assert.equal(severity(129, 80), "elevated");
 });
 
+test("classification requires a recorded age of at least 19", () => {
+  for (const age of [null, 1, 17, 18]) {
+    const status = getBPStatus(135, 85, age);
+    assert.equal(status.severity, "unclassified");
+    assert.equal(status.descriptionKey, "bp.unclassified.ageDesc");
+  }
+
+  assert.equal(getBPStatus(135, 85, 19).severity, "grade1");
+});
+
+test("period means require every recorded age to be at least 19", () => {
+  assert.equal(getBPStatusForPeriodMean(135, 85, [19, 64]).severity, "grade1");
+
+  for (const ages of [[], [null], [18], [19, null], [18, 19]]) {
+    const status = getBPStatusForPeriodMean(135, 85, ages);
+    assert.equal(status.severity, "unclassified", `ages ${JSON.stringify(ages)}`);
+    assert.equal(status.descriptionKey, "bp.unclassified.ageDesc", `ages ${JSON.stringify(ages)}`);
+  }
+});
+
 test("values below the table and non-finite values stay unclassified", () => {
-  assert.equal(severity(99, 59), "unclassified");
-  assert.equal(severity(Number.NaN, 80), "unclassified");
-  assert.equal(severity(120, Number.POSITIVE_INFINITY), "unclassified");
-  assert.equal(severity(Number.NEGATIVE_INFINITY, 70), "unclassified");
+  const readings = [
+    [99, 59],
+    [Number.NaN, 80],
+    [120, Number.POSITIVE_INFINITY],
+    [Number.NEGATIVE_INFINITY, 70],
+  ];
+
+  for (const [systolic, diastolic] of readings) {
+    assert.equal(severity(systolic, diastolic), "unclassified");
+    assert.equal(getBPStatus(systolic, diastolic, 19).descriptionKey, "bp.unclassified.desc");
+    assert.equal(getBPStatus(systolic, diastolic, null).descriptionKey, "bp.unclassified.desc");
+  }
 });

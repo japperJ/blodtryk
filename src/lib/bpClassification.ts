@@ -20,7 +20,10 @@ export type BPDescriptionKey =
   | "bp.grade1.desc"
   | "bp.grade2.desc"
   | "bp.grade3.desc"
-  | "bp.unclassified.desc";
+  | "bp.unclassified.desc"
+  | "bp.unclassified.ageDesc";
+
+export const BP_CLASSIFICATION_MINIMUM_AGE = 19;
 
 export const BP_CLASSIFICATION_METADATA = {
   ruleVersion: "dcs-nbv-2026-4-table-27-1-v1",
@@ -34,6 +37,9 @@ export const BP_CLASSIFICATION_METADATA = {
     url: "https://nbv.cardio.dk/kapitel/hypertension/",
   },
   unit: "mmHg",
+  ageEligibility: {
+    minimumRecordedAge: BP_CLASSIFICATION_MINIMUM_AGE,
+  },
   thresholds: {
     normal: { systolicMin: 100, systolicMax: 129, diastolicMin: 60, diastolicMax: 79, join: "and" },
     elevated: { systolicMin: 130, systolicMax: 134, diastolicMin: 80, diastolicMax: 84, join: "or" },
@@ -108,11 +114,18 @@ function getComponentSeverity(value: number, component: "systolic" | "diastolic"
   return null;
 }
 
-function toStatus(severity: Severity): BPStatus {
-  return { severity, ...STATUS_DETAILS[severity] };
+function toStatus(
+  severity: Severity,
+  descriptionKey: BPDescriptionKey = STATUS_DETAILS[severity].descriptionKey
+): BPStatus {
+  return { severity, ...STATUS_DETAILS[severity], descriptionKey };
 }
 
-export function getBPStatus(systolic: number, diastolic: number): BPStatus {
+export function getBPStatus(
+  systolic: number,
+  diastolic: number,
+  age: number | null | undefined = undefined
+): BPStatus {
   if (!Number.isFinite(systolic) || !Number.isFinite(diastolic)) {
     return toStatus("unclassified");
   }
@@ -123,22 +136,50 @@ export function getBPStatus(systolic: number, diastolic: number): BPStatus {
     (severity): severity is Severity => severity !== null
   );
 
+  let severity: Severity;
   if (indicatedSeverities.length > 0) {
-    return toStatus(
-      indicatedSeverities.reduce((highest, severity) =>
-        SEVERITY_RANK[severity] > SEVERITY_RANK[highest] ? severity : highest
-      )
+    severity = indicatedSeverities.reduce((highest, current) =>
+      SEVERITY_RANK[current] > SEVERITY_RANK[highest] ? current : highest
     );
-  }
-
-  if (
+  } else if (
     systolic >= BP_CLASSIFICATION_METADATA.thresholds.normal.systolicMin &&
     diastolic >= BP_CLASSIFICATION_METADATA.thresholds.normal.diastolicMin
   ) {
-    return toStatus("normal");
+    severity = "normal";
+  } else {
+    return toStatus("unclassified");
   }
 
-  return toStatus("unclassified");
+  if (
+    typeof age !== "number" ||
+    !Number.isFinite(age) ||
+    age < BP_CLASSIFICATION_MINIMUM_AGE
+  ) {
+    return toStatus("unclassified", "bp.unclassified.ageDesc");
+  }
+
+  return toStatus(severity);
+}
+
+export function getBPStatusForPeriodMean(
+  systolic: number,
+  diastolic: number,
+  ages: readonly (number | null | undefined)[]
+): BPStatus {
+  const allAgesEligible =
+    ages.length > 0 &&
+    ages.every(
+      (age) =>
+        typeof age === "number" &&
+        Number.isFinite(age) &&
+        age >= BP_CLASSIFICATION_MINIMUM_AGE
+    );
+
+  return getBPStatus(
+    systolic,
+    diastolic,
+    allAgesEligible ? BP_CLASSIFICATION_MINIMUM_AGE : undefined
+  );
 }
 
 export function getMeanArterialPressure(systolic: number, diastolic: number): number {
