@@ -19,7 +19,7 @@ import EmptyState from "@/components/EmptyState";
 import { ReadingCardSkeleton } from "@/components/Skeleton";
 import { downloadReadingsCsv, downloadReadingsJson } from "@/lib/exporters";
 import { useI18n } from "@/lib/I18nProvider";
-import { countKey } from "@/lib/i18n";
+import { countKey, INTL_LOCALE } from "@/lib/i18n";
 import type { Reading, PersonSummary } from "@/types";
 import Link from "next/link";
 
@@ -116,6 +116,23 @@ export default function ReadingsPage() {
     }
     return true;
   });
+
+  const readingsByDay = new Map<string, Reading[]>();
+  for (const reading of filteredReadings) {
+    const date = new Date(reading.createdAt);
+    const dayKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+    const dayReadings = readingsByDay.get(dayKey);
+    if (dayReadings) dayReadings.push(reading);
+    else readingsByDay.set(dayKey, [reading]);
+  }
+  const readingGroups = Array.from(readingsByDay.entries())
+    .sort(([firstDay], [secondDay]) => secondDay.localeCompare(firstDay))
+    .map(([, dayReadings]) => ({
+      date: new Date(dayReadings[0].createdAt),
+      readings: dayReadings.sort(
+        (first, second) => new Date(second.createdAt).getTime() - new Date(first.createdAt).getTime()
+      ),
+    }));
 
   const withImageCount = readings.filter(r => r.image).length;
   const withoutImageCount = readings.filter(r => !r.image).length;
@@ -306,15 +323,33 @@ export default function ReadingsPage() {
                 ? t(countKey("readings.countFiltered", filteredReadings.length), { count: filteredReadings.length })
                 : t(countKey("count.readings", filteredReadings.length), { count: filteredReadings.length })}
             </p>
-            <div className="space-y-3">
-              {filteredReadings.map((r) => (
-                <ReadingCard
-                  key={r.id}
-                  reading={r}
-                  onDelete={handleDelete}
-                  onEdit={setEditingReading}
-                  onUpdated={handleEditSaved}
-                />
+            <div className="space-y-6">
+              {readingGroups.map(({ date, readings: dayReadings }) => (
+                <section key={date.toISOString()}>
+                  <div className="flex items-center justify-between gap-3 mb-3 border-b border-gray-200 dark:border-gray-700 pb-2">
+                    <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">
+                      {date.toLocaleDateString(INTL_LOCALE[locale], {
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                      })}
+                    </h2>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      {t(countKey("count.readings", dayReadings.length), { count: dayReadings.length })}
+                    </span>
+                  </div>
+                  <div className="space-y-3">
+                    {dayReadings.map((r) => (
+                      <ReadingCard
+                        key={r.id}
+                        reading={r}
+                        onDelete={handleDelete}
+                        onEdit={setEditingReading}
+                        onUpdated={handleEditSaved}
+                      />
+                    ))}
+                  </div>
+                </section>
               ))}
             </div>
           </>
