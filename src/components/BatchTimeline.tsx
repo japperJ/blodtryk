@@ -12,12 +12,11 @@ interface Props {
   items: BatchItemView[];
   results: ScanResult[];
   onReset: () => void;
-  age?: number | null; // Personens alder til aldersjusteret klassificering
   onRetryFailed?: () => void; // kun muligt når billederne stadig findes lokalt i browseren
   jobId?: string | null; // Batch job ID for manual entry API calls
 }
 
-export default function BatchTimeline({ items, results, onReset, age, onRetryFailed, jobId }: Props) {
+export default function BatchTimeline({ items, results, onReset, onRetryFailed, jobId }: Props) {
   const { t, locale, tError } = useI18n();
   // Sorter resultater efter tidspunkt (nyeste først)
   const sortedResults = [...results]
@@ -87,6 +86,11 @@ export default function BatchTimeline({ items, results, onReset, age, onRetryFai
                 {t(countKey("batch.failed", failedCount), { count: failedCount })}
               </p>
             )}
+            {successCount > 0 && (
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                {t("bp.classificationShortNote")}
+              </p>
+            )}
           </div>
         </div>
       </div>
@@ -99,7 +103,7 @@ export default function BatchTimeline({ items, results, onReset, age, onRetryFai
             if (!item || !result.reading) return null;
 
             const date = result.timestamp;
-            const status = getBPStatus(result.reading.systolic, result.reading.diastolic, age);
+            const status = getBPStatus(result.reading.systolic, result.reading.diastolic);
 
             return (
               <div
@@ -127,7 +131,7 @@ export default function BatchTimeline({ items, results, onReset, age, onRetryFai
                         month: 'short',
                       }) : t("batch.unknownDate")}
                     </p>
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${status.color}`}>
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${status.color}`} title={t(status.descriptionKey)}>
                       {t(status.labelKey)}
                     </span>
                   </div>
@@ -219,7 +223,6 @@ export default function BatchTimeline({ items, results, onReset, age, onRetryFai
                           diastolic: result.reading?.diastolic || 80,
                           pulse: result.reading?.pulse || 70,
                         }}
-                        age={age}
                         onSave={(values) => handleSaveManual(result.imageId, values)}
                         onCancel={() => { setEditingItemId(null); setSaveError(null); }}
                         error={saveError}

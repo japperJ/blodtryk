@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev -p 3010 --experimental-https",
     "build": "next build",
+    "test:classification": "node --test scripts/bpClassification.test.mjs",
     "start": "next start -p 3010",
     "db:push": "prisma db push",
     "postinstall": "prisma generate",

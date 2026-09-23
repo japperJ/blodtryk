@@ -13,7 +13,7 @@ Danish blood pressure tracking app with AI-powered OCR. Photograph your blood pr
 - **📷 Camera Scan** — Point your phone camera at a blood pressure monitor, AI reads the values
 - **📁 Batch Upload** — Upload multiple photos at once for batch processing
 - **👤 Multi-User** — Track blood pressure for multiple family members
-- **📊 Age-Adjusted Classification** — BP status adapts based on age (ESH/ESC guidelines)
+- **📊 Blood-Pressure Categories** — Versioned, informational categories based on DCS NBV table 27.1; see scope and caveats below
 - **📄 PDF Export** — Generate professional reports with color-coded status
 - **📈 Trends** — Charts of systolic/diastolic/pulse over time
 - **💊 Medications** — Track medications per person alongside readings
@@ -21,6 +21,12 @@ Danish blood pressure tracking app with AI-powered OCR. Photograph your blood pr
 - **✏️ Manual Editing** — Correct or enter readings by hand
 - **🎨 Dark Mode** — Light / dark / system theme
 - **🌙 PWA** — Install on your phone's home screen
+
+## Classification scope
+
+The app's display categories use the thresholds in the Danish Society of Cardiology (DCS) National Treatment Guideline for arterial hypertension, revision 2026/4, table 27.1. The source defines categories for daytime averages from home or ambulatory monitoring, or unattended automated clinic measurements when those methods are not possible. This app applies the table to individual saved readings and report-period arithmetic means for display only. The adaptation has not been clinically reviewed or validated and is not a diagnosis, treatment target, or triage tool. The app does not adjust categories by age or provide patient-specific targets. DCS notes that systolic blood pressure below 120 mmHg may be too low for older adults; the app does not assess that note.
+
+Rule metadata: `dcs-nbv-2026-4-table-27-1-v1` (verified 2026-09-23). The exact thresholds and comparison behavior are documented in [BP documentation](docs/BP%20documantation.md). Official source: [DCS NBV, arterial hypertension](https://nbv.cardio.dk/kapitel/hypertension/).
 
 ## Internationalization
 
@@ -81,8 +87,9 @@ OLLAMA_MODEL="glm-ocr"
 npm run dev      # Start dev server on port 3010 with HTTPS (required for camera)
 npm run build    # Build for production
 npm start        # Start production server on port 3010
-npx prisma db push   # Apply schema changes to SQLite (also `npm run db:push`)
-npm run db:studio    # Open Prisma Studio
+npx prisma db push       # Apply schema changes to SQLite (also `npm run db:push`)
+npm run db:studio        # Open Prisma Studio
+npm run test:classification # Test classification boundaries and metadata
 ```
 
 ## Usage
@@ -108,9 +115,9 @@ sequenceDiagram
     UI->>API: Send image and person context
     API->>AI: Extract systolic, diastolic, pulse
     AI-->>API: Parsed values
-    API->>DB: Store reading and classification
-    DB-->>UI: Persisted result
-    UI-->>User: Show reading, history, and trends
+    API->>DB: Store reading
+    DB-->>UI: Persisted reading
+    UI-->>User: Show reading, display category, history, and trends
 ```
 
 ## Project Structure

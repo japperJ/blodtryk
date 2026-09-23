@@ -8,6 +8,7 @@ import {
   CircleAlert,
   OctagonAlert,
   Siren,
+  CircleHelp,
   type LucideIcon,
 } from "lucide-react";
 import type { BPStatus, Severity } from "@/lib/bpClassification";
@@ -17,9 +18,10 @@ import { useI18n } from "@/lib/I18nProvider";
 export const SEVERITY_ICON: Record<Severity, LucideIcon> = {
   normal: CheckCircle2,
   elevated: AlertTriangle,
-  stage1: CircleAlert,
-  stage2: OctagonAlert,
-  crisis: Siren,
+  grade1: CircleAlert,
+  grade2: OctagonAlert,
+  grade3: Siren,
+  unclassified: CircleHelp,
 };
 
 interface StatusPillProps {

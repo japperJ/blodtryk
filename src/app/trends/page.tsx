@@ -3,10 +3,9 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { TrendingUp, TrendingDown, Sunrise, Moon, Flame, Camera, User } from "lucide-react";
 import BPLineChart, { LINE_COLORS } from "@/components/charts/BPLineChart";
-import type { TargetBand } from "@/components/charts/BPLineChart";
 import DistributionBar from "@/components/charts/DistributionBar";
 import type { ClassificationSegment } from "@/components/charts/DistributionBar";
-import { getAgeGroupKey, type Severity } from "@/lib/bpClassification";
+import type { Severity } from "@/lib/bpClassification";
 import EmptyState from "@/components/EmptyState";
 import { TrendsSkeleton } from "@/components/Skeleton";
 import { useI18n } from "@/lib/I18nProvider";
@@ -23,26 +22,10 @@ const RANGES: { value: RangeValue; labelKey: string }[] = [
   { value: "all", labelKey: "trends.rangeAll" },
 ];
 
-// Målbånd pr. aldersgruppe — matcher grænserne i lib/bpClassification.ts (#10-spec)
-function getTargetBand(age: number | null): TargetBand {
-  if (age == null || age < 65) return { sysMin: 90, sysMax: 130, diaMin: 60, diaMax: 85, mapMin: 60, mapMax: 85 };
-  if (age < 80) return { sysMin: 90, sysMax: 140, diaMin: 60, diaMax: 85, mapMin: 60, mapMax: 85 };
-  return { sysMin: 90, sysMax: 140, diaMin: 60, diaMax: 80, mapMin: 60, mapMax: 85 };
-}
-
 // Dansk kort dato: "20/8"
 function shortDate(iso: string): string {
   const d = new Date(`${iso}T00:00:00`);
   return `${d.getDate()}/${d.getMonth() + 1}`;
-}
-
-function bandIndicatorStyle(min: number, max: number, maxValue: number) {
-  const left = (min / maxValue) * 100;
-  const width = Math.max(((max - min) / maxValue) * 100, 3);
-  return {
-    left: `${Math.min(Math.max(left, 0), 100)}%`,
-    width: `${Math.min(Math.max(width, 3), 100)}%`,
-  };
 }
 
 export default function TrendsPage() {
@@ -115,12 +98,6 @@ export default function TrendsPage() {
       cancelled = true;
     };
   }, [personId]);
-
-  // Alder og målbånd for den valgte person (manglende fødselsår → under 65)
-  const age =
-    person?.birthYear != null ? new Date().getFullYear() - person.birthYear : null;
-  const band = getTargetBand(age);
-  const ageGroupKey = age == null ? "ageGroup.under65" : getAgeGroupKey(age);
 
   // Klassificerings-segmenter med sværhedsgrad-farver som resten af appen
   const classificationSegments: ClassificationSegment[] = (stats?.classification ?? []).map(
@@ -233,7 +210,7 @@ export default function TrendsPage() {
               </div>
             </div>
 
-            {/* Linjediagram: daglige gennemsnit + målbånd */}
+            {/* Linjediagram: daglige gennemsnit */}
             <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-700">
               <div className="flex items-center justify-between mb-2 gap-2">
                 <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{t("trends.dailyAvg")}</h2>
@@ -259,35 +236,12 @@ export default function TrendsPage() {
               </div>
               <BPLineChart
                 data={stats.daily}
-                band={band}
                 medications={medications}
                 showSystolic={showSystolic}
                 showDiastolic={showDiastolic}
                 showMap={showMap}
                 showPulse={showPulse}
               />
-              {showMap && (() => {
-                const mapValue = stats.avg.map ?? Math.round((stats.avg.systolic + 2 * stats.avg.diastolic) / 3);
-                const min = band.mapMin ?? 60;
-                const max = band.mapMax ?? 85;
-                const summaryKey = mapValue < min
-                  ? "trends.mapSummaryBelow"
-                  : mapValue > max
-                    ? "trends.mapSummaryAbove"
-                    : "trends.mapSummaryInRange";
-
-                return (
-                  <p className="mt-2 text-xs text-gray-600 dark:text-gray-300">
-                    {t(summaryKey, {
-                      map: mapValue,
-                      sys: stats.avg.systolic,
-                      dia: stats.avg.diastolic,
-                      min,
-                      max,
-                    })}
-                  </p>
-                );
-              })()}
               <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
                 {showSystolic && (
                   <span className="flex items-center gap-1.5">
@@ -329,16 +283,8 @@ export default function TrendsPage() {
                     {t("field.pulse")}
                   </span>
                 )}
-                <span className="flex items-center gap-1.5">
-                  <span
-                    className="inline-block h-2 w-2 rounded-sm bg-green-500/25 border border-green-500/40"
-                    aria-hidden
-                  />
-                  {ageGroupKey ? t("trends.bandLegend", { group: t(ageGroupKey) }) : t("trends.bandLegend", { group: "" })}
-                </span>
               </div>
               <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
-                Sys {band.sysMin}–{band.sysMax} · Dia {band.diaMin}–{band.diaMax} mmHg ·{" "}
                 {t("trends.legendCount", { count: stats.count })}
               </p>
 
@@ -380,16 +326,13 @@ export default function TrendsPage() {
               )}
             </div>
 
-            {/* Ugentlige gennemsnit — kompakte bar-rækker med lille målband-indikator */}
+            {/* Weekly averages */}
             {stats.weekly.length > 0 && (
               <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-700">
                 <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">{t("trends.weeklyAvg")}</h2>
                 <div className="space-y-3">
                   {stats.weekly.map((w) => {
-                    const sysBand = bandIndicatorStyle(band.sysMin, band.sysMax, 200);
-                    const diaBand = bandIndicatorStyle(band.diaMin, band.diaMax, 200);
                     const mapValue = w.mapAvg ?? Math.round((w.sysAvg + 2 * w.diaAvg) / 3);
-                    const mapBand = bandIndicatorStyle(band.mapMin ?? 60, band.mapMax ?? 85, 200);
 
                     return (
                       <div key={w.weekStart} className="flex items-center gap-2">
@@ -398,11 +341,6 @@ export default function TrendsPage() {
                         </span>
                         <div className="flex-1 space-y-1.5">
                           <div className="relative h-2 rounded-full bg-gray-100 dark:bg-gray-700 overflow-hidden">
-                            <span
-                              className="absolute inset-y-0 rounded-full border border-green-500/60 bg-green-500/20"
-                              style={{ left: sysBand.left, width: sysBand.width }}
-                              aria-hidden
-                            />
                             <span
                               className="absolute inset-y-0 rounded-full"
                               style={{
@@ -414,11 +352,6 @@ export default function TrendsPage() {
                           </div>
                           <div className="relative h-2 rounded-full bg-gray-100 dark:bg-gray-700 overflow-hidden">
                             <span
-                              className="absolute inset-y-0 rounded-full border border-green-500/60 bg-green-500/20"
-                              style={{ left: diaBand.left, width: diaBand.width }}
-                              aria-hidden
-                            />
-                            <span
                               className="absolute inset-y-0 rounded-full"
                               style={{
                                 width: `${Math.min(100, (w.diaAvg / 200) * 100)}%`,
@@ -428,11 +361,6 @@ export default function TrendsPage() {
                             />
                           </div>
                           <div className="relative h-2 rounded-full bg-gray-100 dark:bg-gray-700 overflow-hidden">
-                            <span
-                              className="absolute inset-y-0 rounded-full border border-green-500/60 bg-green-500/20"
-                              style={{ left: mapBand.left, width: mapBand.width }}
-                              aria-hidden
-                            />
                             <span
                               className="absolute inset-y-0 rounded-full"
                               style={{
@@ -464,6 +392,17 @@ export default function TrendsPage() {
                   {t("trends.classification")}
                 </h2>
                 <DistributionBar segments={classificationSegments} />
+                {stats.classificationMetadata && (
+                  <div className="mt-3 space-y-1 text-xs text-gray-500 dark:text-gray-400">
+                    <p>{t("bp.classificationCaveat")}</p>
+                    <p>
+                      <a href={stats.classificationMetadata.source.url} target="_blank" rel="noreferrer" className="underline underline-offset-2">
+                        {t("bp.classificationSource")}: {stats.classificationMetadata.source.guideline}, {stats.classificationMetadata.source.table} ({stats.classificationMetadata.source.revision})
+                      </a>
+                    </p>
+                    <p>{t("bp.classificationVersion", { version: stats.classificationMetadata.ruleVersion, date: stats.classificationMetadata.verifiedOn })}</p>
+                  </div>
+                )}
               </div>
             )}
 

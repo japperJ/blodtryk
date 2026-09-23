@@ -18,9 +18,10 @@ interface DistributionBarProps {
 const SEVERITY_COLORS: Record<Severity, string> = {
   normal: "bg-green-500",
   elevated: "bg-yellow-400",
-  stage1: "bg-orange-400",
-  stage2: "bg-red-500",
-  crisis: "bg-red-600",
+  grade1: "bg-orange-400",
+  grade2: "bg-red-500",
+  grade3: "bg-red-700",
+  unclassified: "bg-gray-500",
 };
 
 export default function DistributionBar({ segments }: DistributionBarProps) {

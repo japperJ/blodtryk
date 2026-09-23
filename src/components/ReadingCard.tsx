@@ -3,7 +3,7 @@
 import { Pencil } from "lucide-react";
 import { useState } from "react";
 import type { Reading } from "@/types";
-import { getBPStatus, getAgeGroupKey } from "@/lib/bpClassification";
+import { getBPStatus } from "@/lib/bpClassification";
 import { useI18n } from "@/lib/I18nProvider";
 import { INTL_LOCALE } from "@/lib/i18n";
 import ImageViewer from "./ImageViewer";
@@ -20,8 +20,7 @@ export default function ReadingCard({ reading, onDelete, onEdit, onUpdated }: Pr
   const [showImageViewer, setShowImageViewer] = useState(false);
   const [showFullNote, setShowFullNote] = useState(false);
   const date = new Date(reading.createdAt);
-  const status = getBPStatus(reading.systolic, reading.diastolic, reading.age);
-  const ageGroupKey = getAgeGroupKey(reading.age);
+  const status = getBPStatus(reading.systolic, reading.diastolic);
 
   // Note — blank streng behandles som ingen note
   const noteText = reading.note?.trim() ?? "";
@@ -86,7 +85,7 @@ export default function ReadingCard({ reading, onDelete, onEdit, onUpdated }: Pr
             </div>
           </div>
 
-          <span className={`text-xs font-medium px-2 py-1 rounded-full ${status.color}`}>
+          <span className={`text-xs font-medium px-2 py-1 rounded-full ${status.color}`} title={t(status.descriptionKey)}>
             {t(status.labelKey)}
           </span>
         </div>
@@ -107,12 +106,9 @@ export default function ReadingCard({ reading, onDelete, onEdit, onUpdated }: Pr
           </div>
         </div>
 
-        {/* Aldersbaseret vurdering */}
-        {reading.age != null && (
-          <p className="text-[11px] text-gray-500 dark:text-gray-400 text-center mt-2">
-            {ageGroupKey && t(ageGroupKey)} — {t(status.descriptionKey)}
-          </p>
-        )}
+        <p className="text-[11px] text-gray-500 dark:text-gray-400 text-center mt-2">
+          {t(status.descriptionKey)}
+        </p>
 
         {/* Note — afkortet til én linje, tryk for at folde ud/sammen */}
         {noteText && (

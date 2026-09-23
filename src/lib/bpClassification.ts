@@ -1,108 +1,144 @@
-// Aldersjusteret blodtryksklassificering
-// Baseret på ESH 2023 / ESC 2024 guidelines
-
-// Maskinlæsbar sværhedsgrad — gør det muligt at styre fx PDF-farver på
-// sværhedsgrad i stedet for label-tekster (labels oversættes via i18n-nøgler)
-export type Severity = "normal" | "elevated" | "stage1" | "stage2" | "crisis";
+export type Severity =
+  | "normal"
+  | "elevated"
+  | "grade1"
+  | "grade2"
+  | "grade3"
+  | "unclassified";
 
 export type BPLabelKey =
   | "bp.normal.label"
-  | "bp.crisis.label"
-  | "bp.young.elevated.label"
-  | "bp.young.stage1.label"
-  | "bp.young.stage2.label"
-  | "bp.middle.elevated.label"
-  | "bp.middle.stage1.label"
-  | "bp.middle.stage2.label"
-  | "bp.old.elevated.label";
+  | "bp.elevated.label"
+  | "bp.grade1.label"
+  | "bp.grade2.label"
+  | "bp.grade3.label"
+  | "bp.unclassified.label";
+
+export type BPDescriptionKey =
+  | "bp.normal.desc"
+  | "bp.elevated.desc"
+  | "bp.grade1.desc"
+  | "bp.grade2.desc"
+  | "bp.grade3.desc"
+  | "bp.unclassified.desc";
+
+export const BP_CLASSIFICATION_METADATA = {
+  ruleVersion: "dcs-nbv-2026-4-table-27-1-v1",
+  verifiedOn: "2026-09-23",
+  source: {
+    organization: "Dansk Cardiologisk Selskab (DCS)",
+    guideline: "National Behandlingsvejledning: Arteriel hypertension",
+    revision: "2026/4",
+    section: "27.1 Definition og behandlingsmål",
+    table: "27.1",
+    url: "https://nbv.cardio.dk/kapitel/hypertension/",
+  },
+  unit: "mmHg",
+  thresholds: {
+    normal: { systolicMin: 100, systolicMax: 129, diastolicMin: 60, diastolicMax: 79, join: "and" },
+    elevated: { systolicMin: 130, systolicMax: 134, diastolicMin: 80, diastolicMax: 84, join: "or" },
+    grade1: { systolicMin: 135, systolicMax: 154, diastolicMin: 85, diastolicMax: 94, join: "or" },
+    grade2: { systolicMin: 155, systolicMax: 174, diastolicMin: 95, diastolicMax: 104, join: "or" },
+    grade3: { systolicMin: 175, diastolicMin: 105, join: "or" },
+  },
+} as const;
+
+export type BPClassificationMetadata = typeof BP_CLASSIFICATION_METADATA;
 
 export interface BPStatus {
   severity: Severity;
-  /** i18n-nøgle — oversættes med translate(locale, key) eller t(key) */
   labelKey: BPLabelKey;
   color: string;
-  descriptionKey: string;
+  descriptionKey: BPDescriptionKey;
 }
 
-/**
- * Klassificer blodtryk baseret på alder
- * Bruger ESH/ESC guidelines som er mest konservative for ældre
- *
- * Aldersgrupper:
- *   <65:   Normal <120/80, Forhøjet 120-129/<80, Let forhøjet 130-139/80-89, Forhøjet stadium 2 ≥140/≥90
- *   65-79: Normal <130/80, Let forhøjet 130-139/<85, Forhøjet 140-159/85-89, Højt ≥160/≥90
- *   ≥80:   Normal <140/80, Acceptabelt 140-149/<85, Forhøjet 150-159/85-89, Højt ≥160/≥90
- */
-export function getBPStatus(
-  systolic: number,
-  diastolic: number,
-  age?: number | null
-): BPStatus {
-  // Hvis ingen alder, brug standard (under 65)
-  const ageGroup = age == null ? "young" : age < 65 ? "young" : age < 80 ? "middle" : "old";
+const STATUS_DETAILS: Record<Severity, Omit<BPStatus, "severity">> = {
+  normal: {
+    labelKey: "bp.normal.label",
+    color: "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300",
+    descriptionKey: "bp.normal.desc",
+  },
+  elevated: {
+    labelKey: "bp.elevated.label",
+    color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300",
+    descriptionKey: "bp.elevated.desc",
+  },
+  grade1: {
+    labelKey: "bp.grade1.label",
+    color: "bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300",
+    descriptionKey: "bp.grade1.desc",
+  },
+  grade2: {
+    labelKey: "bp.grade2.label",
+    color: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300",
+    descriptionKey: "bp.grade2.desc",
+  },
+  grade3: {
+    labelKey: "bp.grade3.label",
+    color: "bg-red-700 text-white dark:bg-red-600 dark:text-white",
+    descriptionKey: "bp.grade3.desc",
+  },
+  unclassified: {
+    labelKey: "bp.unclassified.label",
+    color: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200",
+    descriptionKey: "bp.unclassified.desc",
+  },
+};
 
-  // === Hypertensiv krise (uanset alder) ===
-  if (systolic > 180 || diastolic > 120) {
-    return {
-      severity: "crisis",
-      labelKey: "bp.crisis.label",
-      color: "bg-red-600 text-white",
-      descriptionKey: "bp.crisis.desc",
-    };
-  }
+const SEVERITY_RANK: Record<Severity, number> = {
+  normal: 0,
+  elevated: 1,
+  grade1: 2,
+  grade2: 3,
+  grade3: 4,
+  unclassified: -1,
+};
 
-  if (ageGroup === "young") {
-    // Under 65 år: AHA/ACC + ESH
-    if (systolic < 120 && diastolic < 80) {
-      return { severity: "normal", labelKey: "bp.normal.label", color: "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300", descriptionKey: "bp.normal.desc" };
-    }
-    if (systolic < 130 && diastolic < 80) {
-      return { severity: "elevated", labelKey: "bp.young.elevated.label", color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300", descriptionKey: "bp.young.elevated.desc" };
-    }
-    // Både systolisk OG diastolisk skal være under grænsen for stadium 1
-    if (systolic < 140 && diastolic < 90) {
-      return { severity: "stage1", labelKey: "bp.young.stage1.label", color: "bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300", descriptionKey: "bp.young.stage1.desc" };
-    }
-    return { severity: "stage2", labelKey: "bp.young.stage2.label", color: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300", descriptionKey: "bp.young.stage2.desc" };
-  }
+function getComponentSeverity(value: number, component: "systolic" | "diastolic"): Severity | null {
+  const thresholds = BP_CLASSIFICATION_METADATA.thresholds;
+  const grade3Min = component === "systolic" ? thresholds.grade3.systolicMin : thresholds.grade3.diastolicMin;
+  const grade2Min = component === "systolic" ? thresholds.grade2.systolicMin : thresholds.grade2.diastolicMin;
+  const grade1Min = component === "systolic" ? thresholds.grade1.systolicMin : thresholds.grade1.diastolicMin;
+  const elevatedMin = component === "systolic" ? thresholds.elevated.systolicMin : thresholds.elevated.diastolicMin;
 
-  if (ageGroup === "middle") {
-    // 65-79 år: ESH/ESC (mere generøs)
-    if (systolic < 130 && diastolic < 80) {
-      return { severity: "normal", labelKey: "bp.normal.label", color: "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300", descriptionKey: "bp.normalOld.desc" };
-    }
-    if (systolic < 140 && diastolic < 85) {
-      return { severity: "elevated", labelKey: "bp.middle.elevated.label", color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300", descriptionKey: "bp.middle.elevated.desc" };
-    }
-    if (systolic < 160 && diastolic < 90) {
-      return { severity: "stage1", labelKey: "bp.middle.stage1.label", color: "bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300", descriptionKey: "bp.middle.stage1.desc" };
-    }
-    return { severity: "stage2", labelKey: "bp.middle.stage2.label", color: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300", descriptionKey: "bp.middle.stage2.desc" };
-  }
-
-  // ≥80 år: ESH/ESC ( mest generøs — undgå for lavt blodtryk)
-  if (systolic < 140 && diastolic < 80) {
-    return { severity: "normal", labelKey: "bp.normal.label", color: "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300", descriptionKey: "bp.normalOld.desc" };
-  }
-  if (systolic < 150 && diastolic < 85) {
-    return { severity: "elevated", labelKey: "bp.old.elevated.label", color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300", descriptionKey: "bp.old.elevated.desc" };
-  }
-  if (systolic < 160 && diastolic < 90) {
-    return { severity: "stage1", labelKey: "bp.middle.stage1.label", color: "bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300", descriptionKey: "bp.middle.stage1.desc" };
-  }
-  return { severity: "stage2", labelKey: "bp.middle.stage2.label", color: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300", descriptionKey: "bp.middle.stage2.desc" };
+  if (value >= grade3Min) return "grade3";
+  if (value >= grade2Min) return "grade2";
+  if (value >= grade1Min) return "grade1";
+  if (value >= elevatedMin) return "elevated";
+  return null;
 }
 
-export type AgeGroupKey = "" | "ageGroup.under65" | "ageGroup.65to79" | "ageGroup.over80";
+function toStatus(severity: Severity): BPStatus {
+  return { severity, ...STATUS_DETAILS[severity] };
+}
 
-/**
- * Returnerer aldersgruppe som i18n-nøgle
- */
-export function getAgeGroupKey(age: number | null): AgeGroupKey {
-  if (age == null) return "";
-  if (age < 65) return "ageGroup.under65";
-  if (age < 80) return "ageGroup.65to79";
-  return "ageGroup.over80";
+export function getBPStatus(systolic: number, diastolic: number): BPStatus {
+  if (!Number.isFinite(systolic) || !Number.isFinite(diastolic)) {
+    return toStatus("unclassified");
+  }
+
+  const systolicSeverity = getComponentSeverity(systolic, "systolic");
+  const diastolicSeverity = getComponentSeverity(diastolic, "diastolic");
+  const indicatedSeverities = [systolicSeverity, diastolicSeverity].filter(
+    (severity): severity is Severity => severity !== null
+  );
+
+  if (indicatedSeverities.length > 0) {
+    return toStatus(
+      indicatedSeverities.reduce((highest, severity) =>
+        SEVERITY_RANK[severity] > SEVERITY_RANK[highest] ? severity : highest
+      )
+    );
+  }
+
+  if (
+    systolic >= BP_CLASSIFICATION_METADATA.thresholds.normal.systolicMin &&
+    diastolic >= BP_CLASSIFICATION_METADATA.thresholds.normal.diastolicMin
+  ) {
+    return toStatus("normal");
+  }
+
+  return toStatus("unclassified");
 }
 
 export function getMeanArterialPressure(systolic: number, diastolic: number): number {
