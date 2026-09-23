@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from "react";
 import {
   ClipboardList,
+  ChevronDown,
   Sunrise,
   Moon,
   Image as ImageIcon,
@@ -34,6 +35,7 @@ export default function ReadingsPage() {
   const [timeFilter, setTimeFilter] = useState<TimeFilterType>("all");
   const [selectedPerson, setSelectedPerson] = useState<PersonSummary | null>(null);
   const [editingReading, setEditingReading] = useState<Reading | null>(null);
+  const [expandedDays, setExpandedDays] = useState<Set<string>>(() => new Set());
   // Medicin til PDF'en (#14): navn, dosis og periode vises i resuméet og i trenddiagrammet
   const [medications, setMedications] = useState<PdfMedication[]>([]);
 
@@ -127,12 +129,23 @@ export default function ReadingsPage() {
   }
   const readingGroups = Array.from(readingsByDay.entries())
     .sort(([firstDay], [secondDay]) => secondDay.localeCompare(firstDay))
-    .map(([, dayReadings]) => ({
-      date: new Date(dayReadings[0].createdAt),
-      readings: dayReadings.sort(
+    .map(([dayKey, dayReadings]) => {
+      const sortedReadings = dayReadings.sort(
         (first, second) => new Date(second.createdAt).getTime() - new Date(first.createdAt).getTime()
-      ),
-    }));
+      );
+      const count = sortedReadings.length;
+
+      return {
+        dayKey,
+        date: new Date(sortedReadings[0].createdAt),
+        readings: sortedReadings,
+        average: {
+          systolic: Math.round(sortedReadings.reduce((sum, reading) => sum + reading.systolic, 0) / count),
+          diastolic: Math.round(sortedReadings.reduce((sum, reading) => sum + reading.diastolic, 0) / count),
+          pulse: Math.round(sortedReadings.reduce((sum, reading) => sum + reading.pulse, 0) / count),
+        },
+      };
+    });
 
   const withImageCount = readings.filter(r => r.image).length;
   const withoutImageCount = readings.filter(r => !r.image).length;
@@ -323,34 +336,72 @@ export default function ReadingsPage() {
                 ? t(countKey("readings.countFiltered", filteredReadings.length), { count: filteredReadings.length })
                 : t(countKey("count.readings", filteredReadings.length), { count: filteredReadings.length })}
             </p>
-            <div className="space-y-6">
-              {readingGroups.map(({ date, readings: dayReadings }) => (
-                <section key={date.toISOString()}>
-                  <div className="flex items-center justify-between gap-3 mb-3 border-b border-gray-200 dark:border-gray-700 pb-2">
-                    <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">
-                      {date.toLocaleDateString(INTL_LOCALE[locale], {
-                        day: "numeric",
-                        month: "long",
-                        year: "numeric",
-                      })}
+            <div className="space-y-3">
+              {readingGroups.map(({ dayKey, date, readings: dayReadings, average }) => {
+                const isExpanded = expandedDays.has(dayKey);
+                const contentId = `readings-day-${dayKey}`;
+
+                return (
+                  <section
+                    key={dayKey}
+                    className="overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
+                  >
+                    <h2>
+                      <button
+                        type="button"
+                        aria-expanded={isExpanded}
+                        aria-controls={contentId}
+                        onClick={() =>
+                          setExpandedDays((previous) => {
+                            const next = new Set(previous);
+                            if (next.has(dayKey)) next.delete(dayKey);
+                            else next.add(dayKey);
+                            return next;
+                          })
+                        }
+                        className="flex min-h-[64px] w-full items-center justify-between gap-3 px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-500"
+                      >
+                        <span className="min-w-0 flex-1">
+                          <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                            <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                              {date.toLocaleDateString(INTL_LOCALE[locale], {
+                                day: "numeric",
+                                month: "long",
+                                year: "numeric",
+                              })}
+                            </span>
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              {t("trends.average")}: {average.systolic}/{average.diastolic} {t("field.mmHg")} · {average.pulse} {t("field.bpm")}
+                            </span>
+                          </span>
+                        </span>
+                        <span className="flex shrink-0 items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                          {t(countKey("count.readings", dayReadings.length), { count: dayReadings.length })}
+                          <ChevronDown
+                            aria-hidden
+                            className={`h-4 w-4 transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                          />
+                        </span>
+                      </button>
                     </h2>
-                    <span className="text-xs text-gray-500 dark:text-gray-400">
-                      {t(countKey("count.readings", dayReadings.length), { count: dayReadings.length })}
-                    </span>
-                  </div>
-                  <div className="space-y-3">
-                    {dayReadings.map((r) => (
-                      <ReadingCard
-                        key={r.id}
-                        reading={r}
-                        onDelete={handleDelete}
-                        onEdit={setEditingReading}
-                        onUpdated={handleEditSaved}
-                      />
-                    ))}
-                  </div>
-                </section>
-              ))}
+                    <div
+                      id={contentId}
+                      hidden={!isExpanded}
+                      className="space-y-3 border-t border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-900"
+                    >
+                      {isExpanded && dayReadings.map((r) => (
+                        <ReadingCard
+                          key={r.id}
+                          reading={r}
+                          onDelete={handleDelete}
+                          onEdit={setEditingReading}
+                          onUpdated={handleEditSaved}
+                        />
+                      ))}
+                    </div>
+                  </section>
+                );
+              })}
             </div>
           </>
         )}
