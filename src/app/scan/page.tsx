@@ -790,6 +790,7 @@ export default function ScanPage() {
                 onReset={handleBatchReset}
                 onRetryFailed={canRetryFailed ? handleRetryFailed : undefined}
                 jobId={batchJobId}
+                age={derivedAge}
               />
             )}
 

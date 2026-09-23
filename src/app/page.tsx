@@ -146,7 +146,7 @@ export default function DashboardPage() {
   }
 
   const latest = readings[0];
-  const latestStatus = latest ? getBPStatus(latest.systolic, latest.diastolic) : null;
+  const latestStatus = latest ? getBPStatus(latest.systolic, latest.diastolic, latest.age) : null;
 
   // Banner-betingelser (#16): se shouldShowReminderBanner i lib/reminder.ts.
   // KUN fallback: vises når notifikationer er afvist eller ikke understøttes,
@@ -310,7 +310,7 @@ export default function DashboardPage() {
                 </div>
                 <div className="space-y-2">
                   {readings.slice(0, 3).map((r) => {
-                    const status = getBPStatus(r.systolic, r.diastolic);
+                    const status = getBPStatus(r.systolic, r.diastolic, r.age);
                     const date = new Date(r.createdAt);
                     return (
                       <div key={r.id} className="bg-white dark:bg-gray-800 rounded-2xl px-4 py-3 shadow-sm border border-gray-200 dark:border-gray-700 flex items-center justify-between">

@@ -91,6 +91,7 @@ export async function GET(request: NextRequest) {
       systolic: true,
       diastolic: true,
       pulse: true,
+      age: true,
       timeOfDay: true,
       createdAt: true,
     },
@@ -168,7 +169,7 @@ export async function GET(request: NextRequest) {
     w.count += 1;
     weeklyMap.set(weekKey, w);
 
-    const status = getBPStatus(r.systolic, r.diastolic);
+    const status = getBPStatus(r.systolic, r.diastolic, r.age);
     const c = classMap.get(status.severity) ?? {
       severity: status.severity,
       labelKey: status.labelKey,

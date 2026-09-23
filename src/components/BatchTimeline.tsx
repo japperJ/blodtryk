@@ -14,9 +14,10 @@ interface Props {
   onReset: () => void;
   onRetryFailed?: () => void; // kun muligt når billederne stadig findes lokalt i browseren
   jobId?: string | null; // Batch job ID for manual entry API calls
+  age: number | null;
 }
 
-export default function BatchTimeline({ items, results, onReset, onRetryFailed, jobId }: Props) {
+export default function BatchTimeline({ items, results, onReset, onRetryFailed, jobId, age }: Props) {
   const { t, locale, tError } = useI18n();
   // Sorter resultater efter tidspunkt (nyeste først)
   const sortedResults = [...results]
@@ -103,7 +104,7 @@ export default function BatchTimeline({ items, results, onReset, onRetryFailed, 
             if (!item || !result.reading) return null;
 
             const date = result.timestamp;
-            const status = getBPStatus(result.reading.systolic, result.reading.diastolic);
+            const status = getBPStatus(result.reading.systolic, result.reading.diastolic, age);
 
             return (
               <div

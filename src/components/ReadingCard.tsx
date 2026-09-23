@@ -20,7 +20,7 @@ export default function ReadingCard({ reading, onDelete, onEdit, onUpdated }: Pr
   const [showImageViewer, setShowImageViewer] = useState(false);
   const [showFullNote, setShowFullNote] = useState(false);
   const date = new Date(reading.createdAt);
-  const status = getBPStatus(reading.systolic, reading.diastolic);
+  const status = getBPStatus(reading.systolic, reading.diastolic, reading.age);
 
   // Note — blank streng behandles som ingen note
   const noteText = reading.note?.trim() ?? "";
