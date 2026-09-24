@@ -7,16 +7,6 @@ import { useI18n } from "@/lib/I18nProvider";
 import { formatMedicationDate } from "@/lib/medicationDate";
 import type { DailyAverage } from "@/types";
 
-// Målbånd (grøn zone) for personens aldersgruppe — se getTargetBand i app/trends/page.tsx
-export interface TargetBand {
-  sysMin: number;
-  sysMax: number;
-  diaMin: number;
-  diaMax: number;
-  mapMin?: number;
-  mapMax?: number;
-}
-
 // Medicin-linjer under diagrammet: hvornår et præparat blev startet og stoppet
 export interface MedicationLane {
   id: number;
@@ -29,7 +19,6 @@ export interface MedicationLane {
 
 interface BPLineChartProps {
   data: DailyAverage[]; // daglige gennemsnit (allerede aggregeret fra stats-API'en)
-  band: TargetBand;
   medications?: MedicationLane[]; // vises som vandrette linjer under x-aksen
   showSystolic: boolean;
   showDiastolic: boolean;
@@ -43,7 +32,6 @@ export const LINE_COLORS = {
   diastolic: "#0d9488", // teal-600
   map: "#f59e0b", // amber-500
   pulse: "#9333ea", // purple-600
-  band: "#22c55e", // green-500
   medication: "#db2777", // pink-600
 } as const;
 
@@ -79,7 +67,6 @@ function shortDate(iso: string): string {
 
 export default function BPLineChart({
   data,
-  band,
   medications,
   showSystolic,
   showDiastolic,
@@ -95,11 +82,6 @@ export default function BPLineChart({
     HEIGHT + (meds.length > 0 ? MED_GAP + meds.length * MED_ROW_H + MED_PAD_BOTTOM : 0);
 
   const values: number[] = [];
-  if (showSystolic) values.push(band.sysMin, band.sysMax);
-  if (showDiastolic) values.push(band.diaMin, band.diaMax);
-  if (showMap && band.mapMin != null && band.mapMax != null) {
-    values.push(band.mapMin, band.mapMax);
-  }
   for (const p of data) {
     if (showSystolic) values.push(p.sysAvg);
     if (showDiastolic) values.push(p.diaAvg);
@@ -180,39 +162,6 @@ export default function BPLineChart({
           </text>
         </g>
       ))}
-
-      <rect
-        x={PAD.left}
-        y={yAt(band.sysMax)}
-        width={innerW}
-        height={Math.max(1, yAt(band.sysMin) - yAt(band.sysMax))}
-        fill={LINE_COLORS.band}
-        opacity="0.10"
-      >
-        <title>{t("chart.bandSys", { min: band.sysMin, max: band.sysMax })}</title>
-      </rect>
-      <rect
-        x={PAD.left}
-        y={yAt(band.diaMax)}
-        width={innerW}
-        height={Math.max(1, yAt(band.diaMin) - yAt(band.diaMax))}
-        fill={LINE_COLORS.band}
-        opacity="0.06"
-      >
-        <title>{t("chart.bandDia", { min: band.diaMin, max: band.diaMax })}</title>
-      </rect>
-      {showMap && band.mapMin != null && band.mapMax != null && (
-        <rect
-          x={PAD.left}
-          y={yAt(band.mapMax)}
-          width={innerW}
-          height={Math.max(1, yAt(band.mapMin) - yAt(band.mapMax))}
-          fill={LINE_COLORS.band}
-          opacity="0.12"
-        >
-          <title>{t("chart.bandMap", { min: band.mapMin, max: band.mapMax })}</title>
-        </rect>
-      )}
 
       {showDiastolic && (
         <polyline

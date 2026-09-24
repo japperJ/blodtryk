@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getBPStatus, getMeanArterialPressure } from "@/lib/bpClassification";
+import { BP_CLASSIFICATION_METADATA, getBPStatus, getMeanArterialPressure, type BPLabelKey, type Severity } from "@/lib/bpClassification";
 
 // Tilladte vinduer for days-parameteren
 const ALLOWED_DAYS = ["7", "30", "90", "all"] as const;
@@ -20,7 +20,8 @@ interface StatsResponse {
   max: StatsEntry;
   daily: { date: string; sysAvg: number; diaAvg: number; pulseAvg: number; mapAvg: number; count: number }[];
   weekly: { weekStart: string; sysAvg: number; diaAvg: number; mapAvg: number; count: number }[];
-  classification: { severity: string; labelKey: string; count: number }[];
+  classification: { severity: Severity; labelKey: BPLabelKey; count: number }[];
+  classificationMetadata: typeof BP_CLASSIFICATION_METADATA;
   byTimeOfDay?: { morning?: { sysAvg: number }; evening?: { sysAvg: number } };
   streakDays: number;
 }
@@ -107,6 +108,7 @@ export async function GET(request: NextRequest) {
       daily: [],
       weekly: [],
       classification: [],
+      classificationMetadata: BP_CLASSIFICATION_METADATA,
       streakDays: 0,
     };
     return NextResponse.json(response);
@@ -121,8 +123,8 @@ export async function GET(request: NextRequest) {
   const dailyMap = new Map<string, { sys: number; dia: number; pul: number; map: number; count: number }>();
   const weeklyMap = new Map<string, { sys: number; dia: number; map: number; count: number }>();
 
-  // Klassificerings-fordeling via den delte, aldersbevidste klassifikator
-  const classMap = new Map<string, { severity: string; labelKey: string; count: number }>();
+  // Classification distribution counts each saved reading using the shared DCS-based rules.
+  const classMap = new Map<Severity, { severity: Severity; labelKey: BPLabelKey; count: number }>();
 
   // Kontekst-tags: morgen/aften
   let morningSys = 0;
@@ -199,7 +201,7 @@ export async function GET(request: NextRequest) {
   }
 
   // Stabil rækkefølge for sværhedsgrader
-  const severityOrder = ["normal", "elevated", "stage1", "stage2", "crisis"];
+  const severityOrder: Severity[] = ["normal", "elevated", "grade1", "grade2", "grade3", "unclassified"];
   const classification = severityOrder
     .filter((s) => classMap.has(s))
     .map((s) => classMap.get(s)!);
@@ -239,6 +241,7 @@ export async function GET(request: NextRequest) {
         count: v.count,
       })),
     classification,
+    classificationMetadata: BP_CLASSIFICATION_METADATA,
     // Udelades helt i JSON når ingen taggede målinger findes
     ...(Object.keys(byTimeOfDay).length > 0 ? { byTimeOfDay } : {}),
     streakDays,

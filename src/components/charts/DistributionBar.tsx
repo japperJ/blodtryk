@@ -3,6 +3,7 @@
 "use client";
 
 import type { Severity } from "@/lib/bpClassification";
+import { useI18n } from "@/lib/I18nProvider";
 
 export interface ClassificationSegment {
   severity: Severity;
@@ -18,12 +19,14 @@ interface DistributionBarProps {
 const SEVERITY_COLORS: Record<Severity, string> = {
   normal: "bg-green-500",
   elevated: "bg-yellow-400",
-  stage1: "bg-orange-400",
-  stage2: "bg-red-500",
-  crisis: "bg-red-600",
+  grade1: "bg-orange-400",
+  grade2: "bg-red-500",
+  grade3: "bg-red-700",
+  unclassified: "bg-gray-500",
 };
 
 export default function DistributionBar({ segments }: DistributionBarProps) {
+  const { t } = useI18n();
   const total = segments.reduce((sum, s) => sum + s.count, 0);
   if (total === 0) return null;
 
@@ -61,7 +64,9 @@ export default function DistributionBar({ segments }: DistributionBarProps) {
         ))}
       </ul>
 
-      <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">{total} målinger klassificeret</p>
+      <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+        {t("trends.distributionTotal", { count: total })}
+      </p>
     </div>
   );
 }

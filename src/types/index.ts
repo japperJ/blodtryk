@@ -1,3 +1,5 @@
+import type { BPClassificationMetadata, BPLabelKey, Severity } from "@/lib/bpClassification";
+
 export interface BloodPressureReading {
   systolic: number;
   diastolic: number;
@@ -74,7 +76,8 @@ export interface ReadingStats {
   max: BloodPressureReading;
   daily: DailyAverage[];
   weekly: WeeklyAverage[];
-  classification: { severity: string; labelKey: string; count: number }[];
+  classification: { severity: Severity; labelKey: BPLabelKey; count: number }[];
+  classificationMetadata: BPClassificationMetadata;
   byTimeOfDay?: TimeOfDayStats; // udelades når ingen målinger har tidspunkt-tags
   streakDays: number;
 }

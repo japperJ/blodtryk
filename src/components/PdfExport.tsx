@@ -2,7 +2,12 @@
 import { useEffect, useRef, useState } from "react";
 import jsPDF from "jspdf";
 import type { Reading } from "@/types";
-import { getBPStatus, getAgeGroupKey, type Severity } from "@/lib/bpClassification";
+import {
+  BP_CLASSIFICATION_METADATA,
+  getBPStatus,
+  getBPStatusForPeriodMean,
+  type Severity,
+} from "@/lib/bpClassification";
 import { timeOfDayLabel, shortArmLabel, exportFilename } from "@/lib/exporters";
 import {
   createDanishReportPdf,
@@ -440,21 +445,35 @@ export default function PdfExport({ readings: allReadings, personName, medicatio
       // så labels kan omdøbes frit uden at ødelægge PDF-farverne
       const setStatusColor = (severity: Severity) => {
         switch (severity) {
-          case "crisis":
+          case "grade3":
             doc.setTextColor(180, 0, 0);
             break;
-          case "stage2":
+          case "grade2":
             doc.setTextColor(200, 0, 0);
             break;
-          case "stage1":
+          case "grade1":
             doc.setTextColor(220, 100, 0);
             break;
           case "elevated":
             doc.setTextColor(200, 150, 0);
             break;
-          default: // normal
+          case "unclassified":
+            doc.setTextColor(120, 120, 120);
+            break;
+          default:
             doc.setTextColor(0, 140, 0);
         }
+      };
+
+      const addClassificationLine = (text: string) => {
+        const lines = doc.splitTextToSize(text, pageWidth - margin * 2) as string[];
+        const lineHeight = 4;
+        checkPage(lines.length * lineHeight + 1);
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8);
+        doc.setTextColor(100);
+        doc.text(lines, margin, y);
+        y += lines.length * lineHeight + 1;
       };
 
       const sorted = [...readings].sort(
@@ -490,14 +509,7 @@ export default function PdfExport({ readings: allReadings, personName, medicatio
       if (ages.length > 0) {
         const uniqueAges = Array.from(new Set(ages));
         if (uniqueAges.length === 1) {
-            doc.text(
-              t("pdf.ageLine", {
-                age: uniqueAges[0],
-                group: t(getAgeGroupKey(uniqueAges[0])),
-              }),
-              margin,
-              y
-            );
+          doc.text(t("pdf.ageLine", { age: uniqueAges[0] }), margin, y);
           y += 5;
         }
       }
@@ -544,8 +556,10 @@ export default function PdfExport({ readings: allReadings, personName, medicatio
         y += 5;
 
         // Gennemsnit og min/maks for systolisk + diastolisk
-        const avgSys = Math.round(readings.reduce((s, r) => s + r.systolic, 0) / readings.length);
-        const avgDia = Math.round(readings.reduce((s, r) => s + r.diastolic, 0) / readings.length);
+        const avgSysRaw = readings.reduce((s, r) => s + r.systolic, 0) / readings.length;
+        const avgDiaRaw = readings.reduce((s, r) => s + r.diastolic, 0) / readings.length;
+        const avgSys = Math.round(avgSysRaw);
+        const avgDia = Math.round(avgDiaRaw);
         const minSys = Math.min(...readings.map((r) => r.systolic));
         const maxSys = Math.max(...readings.map((r) => r.systolic));
         const minDia = Math.min(...readings.map((r) => r.diastolic));
@@ -569,9 +583,8 @@ export default function PdfExport({ readings: allReadings, personName, medicatio
         doc.text(t("pdf.diaMinMax", { min: minDia, max: maxDia }), margin, y);
         y += 6;
 
-        // Klassifikationsfordeling: getBPStatus pr. måling (med alder),
-        // optalt pr. sværhedsgrad — samme fremgangsmåde som stats-API'en (#9)
-        const severityOrder: Severity[] = ["normal", "elevated", "stage1", "stage2", "crisis"];
+        // Appens display category counts individual readings; it is not a diagnosis.
+        const severityOrder: Severity[] = ["normal", "elevated", "grade1", "grade2", "grade3", "unclassified"];
         const classMap = new Map<
           Severity,
           { severity: Severity; labelKey: string; count: number }
@@ -607,17 +620,46 @@ export default function PdfExport({ readings: allReadings, personName, medicatio
         }
         y += 7;
 
-        // Samlet vurdering baseret på gennemsnittet
-        const avgStatus = getBPStatus(avgSys, avgDia, ages[0] || null);
+        const avgStatus = getBPStatusForPeriodMean(
+          avgSysRaw,
+          avgDiaRaw,
+          readings.map((reading) => reading.age)
+        );
         doc.setFont("helvetica", "bold");
+        doc.setFontSize(9);
         setStatusColor(avgStatus.severity);
-        doc.text(t("pdf.overall", { label: t(avgStatus.labelKey) }), margin, y);
+        doc.text(
+          t("pdf.periodMeanCategory", { label: t(avgStatus.labelKey) }),
+          margin,
+          y
+        );
         y += 5;
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(8);
-        doc.setTextColor(100);
-        doc.text(t(avgStatus.descriptionKey), margin, y);
-        y += 8;
+        addClassificationLine(t(avgStatus.descriptionKey));
+        y += 2;
+
+        checkPage(18);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(9);
+        doc.setTextColor(0);
+        doc.text(t("pdf.classificationHeading"), margin, y);
+        y += 5;
+        const source = BP_CLASSIFICATION_METADATA.source;
+        addClassificationLine(
+          t("pdf.classificationSource", {
+            guideline: source.guideline,
+            table: source.table,
+            revision: source.revision,
+          })
+        );
+        addClassificationLine(
+          t("pdf.classificationVersion", {
+            version: BP_CLASSIFICATION_METADATA.ruleVersion,
+            date: BP_CLASSIFICATION_METADATA.verifiedOn,
+          })
+        );
+        addClassificationLine(t("pdf.classificationUrl", { url: source.url }));
+        addClassificationLine(t("pdf.classificationScope"));
+        addClassificationLine(t("pdf.classificationPrecision"));
       }
 
       // === Trenddiagram (best-effort: springes stille over hvis rasterisering fejler) ===

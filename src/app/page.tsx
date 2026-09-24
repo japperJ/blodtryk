@@ -235,6 +235,7 @@ export default function DashboardPage() {
                     {latest.pulse} {t("field.bpm")}
                   </p>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">{formatRelativeTime(latest.createdAt, locale)}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">{t("bp.classificationShortNote")}</p>
                 </>
               ) : (
                 /* Nul-målinger: venlig CTA i stedet for tomme tal */

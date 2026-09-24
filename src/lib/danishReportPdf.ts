@@ -7,7 +7,7 @@
 // så det kan kompileres og verificeres standalone mod reference-PDF'en.
 //
 // Sådan læses originalen:
-//   side 1 = OPSUMMERING (analyse-tabel + tabel med gennemsnit/variation/normal)
+//   side 1 = OPSUMMERING (analyse-tabel + tabel med gennemsnit/variation/individuelt mål)
 //   side 2+ = "Startdato"/"Slutdato" og én blok pr. dag ("Dag N") med
 //             morgen/aften-skemaer
 //
@@ -85,7 +85,7 @@ const ANALYSIS_ROWS: Array<{ label: string; code: string; key: ParameterKey }> =
   { label: "Puls;Hjerte", code: "NPU21692", key: "pulse" },
 ];
 
-// Gennemsnits-tabel: Hjemme-blodtryk | Gennemsnit | Variation | Normal
+// Gennemsnits-tabel: Hjemme-blodtryk | Gennemsnit | Variation | Individuelt mål
 const AVERAGE_TOP = 207.2;
 const AVERAGE_ROW_H = 19.2;
 const AVERAGE_COLUMNS: Array<[number, number]> = [
@@ -99,11 +99,11 @@ const AVERAGE_HEADER_RIGHT = [345.3, 446.9, 548.5];
 const AVERAGE_VALUE_RIGHT = [346.1, 447.7, 549.8];
 const TABLE_TEXT_BASE = 12.8; // baseline i forhold til rækkens top (8 pt tekst)
 
-// Hjemmeblodtryk-mål og normalområde for puls (faste referenceværdier)
+// Patient-specific targets are intentionally omitted; the app does not assess them.
 const TARGETS: Record<ParameterKey, string> = {
-  systolic: "< 135 mm Hg",
-  diastolic: "< 85 mm Hg",
-  pulse: "60-80 pr min",
+  systolic: "Ikke angivet",
+  diastolic: "Ikke angivet",
+  pulse: "-",
 };
 const UNIT: Record<ParameterKey, string> = { systolic: "mm Hg", diastolic: "mm Hg", pulse: "pr min" };
 
@@ -433,7 +433,7 @@ function renderSummaryPage(
     drawText(doc, row.code, ANALYSIS_CODE_RIGHT, base, { size: SIZE_CELL, color: TEXT, align: "right" });
   });
 
-  // --- Hjemme-blodtryk: gennemsnit / variation / normal ---
+  // --- Hjemme-blodtryk: gennemsnit / variation / individuelt mål ---
   const rows: Array<[string, ParameterKey, string | null, string | null, string | null]> = [];
   for (const key of ["systolic", "diastolic", "pulse"] as ParameterKey[]) {
     const p = summary[key];
@@ -449,7 +449,7 @@ function renderSummaryPage(
     color: BLACK,
     bold: true,
   });
-  ["Gennemsnit", "Variation", "Normal"].forEach((title, i) => {
+  ["Gennemsnit", "Variation", "Individuelt mål"].forEach((title, i) => {
     drawText(doc, title, AVERAGE_HEADER_RIGHT[i], avgHeaderBase, {
       size: SIZE_CELL,
       color: BLACK,
