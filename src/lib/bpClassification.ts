@@ -124,7 +124,7 @@ function toStatus(
 export function getBPStatus(
   systolic: number,
   diastolic: number,
-  age: number | null | undefined = undefined
+  age: number | null | undefined
 ): BPStatus {
   if (!Number.isFinite(systolic) || !Number.isFinite(diastolic)) {
     return toStatus("unclassified");

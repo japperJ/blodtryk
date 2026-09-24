@@ -2,7 +2,12 @@
 import { useEffect, useRef, useState } from "react";
 import jsPDF from "jspdf";
 import type { Reading } from "@/types";
-import { BP_CLASSIFICATION_METADATA, getBPStatus, type Severity } from "@/lib/bpClassification";
+import {
+  BP_CLASSIFICATION_METADATA,
+  getBPStatus,
+  getBPStatusForPeriodMean,
+  type Severity,
+} from "@/lib/bpClassification";
 import { timeOfDayLabel, shortArmLabel, exportFilename } from "@/lib/exporters";
 import {
   createDanishReportPdf,
@@ -585,7 +590,7 @@ export default function PdfExport({ readings: allReadings, personName, medicatio
           { severity: Severity; labelKey: string; count: number }
         >();
         for (const r of readings) {
-          const status = getBPStatus(r.systolic, r.diastolic);
+          const status = getBPStatus(r.systolic, r.diastolic, r.age);
           const cur = classMap.get(status.severity) ?? {
             severity: status.severity,
             labelKey: status.labelKey,
@@ -615,7 +620,11 @@ export default function PdfExport({ readings: allReadings, personName, medicatio
         }
         y += 7;
 
-        const avgStatus = getBPStatus(avgSysRaw, avgDiaRaw);
+        const avgStatus = getBPStatusForPeriodMean(
+          avgSysRaw,
+          avgDiaRaw,
+          readings.map((reading) => reading.age)
+        );
         doc.setFont("helvetica", "bold");
         doc.setFontSize(9);
         setStatusColor(avgStatus.severity);
@@ -757,7 +766,7 @@ export default function PdfExport({ readings: allReadings, personName, medicatio
 
       for (const reading of sorted) {
         const date = new Date(reading.createdAt);
-        const status = getBPStatus(reading.systolic, reading.diastolic);
+        const status = getBPStatus(reading.systolic, reading.diastolic, reading.age);
 
         // Note pakkes til kolonnebredden (maks. 2 linjer, … ved afkortning)
         let noteLines: string[] = [];
